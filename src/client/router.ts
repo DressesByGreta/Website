@@ -98,8 +98,10 @@ export function startRouter(init: PageInit): void {
         else if (fresh) document.head.appendChild(document.importNode(fresh, true));
         else old?.remove();
       }
-      const toggle = doc.querySelector<HTMLAnchorElement>('[data-lang-toggle]');
-      document.querySelectorAll<HTMLAnchorElement>('[data-lang-toggle]').forEach((t) => toggle && (t.href = toggle.href));
+      doc.querySelectorAll<HTMLAnchorElement>('.nav [data-lang-link]').forEach((fresh) => {
+        const cur = document.querySelector<HTMLAnchorElement>(`.nav [data-lang-link="${fresh.dataset.langLink}"]`);
+        if (cur) cur.href = fresh.href;
+      });
       const foot = doc.querySelector('footer.foot');
       if (foot) document.querySelector('footer.foot')?.replaceWith(document.importNode(foot, true));
 

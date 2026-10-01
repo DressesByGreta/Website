@@ -3,14 +3,28 @@
  * elements; GSAP slides them (one engine). Escape and the backdrop close them; focus returns.
  */
 import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt } from '../shared/catalog';
-import { copy, href, type Lang } from '../shared/copy';
-import { esc, html, raw } from '../shared/html';
+import { copy, href, LANGS, type Lang } from '../shared/copy';
+import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type Line } from './bag';
 import { gsap, reducedMotion } from './motion';
 
 const SIDE = { menu: 'left', bag: 'right', search: 'top' } as const;
 type Kind = keyof typeof SIDE;
 const INSTAGRAM = 'https://www.instagram.com/dressesbygreta/';
+const MESSAGE = 'https://ig.me/m/dressesbygreta';
+const MAPS = 'https://maps.google.com/?q=41.320034%2C19.812943';
+const ICON = {
+  close: raw('<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>'),
+  out: raw('<svg class="macc__out" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>'),
+  instagram: raw('<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="0.9" fill="currentColor" stroke="none"/></svg>'),
+};
+/** This page in another language (Albanian carries no parameter). */
+const langUrl = (l: Lang): string => {
+  const u = new URL(location.href);
+  u.searchParams.delete('lang');
+  if (l !== 'sq') u.searchParams.set('lang', l);
+  return u.href;
+};
 const MINUS = raw('<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10" stroke="currentColor" stroke-width="1.2"/></svg>');
 const PLUS = raw('<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10M6 1v10" stroke="currentColor" stroke-width="1.2"/></svg>');
 
@@ -38,11 +52,11 @@ export class Drawers {
 
   private make(kind: Kind): HTMLDialogElement {
     const d = document.createElement('dialog');
-    d.className = `drawer drawer--${SIDE[kind]}`;
+    d.className = `drawer drawer--${SIDE[kind]}${kind === 'menu' ? ' drawer--dark' : ''}`;
     d.dataset.kind = kind;
     const title = kind === 'menu' ? this.t.nav.menu : kind === 'bag' ? this.t.bag.title : this.t.search.title;
     d.setAttribute('aria-label', title);
-    d.innerHTML = html`<div class="drawer__bar">
+    d.innerHTML = kind === 'menu' ? html`<div class="drawer__bar drawer__bar--x"><button class="drawer__x" type="button" data-close aria-label="${this.t.nav.close}">${ICON.close}</button><p class="drawer__title sr-only">${title}</p></div><div class="drawer__body" data-body></div><div class="drawer__foot" data-foot hidden></div>`.value : html`<div class="drawer__bar">
         <p class="drawer__title">${title}</p>
         <button class="drawer__close" type="button" data-close>${this.t.nav.close}</button>
       </div>
@@ -102,34 +116,51 @@ export class Drawers {
   private buildMenu(): void {
     const t = this.t;
     const l = this.lang;
-    const other: Lang = l === 'sq' ? 'en' : 'sq';
-    const here = new URL(location.href);
-    here.searchParams.delete('lang');
-    if (other === 'en') here.searchParams.set('lang', 'en');
-    this.d.menu.querySelector('[data-body]')!.innerHTML = html`<nav class="menu" aria-label="${t.nav.menu}">
-      <div class="menu__group">
-        <a class="menu__parent" href="${href('/dyqani', l)}">${t.nav.lookbook}</a>
-        ${CATEGORIES.map((c) => html`<a class="menu__child" href="${href('/dyqani', l, { kategoria: c })}">${t.categories[c]}</a>`)}
+    // Babyboo-style: uppercase rows on a dark sheet, a plus that opens each row in place.
+    const row = (id: string, label: string, body: Raw) => html`<div class="macc">
+        <button class="macc__head" type="button" aria-expanded="false" aria-controls="macc-${id}" data-acc>
+          <span>${label}</span><span class="macc__plus" aria-hidden="true"></span>
+        </button>
+        <div class="macc__panel" id="macc-${id}" inert><div class="macc__inner">${body}</div></div>
+      </div>`;
+    this.d.menu.querySelector('[data-body]')!.innerHTML = html`<nav class="mnav" aria-label="${t.nav.menu}">
+      ${row(
+        'shop',
+        t.nav.lookbook,
+        html`<a class="mnav__child" href="${href('/dyqani', l)}">${t.nav.all}</a>${CATEGORIES.map(
+          (c) => html`<a class="mnav__child" href="${href('/dyqani', l, { kategoria: c })}">${t.categories[c]}</a>`,
+        )}`,
+      )}
+      ${row(
+        'sizes',
+        t.nav.bySize,
+        html`<div class="mnav__sizes">${SIZES.map(
+          (s) => html`<a class="mnav__size" href="${href('/dyqani', l, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}"><span>${s}</span><span>${SIZE_LETTER[s]}</span></a>`,
+        )}</div>`,
+      )}
+      ${row('visit', t.nav.visit, html`<p class="mnav__text">${t.visit.address}</p><a class="mnav__child" href="${MAPS}" target="_blank" rel="noopener">${t.visit.maps}</a>`)}
+      <div class="macc">
+        <a class="macc__head" href="${INSTAGRAM}" target="_blank" rel="noopener"><span>${t.nav.instagram}</span>${ICON.out}</a>
       </div>
-      <div class="menu__group">
-        <p class="menu__parent">${t.nav.bySize}</p>
-        <div class="menu__sizes">
-          ${SIZES.map((s) => html`<a class="menu__size" href="${href('/dyqani', l, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}"><span>${s}</span><span>${SIZE_LETTER[s]}</span></a>`)}
-        </div>
+      <div class="mnav__secondary">
+        <a href="${MESSAGE}" target="_blank" rel="noopener">${t.visit.ask}</a>
+        <a href="${INSTAGRAM}" target="_blank" rel="noopener">${t.footer.rules}</a>
+        <button type="button" data-menu-search>${t.nav.search}</button>
       </div>
-      <div class="menu__group">
-        <a class="menu__parent" href="${href('/', l)}#visit">${t.nav.visit}</a>
-        <a class="menu__parent" href="${INSTAGRAM}" target="_blank" rel="noopener">${t.nav.instagram}</a>
-        <button class="menu__parent" type="button" data-menu-search>${t.nav.search}</button>
+      <div class="mnav__langs" role="group" aria-label="${t.nav.region}">
+        ${LANGS.map(
+          (x) => html`<a href="${langUrl(x)}" lang="${x}" hreflang="${x}" data-no-router data-lang-link="${x}"${x === l ? raw(' aria-current="true"') : ''}>${copy[x].langName}</a>`,
+        )}
       </div>
-      <div class="menu__region">
-        <p class="menu__parent">${t.nav.region}</p>
-        <div class="menu__lang">
-          <a href="${l === 'sq' ? location.href : here.href}" class="${l === 'sq' ? 'is-on' : ''}" lang="sq" hreflang="sq" data-no-router data-lang-link="sq">Shqip</a>
-          <a href="${l === 'en' ? location.href : here.href}" class="${l === 'en' ? 'is-on' : ''}" lang="en" hreflang="en" data-no-router data-lang-link="en">English</a>
-        </div>
-      </div>
+      <div class="mnav__social"><a href="${INSTAGRAM}" target="_blank" rel="noopener" aria-label="${t.nav.instagram}">${ICON.instagram}</a></div>
     </nav>`.value;
+    this.d.menu.querySelectorAll<HTMLButtonElement>('[data-acc]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const open = b.getAttribute('aria-expanded') !== 'true';
+        b.setAttribute('aria-expanded', String(open));
+        this.d.menu.querySelector(`#${b.getAttribute('aria-controls')}`)?.toggleAttribute('inert', !open);
+      }),
+    );
     this.d.menu.querySelector('[data-menu-search]')!.addEventListener('click', () => {
       this.d.menu.close();
       document.documentElement.classList.remove('drawer-open');
@@ -139,11 +170,8 @@ export class Drawers {
 
   /** The language links point at the current page; call after every navigation. */
   syncLanguageLinks(): void {
-    const other = new URL(location.href);
-    other.searchParams.delete('lang');
-    if (this.lang === 'sq') other.searchParams.set('lang', 'en');
     this.d.menu.querySelectorAll<HTMLAnchorElement>('[data-lang-link]').forEach((a) => {
-      a.href = a.dataset.langLink === this.lang ? location.href : other.href;
+      a.href = langUrl(a.dataset.langLink as Lang);
     });
   }
 

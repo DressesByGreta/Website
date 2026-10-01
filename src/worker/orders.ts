@@ -150,7 +150,7 @@ export async function createOrder(env: Env, input: OrderInput, origin: string): 
   const lines = input.items.map((it) => {
     const p = products.get(it.id);
     const left = stock.get(`${it.id}:${it.size}`) ?? 0;
-    const name = p ? (input.lang === 'en' ? p.name_en || p.name_sq : p.name_sq) : '';
+    const name = p ? (input.lang !== 'sq' ? p.name_en || p.name_sq : p.name_sq) : '';
     if (!p || left < it.qty) unavailable.push({ id: it.id, size: it.size, name, left: p ? left : 0 });
     return { ...it, name: p?.name_sq ?? '', price: p?.price ?? 0, image: cover.get(it.id) ?? '' };
   });

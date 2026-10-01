@@ -1,18 +1,20 @@
 /**
- * Every visitor-facing string. Albanian first (the audience is in Tirana), English second.
+ * Every visitor-facing string. Albanian first (the audience is in Tirana), then English and French.
  * Rules: short sentences, concrete verbs, one label per intent, no invented facts.
  * Prices, stock and delivery fees never live here: they come from the admin.
- * No em or en dashes anywhere (DESIGN.md).
+ * No em or en dashes anywhere (DESIGN.md). The brand line "Elegance that endures" stays in English
+ * in every language (Luca, 2026-10-01).
  */
-export type Lang = 'sq' | 'en';
-export const LANGS: readonly Lang[] = ['sq', 'en'];
-export const isLang = (v: unknown): v is Lang => v === 'sq' || v === 'en';
+export type Lang = 'sq' | 'en' | 'fr';
+export const LANGS: readonly Lang[] = ['sq', 'en', 'fr'];
+export const isLang = (v: unknown): v is Lang => v === 'sq' || v === 'en' || v === 'fr';
+
+const TAGLINE = 'Elegance that endures';
 
 const sq = {
   lang: 'sq' as Lang,
   langName: 'Shqip',
-  switchTo: 'English',
-  switchShort: 'EN',
+  langShort: 'SQ',
   meta: {
     homeTitle: 'Dresses by Greta, fustane mbrëmjeje në Tiranë',
     homeDescription: 'Fustane mbrëmjeje, mature dhe koktej nga dyqani në Tiranë. Zgjidh masën, porosite online dhe paguaj në dorëzim.',
@@ -54,7 +56,7 @@ const sq = {
   hero: {
     wordmark: 'Dresses by Greta',
     cta: 'Shiko fustanet',
-    alt: 'Fustan i gjatë me pajeta blu safir, në plazh nën diell',
+    alt: 'Fustan i gjatë me tyl rozë dhe jeshil të zbehtë, në një kopsht me trëndafila',
   },
   categories: { all: 'Të gjitha', gowns: 'Të gjata', mini: 'Mini & midi', black: 'Të zeza', tv: 'Në TV' },
   sizes: {
@@ -75,7 +77,8 @@ const sq = {
     count: (n: number) => (n === 1 ? '1 fustan' : `${n} fustane`),
     inSize: (n: number, size: string) => (n === 1 ? `1 fustan në masën ${size}` : `${n} fustane në masën ${size}`),
     empty: (size: string) => `Asnjë fustan në masën ${size} tani. Provo një masë tjetër ose pyet në Instagram.`,
-    emptyAll: 'Fustanet e reja po fotografohen. Ndërkohë i gjen në Instagram.',
+    emptyCategory: 'Asnjë fustan në këtë kategori tani.',
+    tagline: TAGLINE,
     open: 'Shiko fustanin',
     soldOut: 'E shitur',
   },
@@ -149,6 +152,7 @@ const sq = {
     edit: 'Ndrysho çantën',
   },
   confirmation: {
+    label: 'Porosia nr.',
     title: (n: number) => `Porosia nr. ${n}`,
     thanks: 'Faleminderit. Porosia jote u regjistrua.',
     next: 'Dyqani do të të telefonojë për ta konfirmuar porosinë dhe për të caktuar dërgesën.',
@@ -183,6 +187,7 @@ const sq = {
     followers: '26,2 mijë ndjekës',
     privacy: 'Kjo faqe nuk përdor cookies për reklama. Çanta ruhet vetëm në këtë pajisje.',
     rules: 'Rregullat e qirasë',
+    city: 'Tiranë',
   },
   popup: {
     lead: 'Mos humb asgjë.',
@@ -208,8 +213,7 @@ export type Copy = typeof sq;
 const en: Copy = {
   lang: 'en',
   langName: 'English',
-  switchTo: 'Shqip',
-  switchShort: 'SQ',
+  langShort: 'EN',
   meta: {
     homeTitle: 'Dresses by Greta, evening dresses in Tirana',
     homeDescription: 'Evening, prom and cocktail dresses from the boutique in Tirana. Pick your size, order online and pay on delivery.',
@@ -251,7 +255,7 @@ const en: Copy = {
   hero: {
     wordmark: 'Dresses by Greta',
     cta: 'See the dresses',
-    alt: 'Long sapphire sequin gown on a sunlit beach',
+    alt: 'Long pink and mint tulle gown in a rose garden',
   },
   categories: { all: 'All', gowns: 'Gowns', mini: 'Mini & midi', black: 'Black', tv: 'Seen on TV' },
   sizes: {
@@ -272,7 +276,8 @@ const en: Copy = {
     count: (n: number) => (n === 1 ? '1 dress' : `${n} dresses`),
     inSize: (n: number, size: string) => (n === 1 ? `1 dress in size ${size}` : `${n} dresses in size ${size}`),
     empty: (size: string) => `No dress in size ${size} right now. Try another size or ask on Instagram.`,
-    emptyAll: 'New dresses are being photographed. Meanwhile they are on Instagram.',
+    emptyCategory: 'No dresses in this category right now.',
+    tagline: TAGLINE,
     open: 'See the dress',
     soldOut: 'Sold out',
   },
@@ -346,6 +351,7 @@ const en: Copy = {
     edit: 'Edit the bag',
   },
   confirmation: {
+    label: 'Order no.',
     title: (n: number) => `Order no. ${n}`,
     thanks: 'Thank you. Your order is in.',
     next: 'The shop will call you to confirm the order and arrange delivery.',
@@ -380,6 +386,7 @@ const en: Copy = {
     followers: '26.2K followers',
     privacy: 'This site uses no advertising cookies. Your bag is kept only on this device.',
     rules: 'Rental rules',
+    city: 'Tirana',
   },
   popup: {
     lead: 'Stay in the know.',
@@ -400,13 +407,210 @@ const en: Copy = {
   },
 };
 
-export const copy: Record<Lang, Copy> = { sq, en };
+const fr: Copy = {
+  lang: 'fr',
+  langName: 'Français',
+  langShort: 'FR',
+  meta: {
+    homeTitle: 'Dresses by Greta, robes de soirée à Tirana',
+    homeDescription: 'Robes de soirée, de bal et de cocktail de la boutique de Tirana. Choisissez votre taille, commandez en ligne et payez à la livraison.',
+    shopTitle: 'Shop, Dresses by Greta',
+    shopDescription: 'Toutes les robes Dresses by Greta, avec leur prix et les tailles disponibles. Commandez en ligne et payez à la livraison.',
+    sizeTitle: (size: string) => `Robes en taille ${size}, Dresses by Greta`,
+    checkoutTitle: 'Commande, Dresses by Greta',
+    notFoundTitle: 'Page introuvable, Dresses by Greta',
+  },
+  a11y: {
+    skip: 'Aller au contenu',
+    wordmark: "Dresses by Greta, page d'accueil",
+    sizeIndex: 'Tailles',
+    spreads: 'Les robes',
+    gallery: 'Photos de la robe',
+    close: 'Fermer',
+    qtyDown: 'Un de moins',
+    qtyUp: 'Un de plus',
+    zoom: 'Voir la photo en entier',
+    photoOf: (n: number, total: number) => `Photo ${n} sur ${total}`,
+    prev: 'Photo précédente',
+    next: 'Photo suivante',
+    removeFilter: 'Retirer le filtre',
+  },
+  demo: 'Données de démonstration : les prix et les stocks sont des exemples de test, pas ceux de la boutique.',
+  nav: {
+    menu: 'Menu',
+    close: 'Fermer',
+    search: 'Rechercher',
+    bag: 'Panier',
+    region: 'Langue',
+    shop: 'Boutique',
+    lookbook: 'Shop',
+    all: 'Toutes les robes',
+    bySize: 'Par taille',
+    visit: 'La boutique à Tirana',
+    instagram: 'Instagram',
+  },
+  hero: {
+    wordmark: 'Dresses by Greta',
+    cta: 'Voir les robes',
+    alt: "Robe longue en tulle rose et vert d'eau dans un jardin de roses",
+  },
+  categories: { all: 'Toutes', gowns: 'Longues', mini: 'Mini & midi', black: 'Noires', tv: 'Vues à la télé' },
+  sizes: {
+    title: 'Par taille',
+    all: 'Toutes',
+    count: (n: number) => (n === 1 ? '1 robe' : `${n} robes`),
+    none: 'Aucune pour le moment',
+    guide: 'Tailles européennes : 34 correspond au XS, 36 au S, 38 au M, 40 au L, 42 au XL.',
+    label: (size: string, letter: string) => `Taille ${size} (${letter})`,
+  },
+  home: {
+    openLookbook: 'Voir les robes',
+  },
+  shop: {
+    title: 'Shop',
+    contents: 'Index',
+    spreads: 'Pages',
+    count: (n: number) => (n === 1 ? '1 robe' : `${n} robes`),
+    inSize: (n: number, size: string) => (n === 1 ? `1 robe en taille ${size}` : `${n} robes en taille ${size}`),
+    empty: (size: string) => `Aucune robe en taille ${size} pour le moment. Essayez une autre taille ou écrivez-nous sur Instagram.`,
+    emptyCategory: 'Aucune robe dans cette catégorie pour le moment.',
+    tagline: TAGLINE,
+    open: 'Voir la robe',
+    soldOut: 'Vendue',
+  },
+  product: {
+    size: 'Taille',
+    chooseSize: 'Choisissez votre taille',
+    add: 'Ajouter au panier',
+    added: 'Ajoutée au panier',
+    soldOut: 'Vendue',
+    sizeSoldOut: (size: string) => `La taille ${size} est vendue`,
+    lastOne: 'La dernière dans cette taille',
+    description: 'Description',
+    delivery: 'Livraison et paiement',
+    deliveryBody: 'Vous payez à la livraison, à la réception de la commande. Les frais de livraison apparaissent au moment de la commande.',
+    instagram: 'Voir sur Instagram',
+    ask: 'Demander sur Instagram',
+    next: 'Robe suivante',
+    back: 'Retour aux robes',
+    noPrice: 'Prix sur Instagram',
+    was: 'Avant',
+    rent: 'Pour la louer, écrivez-nous sur Instagram',
+  },
+  bag: {
+    title: 'Panier',
+    empty: 'Votre panier est vide.',
+    emptyBody: 'Choisissez une robe dans le Shop et commandez-la ici.',
+    browse: 'Voir les robes',
+    remove: 'Retirer',
+    qty: 'Quantité',
+    size: 'Taille',
+    subtotal: 'Sous-total',
+    checkout: 'Passer la commande',
+    unavailable: "N'est plus disponible",
+    onlyLeft: (n: number) => (n === 1 ? 'Plus que 1' : `Plus que ${n}`),
+    note: 'La livraison est calculée à la commande. Paiement à la livraison.',
+  },
+  checkout: {
+    title: 'Commande',
+    contact: 'Vos coordonnées',
+    name: 'Nom et prénom',
+    phone: 'Numéro de téléphone',
+    phoneHint: 'Nous vous appelons à ce numéro pour confirmer la commande.',
+    email: 'E-mail (facultatif)',
+    delivery: 'Livraison',
+    zone: 'Zone',
+    zones: { tirana: 'Tirana', albania: 'Autre ville en Albanie', kosovo: 'Kosovo' },
+    city: 'Ville',
+    address: 'Adresse',
+    addressHint: 'Rue, immeuble, étage, appartement',
+    notes: 'Remarques pour la livraison (facultatif)',
+    payment: 'Paiement',
+    cod: 'Paiement à la livraison',
+    codBody: 'Vous payez en espèces à la réception de la commande.',
+    card: 'Par carte',
+    cardBody: 'Vous payez en ligne par carte de débit ou de crédit.',
+    summary: 'Récapitulatif',
+    subtotal: 'Sous-total',
+    shipping: 'Livraison',
+    shippingTbc: 'Confirmée par téléphone',
+    shippingFree: 'Gratuite',
+    total: 'Total',
+    place: 'Envoyer la commande',
+    placing: 'Envoi en cours',
+    emptyTitle: 'Votre panier est vide.',
+    required: 'Remplissez ce champ.',
+    phoneInvalid: 'Saisissez un numéro de téléphone valide, par exemple 069 123 4567.',
+    emailInvalid: 'Saisissez une adresse e-mail valide, ou laissez le champ vide.',
+    soldOut: (name: string, size: string) => `${name}, taille ${size}, n'est plus disponible. Retirez-la du panier pour continuer.`,
+    failed: "La commande n'a pas été envoyée. Réessayez dans un instant.",
+    consent: 'En envoyant la commande, vous acceptez que la boutique vous appelle pour la confirmer.',
+    edit: 'Modifier le panier',
+  },
+  confirmation: {
+    label: 'Commande n°',
+    title: (n: number) => `Commande n° ${n}`,
+    thanks: 'Merci. Votre commande est enregistrée.',
+    next: 'La boutique vous appellera pour confirmer la commande et organiser la livraison.',
+    paid: 'Paiement par carte reçu.',
+    unpaid: 'Paiement à la livraison.',
+    awaiting: "Le paiement par carte n'a pas encore abouti.",
+    retry: 'Payer par carte',
+    cancelled: 'Cette commande a été annulée.',
+    items: 'Robes',
+    deliverTo: 'Adresse de livraison',
+    continue: 'Continuer mes achats',
+  },
+  search: {
+    title: 'Rechercher',
+    placeholder: 'Rechercher une robe ou une couleur',
+    results: (n: number) => (n === 1 ? '1 robe' : `${n} robes`),
+    none: 'Aucune robe de ce nom. Essayez une couleur : rouge, bleu, noir.',
+    clear: 'Effacer',
+  },
+  visit: {
+    title: 'La boutique à Tirana.',
+    address: 'Rruga Andon Zako Çajupi, pas LSI, Tiranë',
+    maps: 'Ouvrir dans Google Maps',
+    body: 'Venez les essayer en boutique. Les nouvelles robes arrivent chaque semaine sur Instagram.',
+    ask: 'Demander sur Instagram',
+  },
+  footer: {
+    shop: 'La boutique',
+    help: 'Aide',
+    dresses: 'Robes',
+    follow: 'Suivre @dressesbygreta',
+    followers: '26,2 k abonnés',
+    privacy: "Ce site n'utilise aucun cookie publicitaire. Votre panier est gardé uniquement sur cet appareil.",
+    rules: 'Règles de location',
+    city: 'Tirana',
+  },
+  popup: {
+    lead: 'Ne manquez rien.',
+    body: 'Les nouvelles robes arrivent chaque semaine sur Instagram.',
+    cta: 'Suivre sur Instagram',
+    close: 'Fermer',
+  },
+  pay: {
+    title: 'Paiement par carte (test)',
+    body: "Cette page simule la banque uniquement sur l'ordinateur de développement. Aucune carte n'est débitée.",
+    pay: 'Payer (test)',
+    fail: 'Refuser le paiement (test)',
+  },
+  notFound: {
+    title: "Cette page n'existe pas.",
+    body: "Cette robe n'est peut-être plus en vente. Les autres sont ici.",
+    cta: 'Voir les robes',
+  },
+};
+
+export const copy: Record<Lang, Copy> = { sq, en, fr };
 
 /** Internal link that keeps the visitor's language (Albanian needs no parameter). */
 export function href(path: string, lang: Lang, params: Record<string, string | undefined> = {}): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
-  if (lang === 'en') q.set('lang', 'en');
+  if (lang !== 'sq') q.set('lang', lang);
   const s = q.toString();
   return s ? `${path}?${s}` : path;
 }

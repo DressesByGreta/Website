@@ -69,7 +69,8 @@ export const photoAt = (p: Photo, target: number): string =>
 const NBSP = String.fromCharCode(160);
 const group = (n: number, sep: string): string => String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, sep);
 export const formatLek = (n: number, lang: Lang): string =>
-  (n < 0 ? '-' : '') + (lang === 'sq' ? `${group(n, NBSP)}${NBSP}Lekë` : `${group(n, ',')}${NBSP}ALL`);
+  (n < 0 ? '-' : '') +
+  (lang === 'sq' ? `${group(n, NBSP)}${NBSP}Lekë` : lang === 'fr' ? `${group(n, NBSP)}${NBSP}ALL` : `${group(n, ',')}${NBSP}ALL`);
 
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
 

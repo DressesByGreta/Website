@@ -10,7 +10,7 @@ export function homeView(lang: Lang, visible: Product[]): Raw {
   return html`<section class="hero" id="hero">
       <figure class="plate hero__plate" style="--p: 1">
         <div class="plate__inner">
-          <img class="plate__img" src="${SITE.heroImage}" width="790" height="1400" alt="${t.hero.alt}" fetchpriority="high" decoding="async" />
+          <img class="plate__img" src="${SITE.heroImage}" width="825" height="1280" alt="${t.hero.alt}" fetchpriority="high" decoding="async" />
           <span class="plate__scan" aria-hidden="true"></span>
         </div>
       </figure>

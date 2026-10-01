@@ -3,7 +3,7 @@
  * header, <main> (the only part the client router swaps), the footer.
  */
 import { CATEGORIES, SIZES, SIZE_LETTER } from '../../shared/catalog';
-import { copy, href, type Lang } from '../../shared/copy';
+import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
 
@@ -57,7 +57,6 @@ export const assetTags = assets;
 
 function header(lang: Lang, o: PageOptions): Raw {
   const t = copy[lang];
-  const other: Lang = lang === 'sq' ? 'en' : 'sq';
   return html`<header class="nav${o.overPhoto ? '' : ' is-solid'}" data-nav>
     <div class="nav__left">
       <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
@@ -68,7 +67,7 @@ function header(lang: Lang, o: PageOptions): Raw {
     </div>
     <a class="nav__wordmark wordmark" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${t.hero.wordmark}</a>
     <div class="nav__right">
-      <a class="tlink" href="${href(o.path, other, o.params ?? {})}" hreflang="${other}" lang="${other}" data-lang-toggle data-no-router>${t.switchShort}</a>
+      <span class="nav__langs">${LANGS.map((l) => html`<a class="tlink" href="${href(o.path, l, o.params ?? {})}" hreflang="${l}" lang="${l}" data-lang-link="${l}" data-no-router${l === lang ? raw(' aria-current="true"') : ''}>${copy[l].langShort}</a>`)}</span>
       <button class="tlink" type="button" data-open="search" aria-haspopup="dialog">${t.nav.search}</button>
       <button class="tlink" type="button" data-open="bag" aria-haspopup="dialog"><span>${t.nav.bag}</span><span class="nav__count" data-bag-count aria-live="polite"></span></button>
     </div>
@@ -77,7 +76,6 @@ function header(lang: Lang, o: PageOptions): Raw {
 
 function footer(lang: Lang, o: PageOptions): Raw {
   const t = copy[lang];
-  const other: Lang = lang === 'sq' ? 'en' : 'sq';
   return html`<footer class="foot">
     <div class="container">
       <div class="foot__cols">
@@ -85,7 +83,7 @@ function footer(lang: Lang, o: PageOptions): Raw {
           <h2>${t.footer.shop}</h2>
           <span>${SITE.address}</span>
           <a href="${SITE.maps}" target="_blank" rel="noopener">${t.visit.maps}</a>
-          <a href="${href(o.path, other, o.params ?? {})}" hreflang="${other}" lang="${other}" data-no-router>${t.switchTo}</a>
+          ${LANGS.filter((l) => l !== lang).map((l) => html`<a href="${href(o.path, l, o.params ?? {})}" hreflang="${l}" lang="${l}" data-lang-link="${l}" data-no-router>${copy[l].langName}</a>`)}
         </div>
         <div class="foot__col">
           <h2>${t.footer.help}</h2>
@@ -101,7 +99,7 @@ function footer(lang: Lang, o: PageOptions): Raw {
         </div>
       </div>
       <div class="foot__bottom">
-        <span>${SITE.name}, ${lang === 'sq' ? 'Tiranë' : 'Tirana'}</span>
+        <span>${SITE.name}, ${t.footer.city}</span>
         <span>${t.footer.followers}</span>
         <span>${t.footer.privacy}</span>
       </div>
@@ -125,8 +123,7 @@ export function page(o: PageOptions): string {
     <meta name="description" content="${o.description}" />
     ${o.noindex ? raw('<meta name="robots" content="noindex" />') : ''}
     <link rel="canonical" href="${canonical}" />
-    <link rel="alternate" hreflang="sq" href="${alt('sq')}" />
-    <link rel="alternate" hreflang="en" href="${alt('en')}" />
+    ${LANGS.map((l) => html`<link rel="alternate" hreflang="${l}" href="${alt(l)}" />`)}
     <link rel="alternate" hreflang="x-default" href="${alt('sq')}" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="color-scheme" content="light" />
@@ -136,7 +133,7 @@ export function page(o: PageOptions): string {
     <meta property="og:image" content="${image}" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:type" content="${o.kind === 'product' ? 'product' : 'website'}" />
-    <meta property="og:locale" content="${o.lang === 'sq' ? 'sq_AL' : 'en_GB'}" />
+    <meta property="og:locale" content="${{ sq: 'sq_AL', en: 'en_GB', fr: 'fr_FR' }[o.lang]}" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/brand/monogram.jpg" />
     <link rel="apple-touch-icon" href="/brand/monogram.jpg" />

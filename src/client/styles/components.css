@@ -327,7 +327,7 @@ html.drawer-open .nav {
 }
 
 /* Phones: MENU, wordmark, bag. Language and search live in the menu drawer. */
-.nav__right [data-lang-toggle],
+.nav__right .nav__langs,
 .nav__right [data-open='search'] {
   display: none;
 }
@@ -345,7 +345,7 @@ html.drawer-open .nav {
   .nav__list {
     display: flex;
   }
-  .nav__right [data-lang-toggle],
+  .nav__right .nav__langs,
   .nav__right [data-open='search'] {
     display: inline-flex;
   }

@@ -403,3 +403,10 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 - **Don't** add dark sections; the hero's letterbox is the only dark field.
 - **Don't** use GSAP pin or snap, Lenis, a second frame loop or CSS keyframe loops.
 - **Don't** write em or en dashes in copy.
+
+## Changes 2026-10-01 (Luca)
+
+- **Menu:** a dark sheet copied from the Babyboo mobile menu Luca pinned: ground #1f1f1f, white ink, secondary text at 62%, rules at 20% white; rows are 13px uppercase at 0.22em tracking, 80px tall, each opening in place under a hairline plus that turns into a minus; grey sentence-case secondary links; the three languages; the Instagram mark at the foot; a thin X closes it from the top left. It is the second dark surface after the hero photograph and the only dark chrome.
+- **Languages:** Albanian, English and French. The header shows SQ, EN and FR on desktop with the current one underlined; phones choose in the menu. French reads the English product names and descriptions (the admin keeps two languages).
+- **Hero:** the rose-garden photograph (pink and mint tulle gown), framed at 50% 42% so the face sits above the wordmark on desktop.
+- **Empty shop:** the brand line "Elegance that endures" in English in every language, 600 weight uppercase at clamp(30px, 6vw, 84px), with the Instagram button.

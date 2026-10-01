@@ -120,7 +120,7 @@ export function confirmationView(lang: Lang, order: OrderRow, items: OrderItemRo
   const fee = order.delivery_fee === null ? t.checkout.shippingTbc : order.delivery_fee === 0 ? t.checkout.shippingFree : formatLek(order.delivery_fee, lang);
   return html`<div class="confirm container" data-confirm data-order-status="${order.status}">
     <h1 class="confirm__title">
-      <span class="confirm__label">${lang === 'sq' ? 'Porosia nr.' : 'Order no.'}</span>
+      <span class="confirm__label">${tc.label}</span>
       <span class="confirm__num">${order.number}</span>
     </h1>
     <div class="confirm__lead">

@@ -106,9 +106,9 @@ export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embed
 
   let body: Raw;
   if (!all.length) {
-    body = html`<div class="lb-empty"><p class="body-lg">${t.shop.emptyAll}</p><a class="btn" href="${SITE.instagram}" target="_blank" rel="noopener">${t.nav.instagram}</a></div>`;
+    body = html`<div class="lb-empty lb-empty--tagline"><p class="lb-tagline" lang="en">${t.shop.tagline}</p><a class="btn" href="${SITE.instagram}" target="_blank" rel="noopener">${t.nav.instagram}</a></div>`;
   } else if (!list.length) {
-    body = html`<div class="lb-empty"><p class="body-lg">${s.size ? t.shop.empty(s.size) : t.shop.emptyAll}</p><a class="btn btn--line" href="${href('/dyqani', lang, params(s, { size: undefined, category: undefined }))}">${t.nav.all}</a></div>`;
+    body = html`<div class="lb-empty"><p class="body-lg">${s.size ? t.shop.empty(s.size) : t.shop.emptyCategory}</p><a class="btn btn--line" href="${href('/dyqani', lang, params(s, { size: undefined, category: undefined }))}">${t.nav.all}</a></div>`;
   } else if (s.view === 'contents') {
     const first = list[0]!;
     body = html`<div class="toc-wrap">

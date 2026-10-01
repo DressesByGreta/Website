@@ -26,7 +26,7 @@
   position: absolute;
   inset: -24px;
   background-size: cover;
-  background-position: 50% 20%;
+  background-position: 50% 42%;
   filter: blur(18px);
   transform: scale(1.04);
 }
@@ -36,7 +36,7 @@
 }
 
 .hero__plate .plate__img {
-  object-position: 50% 20%;
+  object-position: 50% 42%;
 }
 
 .hero__plate .plate__scan {

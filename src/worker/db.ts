@@ -88,7 +88,8 @@ export const toPhoto = (r: ImageRow, lang: Lang): Photo => ({
   w: r.w,
   h: r.h,
   lqip: r.lqip,
-  alt: (lang === 'en' ? r.alt_en || r.alt_sq : r.alt_sq || r.alt_en) || '',
+  // French has no admin fields of its own: it reads the English ones.
+  alt: (lang !== 'sq' ? r.alt_en || r.alt_sq : r.alt_sq || r.alt_en) || '',
 });
 
 function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang: Lang): Product[] {
@@ -108,8 +109,8 @@ function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
-    name: lang === 'en' ? r.name_en || r.name_sq : r.name_sq,
-    description: lang === 'en' ? r.description_en || r.description_sq : r.description_sq || r.description_en,
+    name: lang !== 'sq' ? r.name_en || r.name_sq : r.name_sq,
+    description: lang !== 'sq' ? r.description_en || r.description_sq : r.description_sq || r.description_en,
     price: r.price,
     comparePrice: r.compare_price,
     color: r.color,
