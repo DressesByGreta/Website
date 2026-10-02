@@ -16,19 +16,52 @@ gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
 ScrollTrigger.defaults({ invalidateOnRefresh: true });
 
-export const reducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** The visitor's Stop animations switch (footer and menu), kept on this device. */
+const MOTION_KEY = 'greta-motion';
+export const motionStopped = (): boolean => document.documentElement.dataset.motion === 'off';
+export const reducedMotion = (): boolean => motionStopped() || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 export { gsap, ScrollTrigger };
 
+/** Restores the switch before the first page's motion is built. */
+export function loadMotionChoice(): void {
+  try {
+    if (localStorage.getItem(MOTION_KEY) === 'off') document.documentElement.dataset.motion = 'off';
+  } catch {
+    /* storage blocked: motion follows the system setting */
+  }
+}
+
 let mm: gsap.MatchMedia | null = null;
+let current: HTMLElement | null = null;
+
+/** Flips the switch and rebuilds the current page: reverting the motion context puts every
+ *  element back to its finished CSS state, and the rebuild skips the motion branch when stopped. */
+export function setMotionStopped(stop: boolean): void {
+  if (stop) document.documentElement.dataset.motion = 'off';
+  else delete document.documentElement.dataset.motion;
+  try {
+    if (stop) localStorage.setItem(MOTION_KEY, 'off');
+    else localStorage.removeItem(MOTION_KEY);
+  } catch {
+    /* this page only */
+  }
+  if (!current) return;
+  pageMotion(current, { arrivedByFlight: false });
+  // printPlate writes --p by hand (the context cannot revert it): a plate still waiting to print
+  // would stay blank once its trigger is gone
+  if (stop) current.querySelectorAll<HTMLElement>('.plate').forEach((el) => el.style.removeProperty('--p'));
+}
 
 /** Tears down the previous page's triggers and tweens and builds the new page's. */
 export function pageMotion(main: HTMLElement, opts: { arrivedByFlight: boolean }): void {
   mm?.revert();
   mm = gsap.matchMedia();
+  current = main;
   const kind = main.dataset.page ?? '';
   const nav = document.querySelector<HTMLElement>('[data-nav]');
 
   mm.add('(prefers-reduced-motion: no-preference)', () => {
+    if (motionStopped()) return;
     const undo: Array<() => void> = [];
     if (kind === 'home') undo.push(hero(main));
     if (kind === 'home' || kind === 'shop') shop(main, opts.arrivedByFlight);
@@ -49,6 +82,10 @@ export function pageMotion(main: HTMLElement, opts: { arrivedByFlight: boolean }
     if (overPhoto && main.querySelector('#hero')) {
       ScrollTrigger.create({ trigger: '#hero', start: 'bottom 60px', end: 'max', toggleClass: { targets: nav, className: 'is-scrolled' } });
     }
+    // Reading pages (privacy, terms): a hairline under the header says how far down the text you
+    // are. It follows the scroll position, so it stays with reduced motion too.
+    const read = main.querySelector<HTMLElement>('[data-read-progress]');
+    if (read) gsap.fromTo(read, { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: true } });
   });
 
   // The router has already put the page where it belongs (the top, a #hash, or the remembered spot

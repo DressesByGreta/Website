@@ -1,0 +1,22 @@
+{
+  "id": "/admin",
+  "name": "Dresses by Greta Admin",
+  "short_name": "Greta Admin",
+  "description": "Porositë, fustanet dhe shitjet e Dresses by Greta.",
+  "lang": "sq",
+  "dir": "ltr",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/brand/admin-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/admin-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/admin-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Porositë", "url": "/admin/porosi", "icons": [{ "src": "/brand/admin-icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Shitjet", "url": "/admin/shitjet", "icons": [{ "src": "/brand/admin-icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

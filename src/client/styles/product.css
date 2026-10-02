@@ -112,6 +112,34 @@
   color: var(--ink-2);
 }
 
+/* under the button, the two facts that sell a dress here: pay at the door, try it on in the shop */
+.product__trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-2);
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.product__trust a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-color: rgba(0, 0, 0, 0.35);
+}
+
+@media (pointer: coarse) {
+  .product__trust a {
+    min-height: 44px;
+    margin-block: -10px;
+  }
+}
+
 .product__links {
   display: flex;
   flex-wrap: wrap;
@@ -119,6 +147,7 @@
 }
 
 .product__links .tlink {
+  min-width: 44px;
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 0.18em;
@@ -196,6 +225,13 @@
 
 .buybar .btn {
   grid-area: btn;
+}
+
+/* the bar stays down to the end of the page: the footer's last row scrolls clear of it */
+@media (max-width: 1023px) {
+  body:has(.buybar) .foot {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom) + var(--s-6));
+  }
 }
 
 /* the next dress: a spread-sized teaser that turns the page */

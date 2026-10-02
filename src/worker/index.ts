@@ -4,10 +4,12 @@
  */
 import { Hono } from 'hono';
 import { serveImage } from './images';
+import { syncInstagram } from './instagram';
 import { releaseExpiredCardOrders } from './orders';
 import { adminApi } from './routes/admin-api';
 import { notFound, pages } from './routes/pages';
 import { publicApi } from './routes/public-api';
+import { seo } from './routes/seo';
 import type { AppEnv } from './types';
 
 const app = new Hono<AppEnv>();
@@ -39,6 +41,7 @@ app.use('*', async (c, next) => {
 app.get('/img/*', serveImage);
 app.route('/api/admin', adminApi);
 app.route('/api', publicApi);
+app.route('/', seo);
 app.route('/', pages);
 app.notFound((c) => (c.req.path.startsWith('/api/') ? c.json({ error: 'not_found' }, 404) : notFound(c)));
 app.onError((err, c) => {
@@ -48,7 +51,9 @@ app.onError((err, c) => {
 
 export default {
   fetch: app.fetch,
+  // every 15 minutes: release unpaid card orders; the Instagram count is read every six hours
   async scheduled(_controller, env, ctx) {
     ctx.waitUntil(releaseExpiredCardOrders(env));
+    ctx.waitUntil(syncInstagram(env));
   },
 } satisfies ExportedHandler<Env>;

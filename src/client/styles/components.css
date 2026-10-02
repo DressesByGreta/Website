@@ -141,6 +141,48 @@
   }
 }
 
+/* ---------- new: one word after a dress's name for its first two weeks ---------- */
+/* The label register in ink 80: no box, no colour, never above the name (DESIGN.md). As an
+   inline block it stays whole when the name wraps and outside the name's hover underline. */
+.tag-new {
+  display: inline-block;
+  margin-left: 0.6em;
+  font-size: var(--fs-ui);
+  font-weight: 400;
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+.tag-new::before {
+  content: '·' / '';
+  margin-right: 0.6em;
+}
+
+/* narrow cards (search results, the index on phones and tablets): the word goes under the name,
+   so a wrapped name never leaves the dot at the start of a line */
+.search__name .tag-new,
+.toc__name .tag-new {
+  display: block;
+  margin: 2px 0 0;
+}
+
+.search__name .tag-new::before,
+.toc__name .tag-new::before {
+  content: none;
+}
+
+@media (min-width: 1024px) {
+  .toc__name .tag-new {
+    display: inline-block;
+    margin: 0 0 0 0.6em;
+  }
+  .toc__name .tag-new::before {
+    content: '·' / '';
+  }
+}
+
 /* ---------- plate: the printed photograph ---------- */
 .plate {
   position: relative;
@@ -366,6 +408,25 @@ html.drawer-open .nav {
     display: inline-flex;
   }
   :root:lang(fr) .nav__list {
+    display: none;
+  }
+}
+
+/* "New" (while there are new dresses) joins the categories only where the row keeps room beside
+   the name: from 1180px, in French from 1536px (measured with nav-fit). The menu and the footer
+   always list it. */
+.nav__list .nav__new {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  .nav__list .nav__new {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1180px) and (max-width: 1535.98px) {
+  :root:lang(fr) .nav__list .nav__new {
     display: none;
   }
 }

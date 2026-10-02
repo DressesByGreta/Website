@@ -29,6 +29,7 @@ export interface OrderRow {
   delivery_fee: number | null;
   total: number;
   lang: Lang;
+  source: string;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +56,8 @@ export interface OrderInput {
   notes: string;
   payment: 'cod' | 'card';
   lang: Lang;
+  /** where the visit came from (stats.ts): instagram, google, direct, or utm_source/utm_campaign */
+  source: string;
 }
 
 export type FieldError = { field: string; code: 'required' | 'invalid' };
@@ -101,12 +104,26 @@ export function parseOrderInput(body: unknown): { input?: OrderInput; errors: Fi
   if (errors.length || !payment) return { errors };
   return {
     errors,
-    input: { ref, items: [...merged.values()], name, phone, email, zone, city, address, notes, payment, lang: isLang(b.lang) ? b.lang : 'sq' },
+    input: {
+      ref,
+      items: [...merged.values()],
+      name,
+      phone,
+      email,
+      zone,
+      city,
+      address,
+      notes,
+      payment,
+      lang: isLang(b.lang) ? b.lang : 'sq',
+      source: str(b.source, 60).toLowerCase().replace(/[^a-z0-9._/-]/g, ''),
+    },
   };
 }
 
 export type CreateResult =
-  | { ok: true; id: string; number: number; payUrl?: string }
+  /** created: false when the same submit came again and the order already existed */
+  | { ok: true; id: string; number: number; payUrl?: string; created?: boolean }
   | { ok: false; status: 400 | 409 | 503; error: string; unavailable?: { id: string; size: string; name: string; left: number }[] };
 
 export async function createOrder(env: Env, input: OrderInput, origin: string): Promise<CreateResult> {
@@ -166,10 +183,10 @@ export async function createOrder(env: Env, input: OrderInput, origin: string): 
     await db.batch([
       db
         .prepare(
-          `INSERT INTO orders (id, number, client_ref, status, payment_method, payment_status, customer_name, phone, email, zone, city, address, notes, subtotal, delivery_fee, total, lang)
-           VALUES (?1, (SELECT COALESCE(MAX(number), 1000) + 1 FROM orders), ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)`,
+          `INSERT INTO orders (id, number, client_ref, status, payment_method, payment_status, customer_name, phone, email, zone, city, address, notes, subtotal, delivery_fee, total, lang, source)
+           VALUES (?1, (SELECT COALESCE(MAX(number), 1000) + 1 FROM orders), ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)`,
         )
-        .bind(id, input.ref, card ? 'awaiting_payment' : 'new', input.payment, card ? 'pending' : 'unpaid', input.name, input.phone, input.email, zone.id, input.city, input.address, input.notes, subtotal, fee, total, input.lang),
+        .bind(id, input.ref, card ? 'awaiting_payment' : 'new', input.payment, card ? 'pending' : 'unpaid', input.name, input.phone, input.email, zone.id, input.city, input.address, input.notes, subtotal, fee, total, input.lang, input.source),
       ...lines.map((l) =>
         db.prepare('INSERT INTO order_items (order_id, product_id, name, size, qty, price, image_key) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, l.id, l.name, l.size, l.qty, l.price, l.image),
       ),
@@ -188,11 +205,11 @@ export async function createOrder(env: Env, input: OrderInput, origin: string): 
 
   const row = await db.prepare('SELECT number FROM orders WHERE id = ?').bind(id).first<{ number: number }>();
   const number = row?.number ?? 0;
-  if (!card || !gateway) return { ok: true, id, number };
+  if (!card || !gateway) return { ok: true, id, number, created: true };
 
   const pay = await gateway.createPayment({ id, number, total }, origin);
   await db.prepare('UPDATE orders SET payment_ref = ? WHERE id = ?').bind(pay.ref, id).run();
-  return { ok: true, id, number, payUrl: pay.url };
+  return { ok: true, id, number, payUrl: pay.url, created: true };
 }
 
 export async function getOrder(db: D1Database, id: string): Promise<{ order: OrderRow; items: OrderItemRow[] } | null> {

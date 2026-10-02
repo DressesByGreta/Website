@@ -9,6 +9,7 @@ export type PageInit = (main: HTMLElement, arrivedByFlight: boolean) => void | (
 
 const pages = new Map<string, { at: number; doc: Promise<Document> }>();
 let busy = false;
+let routeBar: HTMLElement | null = null;
 let cleanup: (() => void) | void;
 
 function eligible(a: HTMLAnchorElement, e?: MouseEvent): URL | null {
@@ -38,6 +39,13 @@ function fetchDoc(href: string): Promise<Document> {
 
 export function startRouter(init: PageInit): void {
   history.scrollRestoration = 'manual';
+  // A hairline at the top while the next page loads, shown only when the wait is long enough to
+  // notice (150 ms), so fast swaps never flash it.
+  const bar = document.createElement('div');
+  bar.className = 'route-bar';
+  bar.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(bar);
+  routeBar = bar;
   const main = document.querySelector<HTMLElement>('main');
   if (main) cleanup = init(main, false);
 
@@ -79,6 +87,7 @@ export function startRouter(init: PageInit): void {
   async function go(url: URL, o: { push: boolean; plate?: HTMLElement | null; scroll?: number; fold?: string }): Promise<void> {
     if (busy) return;
     busy = true;
+    const slow = window.setTimeout(() => routeBar?.classList.add('is-on'), 150);
     const docP = fetchDoc(url.href);
     const current = document.querySelector<HTMLElement>('main')!;
     history.replaceState({ ...(history.state ?? {}), scroll: window.scrollY }, '');
@@ -118,9 +127,11 @@ export function startRouter(init: PageInit): void {
       current.replaceWith(fresh);
       if (o.push) history.pushState({ scroll: 0 }, '', url.href);
       const hash = url.hash ? document.getElementById(url.hash.slice(1)) : null;
+      // the header's height, as html's scroll-padding-top gives it to in-page anchors
+      const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
       // instant: html has scroll-behavior: smooth (for in-page anchors), and a smooth jump here was
       // cut short by the ScrollTrigger refresh, leaving the new page where the old one had been
-      window.scrollTo({ left: 0, top: o.scroll ?? (hash ? hash.getBoundingClientRect().top + window.scrollY : 0), behavior: 'instant' });
+      window.scrollTo({ left: 0, top: o.scroll ?? (hash ? hash.getBoundingClientRect().top + window.scrollY - pad : 0), behavior: 'instant' });
 
       cleanup = init(fresh, Boolean(flight));
       if (flight) {
@@ -136,6 +147,8 @@ export function startRouter(init: PageInit): void {
       flight?.clone.remove();
       location.href = url.href;
     } finally {
+      window.clearTimeout(slow);
+      routeBar?.classList.remove('is-on');
       busy = false;
     }
   }

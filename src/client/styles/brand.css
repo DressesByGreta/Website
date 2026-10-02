@@ -41,7 +41,7 @@ html.drawer-open .nav .nav__brand {
    over up here. The hand-over is exact, so it needs no fade. Once the header is paper the name
    always shows, whatever the hand-over state. Without motion both simply show. */
 @media (prefers-reduced-motion: no-preference) {
-  .nav[data-dock]:not(.is-docked):not(.is-scrolled) .nav__brand {
+  :root:not([data-motion='off']) .nav[data-dock]:not(.is-docked):not(.is-scrolled) .nav__brand {
     visibility: hidden;
   }
 }

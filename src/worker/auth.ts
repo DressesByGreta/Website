@@ -33,18 +33,23 @@ export async function createSession(secret: string): Promise<string> {
   return `${payload}.${b64url(sig)}`;
 }
 
-export async function verifySession(secret: string, token: string | undefined): Promise<boolean> {
-  if (!secret || !token) return false;
+/** When a valid session ends (seconds), or null for a missing, forged or expired one. */
+async function sessionEnd(secret: string, token: string | undefined): Promise<number | null> {
+  if (!secret || !token) return null;
   const [payload, sig] = token.split('.');
-  if (!payload || !sig) return false;
+  if (!payload || !sig) return null;
   try {
     const ok = await crypto.subtle.verify('HMAC', await hmacKey(secret), fromB64(sig), enc.encode(payload));
-    if (!ok) return false;
+    if (!ok) return null;
     const { exp } = JSON.parse(new TextDecoder().decode(fromB64(payload))) as { exp?: number };
-    return typeof exp === 'number' && exp > Date.now() / 1000;
+    return typeof exp === 'number' && exp > Date.now() / 1000 ? exp : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function verifySession(secret: string, token: string | undefined): Promise<boolean> {
+  return (await sessionEnd(secret, token)) !== null;
 }
 
 /** Format: pbkdf2_sha256$<iterations>$<salt b64>$<hash b64>. Workers cap PBKDF2 at 100 000 iterations. */
@@ -78,6 +83,15 @@ export const endSession = (c: Context<AppEnv>): void => {
 };
 
 export const isAdmin = (c: Context<AppEnv>): Promise<boolean> => verifySession(c.env.SESSION_SECRET, getCookie(c, SESSION_COOKIE));
+
+/**
+ * A session in use is renewed once a day, so the admin on Greta's home screen stays signed in while
+ * she opens it; after seven days without it, she signs in again.
+ */
+export async function renewSession(c: Context<AppEnv>): Promise<void> {
+  const end = await sessionEnd(c.env.SESSION_SECRET, getCookie(c, SESSION_COOKIE));
+  if (end !== null && end - Date.now() / 1000 < (SESSION_DAYS - 1) * 86400) await startSession(c);
+}
 
 /**
  * Guards /api/admin/*. State-changing requests must also come from this origin: the cookie is

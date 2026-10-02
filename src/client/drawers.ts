@@ -7,7 +7,7 @@ import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt } from '../shared/ca
 import { copy, href, LANGS, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type Line } from './bag';
-import { gsap, reducedMotion } from './motion';
+import { gsap, motionStopped, reducedMotion } from './motion';
 
 const SIDE = { menu: 'left', bag: 'right', search: 'top' } as const;
 type Kind = keyof typeof SIDE;
@@ -114,6 +114,13 @@ export class Drawers {
     for (const d of Object.values(this.d)) if (d.open) void this.close(d, false);
   }
 
+  /** Opens the search with words already typed (the not-found page's field). */
+  search(words: string): void {
+    const input = this.d.search.querySelector<HTMLInputElement>('input');
+    if (input) input.value = words;
+    this.open('search');
+  }
+
   /* ------------------------------------------------------------ menu ------------------------------------------------------------ */
 
   private buildMenu(): void {
@@ -130,7 +137,8 @@ export class Drawers {
       ${row(
         'shop',
         t.nav.lookbook,
-        html`<a class="mnav__child" href="${href('/dyqani', l)}">${t.nav.all}</a>${CATEGORIES.map(
+        // "new" leads the categories while the shop has new dresses (the page says so: body[data-new])
+        html`<a class="mnav__child" href="${href('/dyqani', l)}">${t.nav.all}</a>${[...('new' in document.body.dataset ? (['new'] as const) : []), ...CATEGORIES].map(
           (c) => html`<a class="mnav__child" href="${href('/dyqani', l, { kategoria: c })}">${t.categories[c]}</a>`,
         )}`,
       )}
@@ -149,6 +157,7 @@ export class Drawers {
         <a href="${MESSAGE}" target="_blank" rel="noopener">${t.visit.ask}</a>
         <a href="${INSTAGRAM}" target="_blank" rel="noopener">${t.footer.rules}</a>
         <button type="button" data-menu-search>${t.nav.search}</button>
+        <button type="button" data-motion-toggle>${motionStopped() ? t.motion.play : t.motion.stop}</button>
       </div>
       <div class="mnav__langs" role="group" aria-label="${t.nav.region}">
         ${LANGS.map(
@@ -277,7 +286,8 @@ export class Drawers {
     const cats = copy[l].categories as Record<string, string>;
     // the colour is stored as an English word (red); the visitor may type it in her own language
     const colors = copy[l].search.colors;
-    const words = (p: (typeof list)[number]) => fold(`${p.name} ${p.color} ${colors[p.color] ?? ''} ${p.categories.map((c) => `${c} ${cats[c] ?? ''}`).join(' ')}`);
+    const words = (p: (typeof list)[number]) =>
+      fold(`${p.name} ${p.color} ${colors[p.color] ?? ''} ${p.categories.map((c) => `${c} ${cats[c] ?? ''}`).join(' ')} ${p.isNew ? `new ${cats.new} ${t.product.newTag}` : ''}`);
     const hits = q ? list.filter((p) => words(p).includes(q)) : list.slice(0, 12);
     status.textContent = q ? (hits.length ? t.search.results(hits.length) : t.search.none) : '';
     results.innerHTML = hits
@@ -285,7 +295,7 @@ export class Drawers {
       .map(
         (p) => `<a class="search__hit" href="${esc(href(`/fustan/${p.slug}`, l))}">
           <span class="search__well">${p.cover ? `<img src="${esc(photoAt(p.cover, 480))}" alt="" loading="lazy" decoding="async" />` : ''}</span>
-          <span class="search__name">${esc(p.name)}</span>
+          <span class="search__name">${esc(p.name)}${p.isNew ? `<span class="tag-new">${esc(t.product.newTag)}</span>` : ''}</span>
           <span class="search__price">${p.price !== null ? esc(formatLek(p.price, l)) : ''}</span>
         </a>`,
       )
@@ -294,16 +304,20 @@ export class Drawers {
 
   /* ------------------------------------------------------------ popup ----------------------------------------------------------- */
 
-  /** The follow card: once per session, after a moment, never over a drawer or during checkout. */
+  /** The follow card: once per session, after a moment; never over a drawer, a dress page (on a
+   *  phone it would cover the dress and its buy button) or checkout. Blocked, it waits and asks again. */
   schedulePopup(delayMs = 9000): void {
     try {
       if (sessionStorage.getItem('greta-follow') === '1') return;
     } catch {
       return;
     }
-    window.setTimeout(() => {
-      const kind = document.querySelector<HTMLElement>('main')?.dataset.page;
-      if (document.querySelector('dialog[open]') || kind === 'checkout' || kind === 'confirmation' || kind === 'pay') return;
+    const attempt = () => {
+      const kind = document.querySelector<HTMLElement>('main')?.dataset.page ?? '';
+      if (document.querySelector('dialog[open]') || ['product', 'checkout', 'confirmation', 'pay'].includes(kind)) {
+        window.setTimeout(attempt, 6000);
+        return;
+      }
       const t = this.t;
       const p = document.createElement('dialog');
       p.className = 'popup';
@@ -337,6 +351,7 @@ export class Drawers {
       p.showModal();
       p.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
       if (!reducedMotion()) gsap.fromTo(p, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out', clearProps: 'transform' });
-    }, delayMs);
+    };
+    window.setTimeout(attempt, delayMs);
   }
 }

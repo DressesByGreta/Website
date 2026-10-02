@@ -60,9 +60,10 @@
     color var(--d-hover) var(--ease-color);
 }
 
+/* the radio covers the whole box, border included, so the tap target is the box's full 44px */
 .pick__size input {
   position: absolute;
-  inset: 0;
+  inset: -1px;
   margin: 0;
   opacity: 0;
   cursor: inherit;
@@ -178,7 +179,9 @@
 .si {
   display: inline-flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
+  min-width: 44px;
   min-height: 44px;
   padding: 0 var(--s-2);
   font-size: var(--fs-ui);
@@ -356,6 +359,13 @@
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* a 44px tall target around the 12px name, without moving the caption */
+.spread__name a {
+  display: inline-block;
+  padding-block: 15px;
+  margin-block: -15px;
 }
 
 .spread__price {

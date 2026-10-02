@@ -2,6 +2,7 @@
 import type { Product } from '../../shared/catalog';
 import { copy, type Lang } from '../../shared/copy';
 import { html, type Raw } from '../../shared/html';
+import type { Business } from '../../shared/legal';
 import { SITE } from '../site';
 import { heroBrand } from './brand';
 import { shopView } from './shop';
@@ -42,11 +43,16 @@ export function homeView(lang: Lang, visible: Product[]): Raw {
     </section>`;
 }
 
-export function storeJsonLd(origin: string) {
+/** The shop for search engines; the registered name, NIPT, phone and email once the admin has them. */
+export function storeJsonLd(origin: string, b: Business) {
   return {
     '@context': 'https://schema.org',
     '@type': 'ClothingStore',
     name: SITE.name,
+    legalName: b.legalName || undefined,
+    taxID: b.nipt || undefined,
+    telephone: b.phone || undefined,
+    email: b.email || undefined,
     url: origin + '/',
     image: origin + SITE.ogImage,
     logo: origin + '/brand/apple-touch-icon.png',

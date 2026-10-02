@@ -1,9 +1,10 @@
 /** Server-rendered storefront routes. */
 import { Hono, type Context } from 'hono';
-import { isCategory, isSize, photoAt, type Size } from '../../shared/catalog';
+import { inStock, isShopFilter, isSize, photoAt, type Product, type Size } from '../../shared/catalog';
 import { copy, isLang } from '../../shared/copy';
 import { html } from '../../shared/html';
-import { getSetting, getVisibleBySlug, getZones, listVisible } from '../db';
+import { countNew, getLegalSettings, getSetting, getVisibleBySlug, getZones, listVisible } from '../db';
+import { followerCount } from '../instagram';
 import { getOrder } from '../orders';
 import { gatewayFor } from '../payments';
 import { SITE } from '../site';
@@ -11,19 +12,25 @@ import type { AppEnv } from '../types';
 import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
 import { HERO_SIZES, heroSrcset, homeView, storeJsonLd } from '../views/home';
-import { assetTags, page, setDemo } from '../views/layout';
+import { assetTags, page, setDemo, setFollowers, setNewCount } from '../views/layout';
+import { legalIntro, legalTitle, legalView } from '../views/legal';
 import { productJsonLd, productView } from '../views/product';
 import { shopView, type ShopState } from '../views/shop';
 
 export const pages = new Hono<AppEnv>();
 
-let demoChecked = 0;
+let settingsRead = 0;
 pages.use('*', async (c, next) => {
   const q = c.req.query('lang');
   c.set('lang', isLang(q) ? q : 'sq');
-  if (Date.now() - demoChecked > 60_000) {
-    demoChecked = Date.now();
-    setDemo((await getSetting(c.env.DB, 'demo_data')) === '1');
+  // the demo flag, the follower count and the number of new dresses change rarely: read them once a
+  // minute per instance (the admin refreshes the new count of its own instance when it saves a dress)
+  if (Date.now() - settingsRead > 60_000) {
+    settingsRead = Date.now();
+    const [demo, count, fresh] = await Promise.all([getSetting(c.env.DB, 'demo_data'), followerCount(c.env.DB), countNew(c.env.DB)]);
+    setDemo(demo === '1');
+    setFollowers(count);
+    setNewCount(fresh);
   }
   await next();
 });
@@ -35,7 +42,7 @@ const send = (c: Context<AppEnv>, body: string, status: 200 | 404 = 200) =>
 pages.get('/', async (c) => {
   const lang = c.get('lang');
   const t = copy[lang];
-  const visible = await listVisible(c.env.DB, lang);
+  const [visible, { business }] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB)]);
   return send(
     c,
     page({
@@ -48,7 +55,7 @@ pages.get('/', async (c) => {
       overPhoto: true,
       preload: { srcset: heroSrcset('webp'), sizes: HERO_SIZES, type: 'image/webp' },
       body: homeView(lang, visible),
-      jsonLd: [storeJsonLd(origin(c))],
+      jsonLd: [storeJsonLd(origin(c), business)],
     }),
   );
 });
@@ -60,7 +67,7 @@ pages.get('/dyqani', async (c) => {
   const kat = c.req.query('kategoria');
   const state: ShopState = {
     size: isSize(masa) ? masa : undefined,
-    category: isCategory(kat) ? kat : undefined,
+    category: isShopFilter(kat) ? kat : undefined,
     view: c.req.query('pamja') === 'indeks' ? 'contents' : 'spreads',
   };
   const all = await listVisible(c.env.DB, lang);
@@ -164,7 +171,23 @@ pages.get('/pagesa/test/:id', async (c) => {
   );
 });
 
-/** The admin is a client app; the Worker only hands it a shell. */
+/** The privacy notice and the terms of sale (views/legal.ts). */
+for (const [path, kind] of [
+  ['/privatesia', 'privacy'],
+  ['/kushtet', 'terms'],
+] as const) {
+  pages.get(path, async (c) => {
+    const lang = c.get('lang');
+    const filled = await getLegalSettings(c.env.DB);
+    return send(
+      c,
+      page({ lang, origin: origin(c), path, title: `${legalTitle(kind, lang)}, ${SITE.name}`, description: legalIntro(kind, lang), kind, body: legalView(kind, lang, filled) }),
+    );
+  });
+}
+
+/** The admin is a client app; the Worker only hands it a shell. On a phone it installs on the home
+ *  screen and opens full screen (public/admin.webmanifest, public/admin-sw.js). */
 pages.get('/admin', (c) => adminShell(c));
 pages.get('/admin/*', (c) => adminShell(c));
 
@@ -179,6 +202,13 @@ function adminShell(c: Context<AppEnv>) {
     <title>Admin, ${SITE.name}</title>
     <link rel="icon" href="/brand/favicon-32.png" sizes="32x32" />
     <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/admin.webmanifest" />
+    <link rel="apple-touch-icon" href="/brand/admin-icon-180.png" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-title" content="Greta Admin" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     ${assetTags('admin')}
   </head>
   <body>
@@ -191,19 +221,33 @@ function adminShell(c: Context<AppEnv>) {
   );
 }
 
-export function notFound(c: Context<AppEnv>) {
-  const lang = c.get('lang') ?? 'sq';
+export async function notFound(c: Context<AppEnv>) {
+  const q = c.req.query('lang');
+  const lang = c.get('lang') ?? (isLang(q) ? q : 'sq');
+  const path = new URL(c.req.url).pathname;
+  // four dresses to go on with: an old dress address shows the ones whose names share its words first
+  let dresses: Product[] = [];
+  try {
+    const words = path.startsWith('/fustan/') ? path.slice(8).split('-').filter((w) => w.length > 2) : [];
+    const score = (p: Product) => words.filter((w) => p.slug.includes(w)).length * 10 + (p.featured ? 1 : 0);
+    dresses = (await listVisible(c.env.DB, lang))
+      .filter((p) => inStock(p))
+      .sort((a, b) => score(b) - score(a))
+      .slice(0, 4);
+  } catch (e) {
+    console.error(e);
+  }
   return send(
     c,
     page({
       lang,
       origin: origin(c),
-      path: new URL(c.req.url).pathname,
+      path,
       title: copy[lang].meta.notFoundTitle,
       description: copy[lang].notFound.body,
       kind: 'notfound',
       noindex: true,
-      body: notFoundView(lang),
+      body: notFoundView(lang, dresses),
     }),
     404,
   );

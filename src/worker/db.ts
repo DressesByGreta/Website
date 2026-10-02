@@ -1,6 +1,7 @@
 /** D1 access: catalogue reads for the storefront, full records for the admin, settings. */
 import { SIZES, emptyStock, isCategory, isSize, ZONES, type Category, type Photo, type Product, type Size, type Stock, type Zone } from '../shared/catalog';
 import type { Lang } from '../shared/copy';
+import { EMPTY_BUSINESS, EMPTY_RETURNS, UPDATED, type Business, type Returns } from '../shared/legal';
 
 export interface ProductRow {
   id: string;
@@ -19,6 +20,7 @@ export interface ProductRow {
   sort: number;
   created_at: string;
   updated_at: string;
+  new_until: string | null;
 }
 
 export interface ImageRow {
@@ -60,6 +62,8 @@ export interface AdminProduct {
   stock: Stock;
   photos: (Photo & { altSq: string; altEn: string })[];
   updatedAt: string;
+  /** Shown as new until then; null until the first publication. */
+  newUntil: string | null;
 }
 
 const parseCategories = (json: string): Category[] => {
@@ -106,6 +110,7 @@ function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang
     list.push(toPhoto(im, lang));
     photos.set(im.product_id, list);
   }
+  const now = new Date().toISOString();
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
@@ -119,6 +124,7 @@ function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang
     instagramUrl: r.instagram_url,
     stock: stock.get(r.id) ?? emptyStock(),
     photos: photos.get(r.id) ?? [],
+    isNew: r.new_until !== null && r.new_until > now,
   }));
 }
 
@@ -135,6 +141,12 @@ export async function listVisible(db: D1Database, lang: Lang): Promise<Product[]
   const available = all.filter((x) => SIZES.some((k) => x.stock[k] > 0));
   const soldOut = all.filter((x) => !SIZES.some((k) => x.stock[k] > 0));
   return [...available, ...soldOut];
+}
+
+/** Dresses a visitor can see that are still new: the header shows the "new" filter only when there are some. */
+export async function countNew(db: D1Database): Promise<number> {
+  const row = await db.prepare(`SELECT COUNT(*) AS n FROM products WHERE ${VISIBLE} AND new_until > ?`).bind(new Date().toISOString()).first<{ n: number }>();
+  return row?.n ?? 0;
 }
 
 export async function getVisibleBySlug(db: D1Database, slug: string, lang: Lang): Promise<Product | null> {
@@ -172,6 +184,7 @@ function toAdmin(r: ProductRow, sizes: SizeRow[], images: ImageRow[]): AdminProd
       .filter((im) => im.product_id === r.id)
       .map((im) => ({ ...toPhoto(im, 'sq'), altSq: im.alt_sq, altEn: im.alt_en })),
     updatedAt: r.updated_at,
+    newUntil: r.new_until,
   };
 }
 
@@ -215,6 +228,30 @@ export async function getSetting(db: D1Database, key: string): Promise<string | 
 
 export async function setSetting(db: D1Database, key: string, value: string): Promise<void> {
   await db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').bind(key, value).run();
+}
+
+/**
+ * What the admin fills in for the privacy and terms pages: the business details, the returns
+ * policy, and the day they last changed (the later of that day and the text's own date).
+ */
+export async function getLegalSettings(db: D1Database): Promise<{ business: Business; returns: Returns; updated: string }> {
+  const rows = await db
+    .prepare(`SELECT key, value FROM settings WHERE key IN ('business', 'returns', 'legal_updated', 'shop_phone')`)
+    .all<{ key: string; value: string }>();
+  const get = (k: string) => (rows.results ?? []).find((r) => r.key === k)?.value;
+  const parse = <T extends object>(v: string | undefined, empty: T): T => {
+    try {
+      const o = JSON.parse(v ?? 'null') as Partial<T> | null;
+      return { ...empty, ...(o && typeof o === 'object' ? o : {}) };
+    } catch {
+      return { ...empty };
+    }
+  };
+  const business = parse(get('business'), EMPTY_BUSINESS);
+  // the shop phone saved before the business details existed
+  if (!business.phone && get('shop_phone')) business.phone = get('shop_phone') ?? '';
+  const updated = [UPDATED, get('legal_updated') ?? ''].sort().at(-1) ?? UPDATED;
+  return { business, returns: parse(get('returns'), EMPTY_RETURNS), updated };
 }
 
 export async function getZones(db: D1Database): Promise<Zone[]> {

@@ -156,8 +156,29 @@
   line-height: 1.5;
   color: var(--ink-2);
   text-align: left;
-  padding: 2px 0;
+  padding: 3px 0;
   transition: color var(--d-hover) var(--ease-color);
+}
+
+/* touch: every footer link is a full 44px row (the gap folds into the row) */
+@media (pointer: coarse) {
+  .foot__col {
+    gap: 0;
+  }
+  .foot__col h2 {
+    margin-bottom: var(--s-2);
+  }
+  .foot__col a,
+  .foot__col button {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0;
+  }
+  /* the address reads on the same line as the first link beside it (13px = a centred 18px line in 44px) */
+  .foot__col span {
+    padding-block: 13px;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -171,11 +192,37 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
+  align-items: center;
   gap: var(--s-2) var(--s-5);
   margin-top: var(--s-7);
   padding-top: var(--s-4);
   border-top: 1px solid var(--hairline);
   color: var(--ink-3);
+}
+
+/* Stop animations (also in the menu): the one control in the foot row, so it is underlined */
+.foot__motion {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: var(--fs-ui);
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: color var(--d-hover) var(--ease-color);
+}
+
+@media (pointer: coarse) {
+  .foot__motion {
+    min-height: 44px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .foot__motion:hover {
+    color: var(--ink);
+  }
 }
 
 @media (min-width: 1024px) {

@@ -235,6 +235,12 @@
   }
 }
 
+html[data-motion='off'] .macc__panel,
+html[data-motion='off'] .macc__plus::before,
+html[data-motion='off'] .macc__plus::after {
+  transition-duration: 0s;
+}
+
 /* ---------- header languages (desktop) ---------- */
 .nav__langs {
   display: inline-flex;

@@ -4,15 +4,16 @@
  * index view (?pamja=indeks) is the shop's typeset table of contents. The size index filters both.
  * It is the home page's body under the hero, and /dyqani on its own.
  */
-import { SIZES, SIZE_LETTER, formatLek, inStock, pad2, photoAt, photoSrcset, type Category, type Product, type Size } from '../../shared/catalog';
+import { SIZES, SIZE_LETTER, formatLek, inStock, pad2, photoAt, photoSrcset, type Product, type ShopFilter, type Size } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import { SITE } from '../site';
-import { flipId, folio, plate, price, sizePicker } from './parts';
+import { flipId, folio, newTag, plate, price, sizePicker } from './parts';
 
 export interface ShopState {
   size?: Size;
-  category?: Category;
+  /** A category, or "new": the dresses inside their two weeks as new. */
+  category?: ShopFilter;
   view: 'spreads' | 'contents';
 }
 
@@ -59,14 +60,14 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
   return html`<li class="spread${second ? '' : ' spread--solo'}" id="f-${p.slug}" data-sizes="${sizes}">
     <article class="spread__page" aria-labelledby="n-${p.id}">
       <a class="spread__main" href="${url}" tabindex="-1" aria-hidden="true" data-fly>
-        ${plate(p.photos[0], { alt: '', sizes: '(min-width: 1024px) 52vw, 100vw', eager: i === 0, target: 1600, flip: flipId(p), cls: 'spread__plate' })}
+        ${plate(p.photos[0], { alt: p.photos[0]?.alt || p.name, sizes: '(min-width: 1024px) 52vw, 100vw', eager: i === 0, target: 1600, flip: flipId(p), cls: 'spread__plate' })}
       </a>
       <div class="spread__side">
         ${second
           ? plate(second, { alt: second.alt || p.name, sizes: '(min-width: 1024px) 26vw, 1px', cls: 'spread__second' })
           : html`<p class="spread__page-no" aria-hidden="true"><span class="spread__page-n">${pad2(i + 1)}</span><span class="spread__page-of">/ ${pad2(total)}</span></p>`}
         <form class="spread__cap" data-add data-product="${bagData(p)}" novalidate>
-          <h2 class="spread__name" id="n-${p.id}"><a href="${url}" data-fly-link>${p.name}</a></h2>
+          <h2 class="spread__name" id="n-${p.id}"><a href="${url}" data-fly-link>${p.name}</a>${s.category === 'new' ? '' : newTag(p, lang)}</h2>
           ${price(p, lang, 'price spread__price')}
           ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, `size-${p.id}`, s.size)}
           <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
@@ -86,8 +87,8 @@ function tocItem(p: Product, i: number, lang: Lang, s: ShopState): Raw {
       cover ? html` data-src="${photoAt(cover, 960)}" data-srcset="${photoSrcset(cover)}" data-lqip="${cover.lqip}"` : ''
     }>
       <span class="toc__num">${pad2(i + 1)}</span>
-      ${plate(cover, { alt: '', sizes: '(min-width: 768px) 24vw, 46vw', target: 480, flip: flipId(p), cls: 'toc__plate', tag: 'span' })}
-      <span class="toc__name">${p.name}</span>
+      ${plate(cover, { alt: '', sizes: '(min-width: 768px) 24vw, 46vw', eager: i === 0, target: 480, flip: flipId(p), cls: 'toc__plate', tag: 'span' })}
+      <span class="toc__name">${p.name}${s.category === 'new' ? '' : newTag(p, lang)}</span>
       <span class="toc__lead" aria-hidden="true"></span>
       <span class="toc__sizes">${SIZES.map((k) => (p.stock[k] > 0 ? html`<span>${k}</span>` : html`<s>${k}</s>`))}</span>
       <span class="toc__price">${p.price !== null ? formatLek(p.price, lang) : ''}</span>
@@ -97,7 +98,8 @@ function tocItem(p: Product, i: number, lang: Lang, s: ShopState): Raw {
 
 export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embedded?: boolean } = {}): Raw {
   const t = copy[lang];
-  const inCategory = s.category ? all.filter((p) => p.categories.includes(s.category!)) : all;
+  const cat = s.category;
+  const inCategory = cat === 'new' ? all.filter((p) => p.isNew) : cat ? all.filter((p) => p.categories.includes(cat)) : all;
   const counts = Object.fromEntries(SIZES.map((k) => [k, inCategory.filter((p) => p.stock[k] > 0).length])) as Record<Size, number>;
   const list = s.size ? inCategory.filter((p) => p.stock[s.size!] > 0) : inCategory;
   const count = s.size ? t.shop.inSize(list.length, s.size) : t.shop.count(list.length);
@@ -114,7 +116,7 @@ export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embed
     body = html`<div class="toc-wrap">
       <ol class="toc" aria-label="${t.shop.contents}">${list.map((p, i) => tocItem(p, i, lang, s))}</ol>
       <div class="toc-preview" aria-hidden="true">
-        ${plate(first.photos[0], { alt: '', sizes: '24vw', target: 960, flip: flipId(first), cls: 'toc-preview__plate', tag: 'span' })}
+        ${plate(first.photos[0], { alt: '', sizes: '24vw', eager: true, target: 960, flip: flipId(first), cls: 'toc-preview__plate', tag: 'span' })}
         <span class="toc-preview__name" data-preview-name>${first.name}</span>
       </div>
     </div>`;

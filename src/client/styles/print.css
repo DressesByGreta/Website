@@ -1,0 +1,104 @@
+/* Printing: the page's content in ink on white, without the shop's chrome. Mostly an order
+   confirmation, a dress, or the privacy and terms pages. */
+@media print {
+  .nav,
+  .foot,
+  .skip,
+  .drawer,
+  .popup,
+  .buybar,
+  .demo-note,
+  .route-bar,
+  .legal__progress,
+  .size-strip,
+  .size-index,
+  .hero,
+  .next-dress,
+  .product__form,
+  .product__trust,
+  .product__links,
+  .product__count,
+  .missing__search,
+  .plate__scan,
+  .btn,
+  [data-motion-toggle] {
+    display: none !important;
+  }
+
+  /* a photograph prints at its own shape, without the screen-sized frame around it */
+  .plate,
+  .plate__inner {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    background: none !important;
+    clip-path: none !important;
+  }
+
+  .plate__img {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main,
+  .legal,
+  .checkout,
+  .confirm,
+  .product,
+  .missing {
+    min-height: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* every photograph fully printed, and nothing caught halfway through its entrance */
+  .plate {
+    --p: 1 !important;
+  }
+
+  .confirm__num,
+  .confirm__lead > *,
+  .confirm__grid > *,
+  .product__hold > *,
+  .spread__cap,
+  .spread__page-n {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .spread,
+  .spread__page {
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    break-inside: avoid;
+  }
+
+  .product__photo + .product__photo {
+    display: none;
+  }
+
+  img {
+    max-height: 70vh;
+    object-fit: contain;
+    break-inside: avoid;
+  }
+
+  .legal__part,
+  .confirm__grid > * {
+    break-inside: avoid;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}

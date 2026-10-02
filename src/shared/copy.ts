@@ -13,6 +13,17 @@ const TAGLINE = 'Elegance that endures';
 /** French sets a non-breaking space before a colon, so the colon never starts a line. */
 const NBSP = String.fromCharCode(160);
 
+/** A follower count the way Instagram shows it, rounded down: 26 431 is 26,4 mijë, 26.4K, 26,4 k. */
+function compact(n: number, lang: Lang): string {
+  if (n < 1000) return String(n);
+  const million = n >= 1_000_000;
+  const v = Math.floor(n / (million ? 100_000 : 100)) / 10;
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(1);
+  if (lang === 'en') return `${s}${million ? 'M' : 'K'}`;
+  const d = s.replace('.', ',');
+  return lang === 'fr' ? `${d}${NBSP}${million ? 'M' : 'k'}` : `${d} ${million ? 'milion' : 'mijë'}`;
+}
+
 const sq = {
   lang: 'sq' as Lang,
   langName: 'Shqip',
@@ -60,7 +71,7 @@ const sq = {
     cta: 'Shiko fustanet',
     alt: 'Fustan i gjatë me tyl rozë dhe jeshil të zbehtë, në një kopsht me trëndafila',
   },
-  categories: { all: 'Të gjitha', gowns: 'Të gjata', mini: 'Mini & midi', black: 'Të zeza', tv: 'Në TV' },
+  categories: { all: 'Të gjitha', gowns: 'Të gjata', mini: 'Mini & midi', black: 'Të zeza', tv: 'Në TV', new: 'Të reja' },
   sizes: {
     title: 'Sipas masës',
     all: 'Të gjitha',
@@ -102,6 +113,9 @@ const sq = {
     noPrice: 'Çmimi në Instagram',
     was: 'Më parë',
     rent: 'Për qira, pyet në Instagram',
+    share: 'Shpërndaje',
+    copied: 'Lidhja u kopjua',
+    newTag: 'E re',
   },
   bag: {
     title: 'Çanta',
@@ -202,7 +216,7 @@ const sq = {
     help: 'Ndihmë',
     dresses: 'Fustanet',
     follow: 'Ndiq @dressesbygreta',
-    followers: '26,2 mijë ndjekës',
+    followers: (n: number) => `${compact(n, 'sq')} ndjekës`,
     privacy: 'Kjo faqe nuk përdor cookies për reklama. Çanta ruhet vetëm në këtë pajisje.',
     rules: 'Rregullat e qirasë',
     city: 'Tiranë',
@@ -212,6 +226,14 @@ const sq = {
     body: 'Fustanet e reja dalin çdo javë në Instagram.',
     cta: 'Ndiq në Instagram',
     close: 'Mbyll',
+  },
+  motion: {
+    stop: 'Ndalo animacionet',
+    play: 'Lejo animacionet',
+  },
+  legal: {
+    privacy: 'Privatësia',
+    terms: 'Kushtet e shitjes',
   },
   pay: {
     title: 'Pagesa me kartë (test)',
@@ -275,7 +297,7 @@ const en: Copy = {
     cta: 'See the dresses',
     alt: 'Long pink and mint tulle gown in a rose garden',
   },
-  categories: { all: 'All', gowns: 'Gowns', mini: 'Mini & midi', black: 'Black', tv: 'Seen on TV' },
+  categories: { all: 'All', gowns: 'Gowns', mini: 'Mini & midi', black: 'Black', tv: 'Seen on TV', new: 'New' },
   sizes: {
     title: 'By size',
     all: 'All',
@@ -317,6 +339,9 @@ const en: Copy = {
     noPrice: 'Price on Instagram',
     was: 'Was',
     rent: 'To rent it, ask on Instagram',
+    share: 'Share',
+    copied: 'Link copied',
+    newTag: 'New',
   },
   bag: {
     title: 'Bag',
@@ -402,7 +427,7 @@ const en: Copy = {
     help: 'Help',
     dresses: 'Dresses',
     follow: 'Follow @dressesbygreta',
-    followers: '26.2K followers',
+    followers: (n: number) => `${compact(n, 'en')} followers`,
     privacy: 'This site uses no advertising cookies. Your bag is kept only on this device.',
     rules: 'Rental rules',
     city: 'Tirana',
@@ -412,6 +437,14 @@ const en: Copy = {
     body: 'New dresses appear every week on Instagram.',
     cta: 'Follow on Instagram',
     close: 'Close',
+  },
+  motion: {
+    stop: 'Stop animations',
+    play: 'Play animations',
+  },
+  legal: {
+    privacy: 'Privacy',
+    terms: 'Terms of sale',
   },
   pay: {
     title: 'Card payment (test)',
@@ -473,7 +506,7 @@ const fr: Copy = {
     cta: 'Voir les robes',
     alt: "Robe longue en tulle rose et vert d'eau dans un jardin de roses",
   },
-  categories: { all: 'Toutes', gowns: 'Longues', mini: 'Mini & midi', black: 'Noires', tv: 'Vues à la télé' },
+  categories: { all: 'Toutes', gowns: 'Longues', mini: 'Mini & midi', black: 'Noires', tv: 'Vues à la télé', new: 'Nouveautés' },
   sizes: {
     title: 'Par taille',
     all: 'Toutes',
@@ -515,6 +548,9 @@ const fr: Copy = {
     noPrice: 'Prix sur Instagram',
     was: 'Avant',
     rent: 'Pour la louer, écrivez-nous sur Instagram',
+    share: 'Partager',
+    copied: 'Lien copié',
+    newTag: 'Nouveauté',
   },
   bag: {
     title: 'Panier',
@@ -615,7 +651,7 @@ const fr: Copy = {
     help: 'Aide',
     dresses: 'Robes',
     follow: 'Suivre @dressesbygreta',
-    followers: '26,2 k abonnés',
+    followers: (n: number) => `${compact(n, 'fr')} abonnés`,
     privacy: "Ce site n'utilise aucun cookie publicitaire. Votre panier est gardé uniquement sur cet appareil.",
     rules: 'Règles de location',
     city: 'Tirana',
@@ -625,6 +661,14 @@ const fr: Copy = {
     body: 'Les nouvelles robes arrivent chaque semaine sur Instagram.',
     cta: 'Suivre sur Instagram',
     close: 'Fermer',
+  },
+  motion: {
+    stop: 'Arrêter les animations',
+    play: 'Réactiver les animations',
+  },
+  legal: {
+    privacy: 'Confidentialité',
+    terms: 'Conditions de vente',
   },
   pay: {
     title: 'Paiement par carte (test)',

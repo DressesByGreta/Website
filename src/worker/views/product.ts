@@ -4,7 +4,7 @@ import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import { SITE } from '../site';
 import { bagData } from './shop';
-import { flipId, folio, plate, price, sizePicker } from './parts';
+import { flipId, folio, newTag, plate, price, sizePicker } from './parts';
 
 export function productView(lang: Lang, p: Product, index: number, total: number, next: Product | null, size?: Size): Raw {
   const t = copy[lang];
@@ -31,13 +31,14 @@ export function productView(lang: Lang, p: Product, index: number, total: number
 
       <div class="product__info">
         <div class="product__hold">
-          <h1 class="product__name">${p.name}</h1>
+          <h1 class="product__name">${p.name}${newTag(p, lang)}</h1>
           ${price(p, lang, 'price product__price')}
           <form class="product__form" data-add data-product="${bagData(p)}" novalidate>
             ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, 'size', size)}
             <p class="pick__hint small" data-pick-hint aria-live="polite"></p>
             <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
           </form>
+          <p class="product__trust"><span>${t.checkout.cod}</span><span aria-hidden="true">·</span><a href="${href('/', lang)}#visit">${t.nav.visit}</a></p>
           <p class="small product__guide">${t.sizes.guide}</p>
           ${paragraphs.length
             ? html`<details class="acc" open><summary class="acc__sum">${t.product.description}</summary><div class="acc__body">${paragraphs.map((s) => html`<p class="body">${s}</p>`)}</div></details>`
@@ -46,6 +47,8 @@ export function productView(lang: Lang, p: Product, index: number, total: number
           <p class="product__links">
             <a class="tlink" href="${SITE.message}" target="_blank" rel="noopener">${t.product.rent}</a>
             ${p.instagramUrl ? html`<a class="tlink" href="${p.instagramUrl}" target="_blank" rel="noopener">${t.product.instagram}</a>` : ''}
+            <button class="tlink" type="button" data-share>${t.product.share}</button>
+            <span class="sr-only" aria-live="polite" data-share-status></span>
           </p>
           <p class="product__foot"><span>${folio(index, total)}</span><a class="tlink" href="${href('/dyqani', lang)}">${t.product.back}</a></p>
         </div>

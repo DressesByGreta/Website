@@ -6,6 +6,7 @@ import { bag, type Snap } from './bag';
 import type { Drawers } from './drawers';
 import { dropIntoBag, gsap, pageMotion, printPlate, reducedMotion } from './motion';
 import { navigate, type PageInit } from './router';
+import { trackForm, trackView, visitSource } from './stats';
 
 interface ProductData extends Snap {
   id: string;
@@ -17,12 +18,19 @@ export function initPage(lang: Lang, drawers: Drawers): PageInit {
     pageMotion(main, { arrivedByFlight });
     main.querySelectorAll<HTMLFormElement>('form[data-add]').forEach((f) => addForm(f, lang));
     const kind = main.dataset.page;
+    if (kind) trackView(kind);
     markNav();
     if (kind === 'home' || kind === 'shop') offs.push(indexPreview(main));
     if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang));
     if (kind === 'checkout') offs.push(checkoutPage(main, lang));
     if (kind === 'confirmation') confirmationPage(main);
     if (kind === 'pay') payPage(main);
+    if (kind === 'notfound') {
+      main.querySelector<HTMLFormElement>('[data-missing-search]')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        drawers.search(String(new FormData(e.currentTarget as HTMLFormElement).get('q') ?? '').trim());
+      });
+    }
     drawers.syncLanguageLinks();
     return () => offs.forEach((off) => off());
   };
@@ -200,8 +208,48 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
 
 /* ----------------------------------------------------------------- product ---------------------------------------------------------------- */
 
+/**
+ * Share a dress: on a phone its own share sheet (WhatsApp, Instagram, messages); on a computer the
+ * link is copied, which is what people expect there. The link says it was shared, so the stats
+ * can count those visits.
+ */
+function shareButton(main: HTMLElement, lang: Lang): void {
+  const b = main.querySelector<HTMLButtonElement>('[data-share]');
+  const status = main.querySelector<HTMLElement>('[data-share-status]');
+  if (!b) return;
+  const t = copy[lang].product;
+  b.addEventListener('click', async () => {
+    const url = new URL(location.pathname, location.origin);
+    if (lang !== 'sq') url.searchParams.set('lang', lang);
+    url.searchParams.set('utm_source', 'share');
+    // the dress's name alone, without the "new" word that may follow it in the heading
+    const name = main.querySelector('.product__name')?.firstChild?.textContent?.trim();
+    const title = name || document.title;
+    if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title, url: url.href });
+      } catch {
+        /* the sheet was closed */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url.href);
+      b.textContent = t.copied;
+      if (status) status.textContent = t.copied;
+      window.setTimeout(() => {
+        b.textContent = t.share;
+        if (status) status.textContent = '';
+      }, 2000);
+    } catch {
+      /* no clipboard here: nothing to promise */
+    }
+  });
+}
+
 function productPage(main: HTMLElement, lang: Lang): () => void {
   const t = copy[lang];
+  shareButton(main, lang);
   const observers: IntersectionObserver[] = [];
   const counter = main.querySelector<HTMLElement>('[data-gallery-i]');
   const gallery = main.querySelector<HTMLElement>('[data-gallery]');
@@ -332,7 +380,9 @@ function checkoutPage(main: HTMLElement, lang: Lang): () => void {
     if (val('city').length < 2) problems.push(['city', tc.required]);
     if (val('address').length < 5) problems.push(['address', tc.required]);
     ['name', 'phone', 'email', 'city', 'address'].forEach((n) => fieldError(n, problems.find(([k]) => k === n)?.[1] ?? null));
+    trackForm('submit');
     if (problems.length) {
+      trackForm('invalid', problems.map(([k]) => k));
       form.querySelector<HTMLElement>(`[name="${problems[0]![0]}"]`)?.focus();
       return;
     }
@@ -359,6 +409,7 @@ function checkoutPage(main: HTMLElement, lang: Lang): () => void {
           payment: (form.elements.namedItem('payment') as RadioNodeList | null)?.value ?? 'cod',
           website: val('website'),
           lang,
+          source: visitSource(),
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { id?: string; payUrl?: string | null; error?: string; fields?: { field: string }[]; unavailable?: { name: string; size: string }[] };

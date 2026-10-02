@@ -10,6 +10,12 @@ export const CATEGORIES = ['gowns', 'mini', 'black', 'tv'] as const;
 export type Category = (typeof CATEGORIES)[number];
 export const isCategory = (v: unknown): v is Category => typeof v === 'string' && (CATEGORIES as readonly string[]).includes(v);
 
+/** A dress counts as new for two weeks from its first publication; the admin can restart or end them. */
+export const NEW_DAYS = 14;
+/** The shop's filters: the categories Greta ticks, and the new dresses, which the shop works out itself. */
+export type ShopFilter = Category | 'new';
+export const isShopFilter = (v: unknown): v is ShopFilter => v === 'new' || isCategory(v);
+
 export const ZONES = ['tirana', 'albania', 'kosovo'] as const;
 export type ZoneId = (typeof ZONES)[number];
 export interface Zone {
@@ -55,6 +61,8 @@ export interface Product {
   instagramUrl: string;
   stock: Stock;
   photos: Photo[];
+  /** Inside its two weeks as new (NEW_DAYS). */
+  isNew: boolean;
 }
 
 export const emptyStock = (): Stock => ({ '34': 0, '36': 0, '38': 0, '40': 0, '42': 0 });

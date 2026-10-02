@@ -3,7 +3,7 @@
  * header, <main> (the only part the client router swaps), the footer.
  */
 import { markSvg, nameSvg } from '../../shared/brand';
-import { CATEGORIES, SIZES, SIZE_LETTER } from '../../shared/catalog';
+import { CATEGORIES, SIZES, SIZE_LETTER, type ShopFilter } from '../../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
@@ -20,7 +20,7 @@ export interface PageOptions {
   description: string;
   /** Absolute or root-relative image for link previews. */
   image?: string;
-  kind: 'home' | 'shop' | 'product' | 'checkout' | 'confirmation' | 'pay' | 'notfound';
+  kind: 'home' | 'shop' | 'product' | 'checkout' | 'confirmation' | 'pay' | 'notfound' | 'privacy' | 'terms';
   body: Raw;
   /** Transparent header over a photograph (home). */
   overPhoto?: boolean;
@@ -43,6 +43,19 @@ let demoData = false;
 export const setDemo = (on: boolean): void => {
   demoData = on;
 };
+
+/** Set from the settings table too: Instagram's follower count, kept fresh by instagram.ts. */
+let followers: number = SITE.followersSeed;
+export const setFollowers = (n: number): void => {
+  if (Number.isInteger(n) && n >= 0) followers = n;
+};
+
+/** And how many dresses are new (db.countNew): the "new" filter is listed first while there are some. */
+let newCount = 0;
+export const setNewCount = (n: number): void => {
+  newCount = n;
+};
+const filters = (): ShopFilter[] => (newCount > 0 ? ['new', ...CATEGORIES] : [...CATEGORIES]);
 const ldJson = (o: object): string => JSON.stringify(o).replace(/</g, `${B}u003c`);
 
 function assets(kind: 'store' | 'admin'): Raw {
@@ -69,7 +82,7 @@ function header(lang: Lang, o: PageOptions): Raw {
       <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
       <nav class="nav__list" aria-label="${t.nav.shop}">
         <a class="tlink" href="${href('/dyqani', lang)}">${t.nav.lookbook}</a>
-        ${CATEGORIES.map((c) => html`<a class="tlink" href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
+        ${filters().map((c) => html`<a class="tlink${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
       </nav>
     </div>
     <a class="nav__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(nameSvg('nav__name'))}</a>
@@ -97,11 +110,13 @@ function footer(lang: Lang, o: PageOptions): Raw {
           <a href="${SITE.message}" target="_blank" rel="noopener">${t.visit.ask}</a>
           <a href="${SITE.instagram}" target="_blank" rel="noopener">${t.footer.rules}</a>
           <a href="${SITE.instagram}" target="_blank" rel="noopener">${t.footer.follow}</a>
+          <a href="${href('/kushtet', lang)}">${t.legal.terms}</a>
+          <a href="${href('/privatesia', lang)}">${t.legal.privacy}</a>
         </div>
         <div class="foot__col">
           <h2>${t.footer.dresses}</h2>
           <a href="${href('/dyqani', lang)}">${t.nav.lookbook}</a>
-          ${CATEGORIES.map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
+          ${filters().map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
           <span class="foot__sizes">${SIZES.map((s) => html`<a href="${href('/dyqani', lang, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}">${s}</a>`)}</span>
         </div>
       </div>
@@ -111,8 +126,9 @@ function footer(lang: Lang, o: PageOptions): Raw {
       </div>
       <div class="foot__bottom">
         <span>${SITE.name}, ${t.footer.city}</span>
-        <span>${t.footer.followers}</span>
+        <span>${t.footer.followers(followers)}</span>
         <span>${t.footer.privacy}</span>
+        <button class="foot__motion" type="button" data-motion-toggle>${t.motion.stop}</button>
       </div>
     </div>
   </footer>`;
@@ -158,7 +174,7 @@ export function page(o: PageOptions): string {
     ${assets('store')}
     ${ld}
   </head>
-  <body data-lang="${o.lang}">
+  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}>
     ${brandSprite()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}

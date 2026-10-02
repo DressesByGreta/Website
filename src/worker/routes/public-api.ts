@@ -5,6 +5,8 @@ import { hit, listVisible } from '../db';
 import { clientIp } from '../auth';
 import { createOrder, getOrder, parseOrderInput, setOrderStatus, setPaymentStatus } from '../orders';
 import { gatewayFor } from '../payments';
+import { BOT_UA, count, parseHit, rowsFor, tooMany } from '../stats';
+import { orderAlert } from '../telegram';
 import type { AppEnv } from '../types';
 
 export const publicApi = new Hono<AppEnv>();
@@ -23,6 +25,7 @@ publicApi.get('/products', async (c) => {
       categories: p.categories,
       stock: p.stock,
       cover: p.photos[0] ?? null,
+      isNew: p.isNew,
     })),
     200,
     { 'cache-control': 'public, max-age=20' },
@@ -38,9 +41,26 @@ publicApi.post('/orders', async (c) => {
   if (!input) return c.json({ error: 'invalid', fields: errors }, 400);
   // Ten orders an hour from one address; the local dev build is exempt so test runs do not trip it.
   if (!(await hit(c.env.DB, `order:${clientIp(c)}`, import.meta.env.DEV ? 1000 : 10, 60 * 60))) return c.json({ error: 'too_many_orders' }, 429);
-  const res = await createOrder(c.env, input, new URL(c.req.url).origin);
+  const origin = new URL(c.req.url).origin;
+  const res = await createOrder(c.env, input, origin);
   if (!res.ok) return c.json({ error: res.error, unavailable: res.unavailable ?? [] }, res.status);
+  // Telegram, after the response: cash orders now, card orders once the bank says paid
+  if (res.created && !res.payUrl) c.executionCtx.waitUntil(orderAlert(c.env, origin, res.id));
   return c.json({ id: res.id, number: res.number, payUrl: res.payUrl ?? null }, 201);
+});
+
+/** The shop's own visit counts (stats.ts): one beacon per page view, nothing kept about the visitor. */
+publicApi.post('/hit', async (c) => {
+  if (BOT_UA.test(c.req.header('user-agent') ?? '')) return c.body(null, 204);
+  let raw: unknown = null;
+  try {
+    raw = JSON.parse((await c.req.text()).slice(0, 2000));
+  } catch {
+    /* not a beacon */
+  }
+  const h = parseHit(raw);
+  if (h && !tooMany(clientIp(c))) c.executionCtx.waitUntil(count(c.env.DB, rowsFor(h)).catch((e) => console.error('stats', e)));
+  return c.body(null, 204);
 });
 
 /** The simulated bank's answer (local development only). */
@@ -52,6 +72,8 @@ publicApi.post('/pay/test/:id', async (c) => {
   if (result === 'paid') {
     await setPaymentStatus(c.env.DB, o.order.id, 'paid');
     await setOrderStatus(c.env.DB, o.order.id, 'new');
+    // a real gateway's paid callback does the same
+    c.executionCtx.waitUntil(orderAlert(c.env, new URL(c.req.url).origin, o.order.id));
   } else {
     await setOrderStatus(c.env.DB, o.order.id, 'cancelled', 'failed');
   }

@@ -11,6 +11,12 @@
   padding: calc(var(--header-h) + var(--s-6)) var(--gutter) var(--section);
 }
 
+/* The bag lives on the device, so the page learns after it loads whether it is empty. At least a
+   screen tall, the footer stays below the fold either way and nothing visible jumps. */
+.checkout {
+  min-height: 100svh;
+}
+
 .co-head {
   display: flex;
   justify-content: space-between;
@@ -576,9 +582,30 @@
 
 .foot__sizes {
   display: flex;
-  gap: var(--s-3);
+  gap: var(--s-1);
 }
 
+/* numerals flush with the column's left edge, the target reaching right */
 .foot__sizes a {
+  display: inline-grid;
+  place-items: center start;
+  min-width: 24px;
+  min-height: 24px;
   font-variant-numeric: tabular-nums;
+}
+
+/* touch: 44px squares where the column is wide enough; phones pick sizes from the sticky size
+   strip and the menu's size squares instead of five cramped numerals */
+@media (pointer: coarse) {
+  .foot__sizes a {
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 767px) {
+  .foot__sizes {
+    display: none;
+  }
 }

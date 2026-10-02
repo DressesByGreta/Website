@@ -26,6 +26,9 @@ export function plate(p: Photo | undefined, o: ImgOptions & { cls?: string; flip
 
 export const flipId = (p: Pick<Product, 'id'>): string => `p-${p.id}`;
 
+/** "New" after a dress's name while it is new: a word in the label register, never a badge (DESIGN.md). */
+export const newTag = (p: Pick<Product, 'isNew'>, lang: Lang): Raw | '' => (p.isNew ? html`<span class="tag-new">${copy[lang].product.newTag}</span>` : '');
+
 export function price(p: Pick<Product, 'price' | 'comparePrice'>, lang: Lang, cls = 'price'): Raw {
   if (p.price === null) return html`<p class="${cls}">${copy[lang].product.noPrice}</p>`;
   const was = p.comparePrice && p.comparePrice > p.price ? p.comparePrice : null;

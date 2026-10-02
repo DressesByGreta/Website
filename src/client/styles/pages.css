@@ -1,0 +1,185 @@
+/* Reading pages (privacy, terms), the not-found page, the loading hairline between pages. */
+
+/* ---------- privacy and terms: one column at reading width ---------- */
+.legal {
+  max-width: 760px;
+  padding-top: calc(var(--header-h) + var(--s-7));
+  padding-bottom: var(--section);
+}
+
+/* how far down the text you are (motion.ts), a hairline under the header */
+.legal__progress {
+  position: fixed;
+  top: calc(var(--header-h) + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  z-index: calc(var(--z-nav) - 1);
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.legal__head {
+  display: grid;
+  gap: var(--s-2);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--ink);
+}
+
+.legal__title,
+.legal__h {
+  font-size: var(--fs-ui);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legal__date {
+  font-size: var(--fs-ui);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.legal__intro {
+  max-width: 60ch;
+  margin-top: var(--s-6);
+  font-size: 16px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.legal__part {
+  display: grid;
+  gap: var(--s-3);
+  max-width: 62ch;
+  margin-top: var(--s-7);
+}
+
+.legal__part p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.legal__other {
+  margin-top: var(--s-8);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.legal__other .tlink {
+  padding-left: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 1px;
+}
+
+/* ---------- not found: say so, then help ---------- */
+.missing {
+  display: grid;
+  gap: var(--s-5);
+  justify-items: start;
+  align-content: start;
+  min-height: 100svh;
+}
+
+.missing__search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  width: min(100%, 520px);
+}
+
+.missing__input {
+  height: 44px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.missing__dresses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-5) var(--s-3);
+  width: 100%;
+}
+
+.missing__dress {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.missing__plate {
+  display: block;
+  aspect-ratio: 3 / 4;
+}
+
+.missing__name {
+  font-size: var(--fs-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.missing__price {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .missing__dresses {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .missing__dress:hover .missing__name {
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+}
+
+/* ---------- loading between pages: a hairline that creeps, shown after 150 ms (router.ts) ---------- */
+.route-bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 1000;
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.route-bar.is-on {
+  opacity: 1;
+  animation: route-creep 2.4s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+}
+
+@keyframes route-creep {
+  from {
+    transform: scaleX(0.08);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-bar.is-on {
+    animation: none;
+    transform: scaleX(0.5);
+  }
+}
+
+html[data-motion='off'] .route-bar.is-on {
+  animation: none;
+  transform: scaleX(0.5);
+}

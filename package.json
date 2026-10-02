@@ -12,7 +12,7 @@
     "db:migrate": "wrangler d1 migrations apply greta --local",
     "seed": "uv run --with pillow python tools/seed.py",
     "admin:password": "node tools/admin-password.mjs",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler d1 migrations apply greta --remote && wrangler deploy"
   },
   "dependencies": {
     "gsap": "^3.13.0",

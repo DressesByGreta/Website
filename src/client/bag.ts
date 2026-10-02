@@ -129,6 +129,7 @@ export interface CatalogueItem {
   categories: string[];
   stock: Stock;
   cover: Photo | null;
+  isNew: boolean;
 }
 
 const cache = new Map<Lang, { at: number; data: Promise<CatalogueItem[]> }>();

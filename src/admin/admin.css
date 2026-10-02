@@ -120,6 +120,33 @@ body {
   border-bottom-color: var(--ink);
 }
 
+/* Phones: the name and the two links on one row, the tabs on the next; five tabs are wider than a
+   phone, so the row scrolls sideways, fades where more tabs wait, and shows the open one. */
+@media (max-width: 767.98px) {
+  .adm-brand__sub {
+    display: none;
+  }
+  .adm-top__end {
+    order: 2;
+  }
+  .adm-tabs {
+    order: 3;
+    flex: 1 0 100%;
+  }
+  .adm-tabs.is-more {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+  }
+  .adm-tabs.is-less {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent);
+  }
+  .adm-tabs.is-less.is-more {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+  }
+}
+
 .adm-badge {
   display: inline-grid;
   place-items: center;
@@ -166,6 +193,15 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--s-6) var(--gutter) var(--s-9);
+}
+
+/* full screen on a phone (the home-screen app runs edge to edge): clear the notch when turned sideways */
+@supports (padding: max(0px)) {
+  .adm-top,
+  .adm-main {
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
+  }
 }
 
 .adm-head {
@@ -922,6 +958,380 @@ body {
   gap: var(--s-3);
   padding: var(--s-3) 0;
   border-bottom: 1px solid var(--hairline);
+}
+
+/* order alerts: the linked phones, one row each */
+.adm-chats {
+  display: grid;
+}
+
+.adm-chat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* the legal pages: how the text will read, on a grey panel */
+.adm-preview {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--ground-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.adm-preview b {
+  font-weight: 700;
+}
+
+.adm-preview [data-legal-preview] {
+  display: grid;
+  gap: var(--s-2);
+}
+
+/* a hint under a field reads as a sentence, not as a label */
+.adm-hint {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* the one-time code while a phone is being linked */
+.adm-pair {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--ground-2);
+}
+
+.adm-pair .adm-link {
+  overflow-wrap: anywhere;
+}
+
+.adm-code {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-big {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* a field and its button on one line, bottoms aligned */
+.adm-inline-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-3);
+}
+
+/* ---------- stats ---------- */
+.adm-seg {
+  display: flex;
+  border: 1px solid var(--ink);
+}
+
+.adm-seg__item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--s-3);
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}
+
+.adm-seg__item.is-on {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.adm-stats-note {
+  margin: calc(-1 * var(--s-3)) 0 var(--s-4);
+}
+
+.adm-stats {
+  margin-top: var(--s-4);
+}
+
+.adm-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.adm-kpis dt {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.adm-kpis dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* visits per day: one ink column a day, the busiest day full height */
+.adm-days {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 72px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.adm-days span {
+  flex: 1;
+  min-height: 1px;
+  height: calc(var(--h) * 100%);
+  background: var(--ink);
+}
+
+.adm-days__ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(-1 * var(--s-2));
+}
+
+.adm-bar-cell {
+  width: 40%;
+}
+
+.adm-bar {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  background: var(--ground-2);
+}
+
+.adm-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: left center;
+}
+
+/* ---------- sales ---------- */
+/* the period: back, its name, forward (never into a period that has not started), the downloads */
+.adm-period {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+@media (min-width: 768px) {
+  .adm-period {
+    grid-template-columns: 44px auto 44px minmax(0, 1fr);
+  }
+}
+
+.adm-period__title {
+  font-size: 15px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-period__now {
+  margin-left: var(--s-2);
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* the downloads: their own row on a phone, the end of the period's row from 768px */
+.adm-period__end {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+@media (min-width: 768px) {
+  .adm-period__end {
+    grid-column: auto;
+    justify-content: flex-end;
+  }
+}
+
+.adm-step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--hairline);
+  background: var(--ground);
+}
+
+.adm-step.is-off {
+  color: var(--ink-3);
+  opacity: 0.4;
+}
+
+.adm-kpis .adm-kpi__was {
+  margin-top: 2px;
+  font-size: var(--fs-ui);
+  color: var(--ink-3);
+}
+
+/* a week: seven wider columns, each with its count and day under it */
+.adm-days--week {
+  gap: var(--s-2);
+}
+
+.adm-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin-top: calc(-1 * var(--s-2));
+  text-align: center;
+}
+
+.adm-week b {
+  display: block;
+  font-weight: 400;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* key and count pairs on a line: statuses, payment, sources */
+.adm-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-tally__k {
+  color: var(--ink-2);
+}
+
+.adm-sizes-sold {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-3);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-sizes-sold b {
+  font-weight: 400;
+  color: var(--ink-2);
+  margin-right: 4px;
+}
+
+.adm-sizes-sold .adm-bar {
+  margin: 0 0 6px;
+}
+
+/* the editor's «Të reja» line: where the dress stands, and the one button that changes it */
+.adm-newstate {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-1);
+}
+
+.adm-newstate .adm-label {
+  margin: 0;
+}
+
+/* ---------- confirmations and the password field ---------- */
+.adm-dialog {
+  width: min(420px, 92vw);
+  padding: var(--s-5);
+  border: 1px solid var(--ink);
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.adm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.adm-dialog p {
+  margin: 0 0 var(--s-4);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.adm-danger-fill {
+  background: var(--error);
+  border-color: var(--error);
+  color: #ffffff;
+}
+
+.adm-pw {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.adm-pw .adm-link {
+  min-height: 44px;
+  padding: 0 var(--s-2);
+}
+
+/* ---------- print: an order becomes a packing slip ---------- */
+.adm-print-only {
+  display: none;
+}
+
+@media print {
+  .adm-top,
+  .adm-demo,
+  .adm-actions,
+  .adm-back,
+  .adm-no-print,
+  [data-print],
+  .adm-toast,
+  .adm-note {
+    display: none !important;
+  }
+
+  .adm-print-only {
+    display: inline;
+  }
+
+  html,
+  body,
+  .adm-root {
+    background: #ffffff !important;
+  }
+
+  .adm-main {
+    padding: 0 !important;
+    max-width: none;
+  }
+
+  .adm-card {
+    border: 0;
+    padding: 0 0 12px;
+    break-inside: avoid;
+  }
+
+  .adm-order {
+    display: block;
+  }
+}
+
+.adm-card code {
+  padding: 1px 4px;
+  background: var(--ground-2);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- toast ---------- */

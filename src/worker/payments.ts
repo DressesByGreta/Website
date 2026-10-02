@@ -4,7 +4,8 @@
  * whole flow (hold stock, pay or decline, confirm or release) can be exercised.
  *
  * A real gateway implements `Gateway`: createPayment returns the bank's hosted payment URL, and a
- * signed callback route marks the order paid (setPaymentStatus + setOrderStatus 'new') or failed.
+ * signed callback route marks the order paid (setPaymentStatus + setOrderStatus 'new', then
+ * orderAlert for the Telegram message, as /api/pay/test does) or failed.
  */
 export interface Gateway {
   id: string;

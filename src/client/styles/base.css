@@ -8,15 +8,34 @@
 html {
   background: var(--ground);
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.06);
   scrollbar-width: thin;
   scrollbar-color: #c8c8c8 var(--ground);
   scroll-behavior: smooth;
+  /* anchors and keyboard focus land below the fixed header, never under it */
+  scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top));
 }
 
+/* reduced motion from the system, or the Stop animations switch in the footer and the menu */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
+}
+
+html[data-motion='off'] {
+  scroll-behavior: auto;
+}
+
+/* no double-tap zoom on controls that are tapped in a row (size, quantity) */
+a,
+button,
+input,
+label,
+select,
+summary,
+textarea {
+  touch-action: manipulation;
 }
 
 body {
@@ -129,7 +148,10 @@ textarea {
   top: var(--s-3);
   left: var(--s-3);
   z-index: 60;
-  padding: var(--s-3) var(--s-5);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s-5);
   background: var(--ink);
   color: var(--ground);
   font-size: var(--fs-ui);

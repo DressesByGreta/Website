@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const { copy } = await import('file:///' + resolve(root, 'src/shared/copy.ts').replace(/\\/g, '/'));
 const { LOGO_BOX, LOGO_PATHS } = await import('file:///' + resolve(root, 'src/shared/brand-logo.ts').replace(/\\/g, '/'));
+const { LEGAL } = await import('file:///' + resolve(root, 'src/shared/legal.ts').replace(/\\/g, '/'));
 const out = resolve(root, process.argv[2] ?? '.impeccable/review/copy-review.html');
 
 const NBSP = String.fromCharCode(160);
@@ -49,7 +50,7 @@ const GROUPS = [
   ['checkout', ['checkout']],
   ['confirmation', ['confirmation']],
   ['search', ['search']],
-  ['footer', ['footer']],
+  ['footer', ['footer', 'motion', 'legal']],
   ['notFound', ['notFound']],
   ['meta', ['meta']],
   ['a11y', ['a11y']],
@@ -61,6 +62,7 @@ const NOTES = {
     'nav.bag': 'Shumë dyqane online shkruajnë «Shporta» dhe «Shto në shportë». «Çanta» mund të ngatërrohet me çantat e dorës. Cilën preferon?',
     'product.add': 'Varet nga pyetja te «Çanta», në kokën e faqes.',
     'shop.soldOut': '«Fustan» është mashkullor, prandaj ndoshta «I shitur». Apo «Pa gjendje», si në admin?',
+    'product.newTag': 'Del pas emrit të fustanit gjatë dy javëve të para. Si te «E shitur»: «fustan» është mashkullor, prandaj ndoshta «I ri»?',
     'product.lastOne': 'Ndoshta «Copa e fundit në këtë masë»? («Fustan» është mashkullor.)',
     'a11y.zoom': '«Shiko foton e plotë»? Këtë e lexojnë vetëm lexuesit e ekranit.',
     'sizes.guide': 'Drejtshkrimi standard është «evropiane». Cilën formë preferon?',
@@ -93,6 +95,7 @@ const UI = {
       home: 'Kryefaqja', nav: 'Koka e faqes dhe menuja', shop: 'Dyqani: lista e fustaneve', product: 'Faqja e fustanit',
       bag: 'Çanta', checkout: 'Porosia', confirmation: 'Pas porosisë', search: 'Kërkimi', footer: 'Fundi i faqes',
       notFound: 'Faqe që nuk ekziston', meta: 'Titujt në Google dhe në skedën e shfletuesit', a11y: 'Për lexuesit e ekranit (nuk shihen)',
+      privacy: 'Faqja e privatësisë', terms: 'Faqja e kushteve të shitjes',
     },
     ok: 'Në rregull', edit: 'Ndrysho', cancel: 'Anulo', isOk: 'Në rregull', isChanged: 'Ndryshuar',
     question: 'Pyetje', meaning: 'EN', fix: 'Si duhet të jetë', note: 'Shënim (jo i detyrueshëm)',
@@ -118,6 +121,7 @@ const UI = {
       home: 'Page d’accueil', nav: 'En-tête et menu', shop: 'La boutique : liste des robes', product: 'Fiche de la robe',
       bag: 'Panier', checkout: 'Commande', confirmation: 'Après la commande', search: 'Recherche', footer: 'Pied de page',
       notFound: 'Page introuvable', meta: 'Titres dans Google et dans l’onglet du navigateur', a11y: 'Pour les lecteurs d’écran (invisibles)',
+      privacy: 'Page Confidentialité', terms: 'Page Conditions de vente',
     },
     ok: 'Correct', edit: 'Modifier', cancel: 'Annuler', isOk: 'Correct', isChanged: 'Modifié',
     question: 'Question', meaning: 'EN', fix: 'Version correcte', note: 'Remarque (facultatif)',
@@ -174,6 +178,20 @@ for (const lang of ['sq', 'fr']) {
     const row = { id: key, keys: [key], text, en: en.get(key) ?? '', note: NOTES[lang][key] ?? '' };
     seen.set(text, row);
     group.rows.push(row);
+  }
+  // the privacy and terms pages (src/shared/legal.ts), one line per heading and paragraph
+  for (const kind of ['privacy', 'terms']) {
+    const d = LEGAL[kind][lang];
+    const e = LEGAL[kind].en;
+    const rows = [
+      { id: `legal.${kind}.title`, keys: [`legal.${kind}.title`], text: d.title, en: e.title, note: '' },
+      { id: `legal.${kind}.intro`, keys: [`legal.${kind}.intro`], text: d.intro, en: e.intro, note: '' },
+    ];
+    d.sections.forEach((s, i) => {
+      rows.push({ id: `legal.${kind}.${i}.h`, keys: [`legal.${kind}.${i}.h`], text: s.h, en: e.sections[i].h, note: '' });
+      s.p.forEach((p, j) => rows.push({ id: `legal.${kind}.${i}.p${j}`, keys: [`legal.${kind}.${i}.p${j}`], text: p, en: e.sections[i].p[j], note: '' }));
+    });
+    groups.push({ id: kind, title: UI[lang].groups[kind], rows });
   }
   langs[lang] = groups.filter((g) => g.rows.length);
 }

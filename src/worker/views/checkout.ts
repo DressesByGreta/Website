@@ -1,8 +1,9 @@
 /** Checkout, order confirmation, the simulated bank page, not found. */
-import { formatLek, type Zone } from '../../shared/catalog';
+import { formatLek, type Product, type Zone } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { OrderItemRow, OrderRow } from '../orders';
+import { flipId, plate } from './parts';
 
 function field(o: { name: string; label: string; type?: string; autocomplete?: string; inputmode?: string; hint?: string; required?: boolean; max?: number }): Raw {
   const id = `co-${o.name}`;
@@ -86,7 +87,7 @@ export function checkoutView(lang: Lang, zones: Zone[], card: boolean): Raw {
           <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </div>
 
-        <p class="small co-consent">${tc.consent}</p>
+        <p class="small co-consent">${tc.consent} <a href="${href('/kushtet', lang)}" target="_blank" rel="noopener">${t.legal.terms}</a> · <a href="${href('/privatesia', lang)}" target="_blank" rel="noopener">${t.legal.privacy}</a></p>
         <button class="btn btn--wide co-submit" type="submit" data-co-submit>${tc.place}</button>
         <p class="co-error" role="alert" data-co-error hidden></p>
       </form>
@@ -171,11 +172,33 @@ export function payTestView(lang: Lang, order: OrderRow): Raw {
   </div>`;
 }
 
-export function notFoundView(lang: Lang): Raw {
-  const t = copy[lang].notFound;
+/**
+ * Not found: say so, then help. A search field (it opens the shop's search with the words already
+ * typed) and four dresses, the ones closest to the address that was asked for first.
+ */
+export function notFoundView(lang: Lang, dresses: Product[] = []): Raw {
+  const t = copy[lang];
   return html`<div class="missing container">
-    <h1 class="co-title">${t.title}</h1>
-    <p class="body">${t.body}</p>
-    <a class="btn" href="${href('/dyqani', lang)}">${t.cta}</a>
+    <h1 class="co-title">${t.notFound.title}</h1>
+    <p class="body">${t.notFound.body}</p>
+    <form class="missing__search" role="search" action="${href('/dyqani', lang)}" data-missing-search>
+      <label class="sr-only" for="missing-q">${t.search.title}</label>
+      <input class="missing__input" id="missing-q" type="search" name="q" placeholder="${t.search.placeholder}" autocomplete="off" />
+      <button class="btn" type="submit">${t.search.title}</button>
+    </form>
+    ${dresses.length
+      ? html`<ul class="missing__dresses">
+          ${dresses.map(
+            (p, i) => html`<li>
+              <a class="missing__dress" href="${href(`/fustan/${p.slug}`, lang)}" data-fly-link>
+                ${plate(p.photos[0], { alt: '', sizes: '(min-width: 768px) 22vw, 46vw', eager: i === 0, target: 480, flip: flipId(p), cls: 'missing__plate', tag: 'span' })}
+                <span class="missing__name">${p.name}</span>
+                ${p.price !== null ? html`<span class="missing__price">${formatLek(p.price, lang)}</span>` : ''}
+              </a>
+            </li>`,
+          )}
+        </ul>`
+      : ''}
+    <a class="btn btn--line" href="${href('/dyqani', lang)}">${t.notFound.cta}</a>
   </div>`;
 }

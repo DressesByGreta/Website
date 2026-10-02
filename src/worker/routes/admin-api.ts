@@ -1,20 +1,29 @@
 /** /api/admin/*: Greta's back office. Every route below the sign-in block requires a session. */
-import { Hono } from 'hono';
-import { CATEGORIES, SIZES, isCategory, slugify, type Stock } from '../../shared/catalog';
-import { clearHits, adminGet, adminList, getSetting, getZones, hit, setSetting, uniqueSlug } from '../db';
-import { clientIp, devLoginAllowed, endSession, isAdmin, requireAdmin, startSession, verifyPassword } from '../auth';
+import { Hono, type Context } from 'hono';
+import { CATEGORIES, NEW_DAYS, SIZES, isCategory, slugify, type Stock } from '../../shared/catalog';
+import type { Business, Returns } from '../../shared/legal';
+import { isDay } from '../../shared/time';
+import { clearHits, adminGet, adminList, countNew, getLegalSettings, getSetting, getZones, hit, setSetting, uniqueSlug } from '../db';
+import { clientIp, devLoginAllowed, endSession, isAdmin, renewSession, requireAdmin, startSession, verifyPassword } from '../auth';
 import { deleteVariants, parseUploadMeta, storeVariants } from '../images';
+import { instagramState, linkInstagram, setFollowersByHand, syncInstagram, unlinkInstagram, type InstagramState } from '../instagram';
 import { allowedNext, getOrder, setOrderStatus, setPaymentStatus, type OrderStatus, type PaymentStatus } from '../orders';
 import { gatewayFor } from '../payments';
+import { salesReport } from '../sales';
+import { report } from '../stats';
+import { botName, checkLink, linkedChats, removeChat, sendTest, startLink, telegramReady } from '../telegram';
 import type { AppEnv } from '../types';
+import { setFollowers, setNewCount } from '../views/layout';
 
 export const adminApi = new Hono<AppEnv>();
 
 /* --------------------------------------------------------------- sign in --------------------------------------------------------------- */
 
-adminApi.get('/me', async (c) =>
-  c.json({ admin: await isAdmin(c), devLogin: devLoginAllowed(c), passwordSet: Boolean(c.env.ADMIN_PASSWORD_HASH) }, 200, { 'cache-control': 'no-store' }),
-);
+adminApi.get('/me', async (c) => {
+  const admin = await isAdmin(c);
+  if (admin) await renewSession(c);
+  return c.json({ admin, devLogin: devLoginAllowed(c), passwordSet: Boolean(c.env.ADMIN_PASSWORD_HASH) }, 200, { 'cache-control': 'no-store' });
+});
 
 adminApi.post('/login', async (c) => {
   if (c.req.header('Origin') !== new URL(c.req.url).origin) return c.json({ error: 'bad_origin' }, 403);
@@ -151,19 +160,27 @@ adminApi.put('/products/:id', async (c) => {
     if (reasons.length) return c.json({ error: 'cannot_publish', reasons }, 400);
   }
 
+  // New for two weeks from the first publication; { markNew } restarts the two weeks or ends them now.
+  const twoWeeks = () => new Date(Date.now() + NEW_DAYS * 86_400_000).toISOString();
+  let newUntil = cur.newUntil;
+  if (typeof b.markNew === 'boolean') newUntil = b.markNew ? twoWeeks() : new Date().toISOString();
+  else if (status === 'published' && newUntil === null) newUntil = twoWeeks();
+
   await db.batch([
     db
       .prepare(
         `UPDATE products SET slug = ?, name_sq = ?, name_en = ?, description_sq = ?, description_en = ?, price = ?, compare_price = ?, color = ?,
-         categories = ?, status = ?, featured = ?, instagram_url = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+         categories = ?, status = ?, featured = ?, instagram_url = ?, new_until = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
       )
-      .bind(slug, nameSq, nameEn, descriptionSq, descriptionEn, price ?? null, comparePrice ?? null, color, JSON.stringify(categories), status, featured ? 1 : 0, instagramUrl, id),
+      .bind(slug, nameSq, nameEn, descriptionSq, descriptionEn, price ?? null, comparePrice ?? null, color, JSON.stringify(categories), status, featured ? 1 : 0, instagramUrl, newUntil, id),
     ...SIZES.map((s) =>
       db
         .prepare('INSERT INTO product_sizes (product_id, size, stock) VALUES (?, ?, ?) ON CONFLICT (product_id, size) DO UPDATE SET stock = excluded.stock')
         .bind(id, s, stock[s]),
     ),
   ]);
+  // the header's "new" link on this instance follows at once (the others within a minute)
+  setNewCount(await countNew(db));
   return c.json(await adminGet(db, id));
 });
 
@@ -321,3 +338,131 @@ adminApi.put('/settings', async (c) => {
   if (typeof b.shopPhone === 'string') await setSetting(c.env.DB, 'shop_phone', b.shopPhone.trim().slice(0, 30));
   return c.json({ zones, shopPhone: (await getSetting(c.env.DB, 'shop_phone')) ?? '' });
 });
+
+/* ------------------------------------------------------- the legal pages' details ------------------------------------------------------ */
+
+const NIPT_RE = /^[A-Z]\d{8}[A-Z]$/;
+const PHONE_RE = /^\+?[\d\s()./-]+$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+adminApi.get('/legal', async (c) => c.json(await getLegalSettings(c.env.DB)));
+
+/** The business details and the returns policy for /kushtet and /privatesia; a change moves their date. */
+adminApi.put('/legal', async (c) => {
+  const b = (await c.req.json().catch(() => ({}))) as { business?: Record<string, unknown>; returns?: Record<string, unknown> };
+  const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const business: Business = {
+    legalName: text(b.business?.legalName, 120),
+    nipt: text(b.business?.nipt, 20).toUpperCase().replace(/\s/g, ''),
+    phone: text(b.business?.phone, 30),
+    email: text(b.business?.email, 120),
+  };
+  const r = b.returns ?? {};
+  const mode: Returns['mode'] = r.mode === 'none' || r.mode === 'exchange' || r.mode === 'refund' ? r.mode : '';
+  const days = Number(r.days);
+  const fields: string[] = [];
+  if (business.nipt && !NIPT_RE.test(business.nipt)) fields.push('nipt');
+  const digits = business.phone.replace(/\D/g, '');
+  if (business.phone && (!PHONE_RE.test(business.phone) || digits.length < 8 || digits.length > 15)) fields.push('phone');
+  if (business.email && !EMAIL_RE.test(business.email)) fields.push('email');
+  if ((mode === 'exchange' || mode === 'refund') && !(Number.isInteger(days) && days >= 1 && days <= 90)) fields.push('days');
+  if (fields.length) return c.json({ error: 'invalid', fields }, 400);
+  const returns: Returns = {
+    mode,
+    days: Number.isInteger(days) && days >= 1 && days <= 90 ? days : 14,
+    unworn: r.unworn !== false,
+    shipping: r.shipping === 'shop' ? 'shop' : 'customer',
+    noteSq: text(r.noteSq, 600),
+    noteEn: text(r.noteEn, 600),
+  };
+  const db = c.env.DB;
+  const before = await getLegalSettings(db);
+  await setSetting(db, 'business', JSON.stringify(business));
+  await setSetting(db, 'returns', JSON.stringify(returns));
+  if (JSON.stringify(before.business) !== JSON.stringify(business) || JSON.stringify(before.returns) !== JSON.stringify(returns)) {
+    await setSetting(db, 'legal_updated', new Date().toISOString().slice(0, 10));
+  }
+  return c.json(await getLegalSettings(db));
+});
+
+/* ------------------------------------------------------------ visit counts ------------------------------------------------------------- */
+
+adminApi.get('/stats', async (c) => {
+  const days = Number(c.req.query('days'));
+  return c.json(await report(c.env.DB, [7, 30, 90].includes(days) ? days : 30));
+});
+
+/* --------------------------------------------------------------- sales ---------------------------------------------------------------- */
+
+/** The orders of a period [from, to) and of the one before it [prev, from), Tirana days, at most 62 days each. */
+adminApi.get('/sales', async (c) => {
+  const [prev, from, to] = [c.req.query('prev'), c.req.query('from'), c.req.query('to')];
+  if (!isDay(prev) || !isDay(from) || !isDay(to) || !(prev < from && from < to)) return c.json({ error: 'invalid' }, 400);
+  const span = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) / 86_400_000;
+  if (span(prev, from) > 62 || span(from, to) > 62) return c.json({ error: 'invalid' }, 400);
+  return c.json(await salesReport(c.env.DB, prev, from, to));
+});
+
+/* ------------------------------------------------------- order alerts on Telegram ------------------------------------------------------- */
+
+adminApi.get('/telegram', async (c) =>
+  c.json({ ready: telegramReady(c.env), bot: telegramReady(c.env) ? await botName(c.env) : null, chats: await linkedChats(c.env.DB) }),
+);
+
+/** A one-time code and the t.me link that sends it; the admin then polls /telegram/check. */
+adminApi.post('/telegram/link', async (c) => {
+  if (!telegramReady(c.env)) return c.json({ error: 'telegram_off' }, 503);
+  const bot = await botName(c.env);
+  if (!bot) return c.json({ error: 'telegram_down' }, 502);
+  const code = await startLink(c.env.DB);
+  return c.json({ code, bot, url: `https://t.me/${bot}?start=${code}` });
+});
+
+adminApi.post('/telegram/check', async (c) => {
+  if (!telegramReady(c.env)) return c.json({ error: 'telegram_off' }, 503);
+  try {
+    return c.json(await checkLink(c.env));
+  } catch (e) {
+    console.error(e);
+    return c.json({ error: 'telegram_down' }, 502);
+  }
+});
+
+adminApi.delete('/telegram/chats/:id', async (c) => c.json({ chats: await removeChat(c.env.DB, Number(c.req.param('id'))) }));
+
+adminApi.post('/telegram/test', async (c) => {
+  if (!telegramReady(c.env)) return c.json({ error: 'telegram_off' }, 503);
+  return c.json({ sent: await sendTest(c.env) });
+});
+
+/* ------------------------------------------------------ Instagram follower count ------------------------------------------------------- */
+
+/** Every answer carries the state; the footer of this instance takes the new number at once. */
+const igReply = (c: Context<AppEnv>, s: InstagramState) => {
+  setFollowers(s.followers);
+  return c.json(s);
+};
+
+adminApi.get('/instagram', async (c) => c.json(await instagramState(c.env.DB)));
+
+/** { token } links Instagram (checked with Instagram first); { followers } sets the number by hand. */
+adminApi.put('/instagram', async (c) => {
+  const b = (await c.req.json().catch(() => ({}))) as { token?: unknown; followers?: unknown };
+  if (typeof b.token === 'string') {
+    const token = b.token.trim();
+    if (!/^[A-Za-z0-9_.|-]{20,600}$/.test(token)) return c.json({ error: 'instagram_token' }, 400);
+    try {
+      return igReply(c, await linkInstagram(c.env, token));
+    } catch (e) {
+      console.error('instagram link', e);
+      return c.json({ error: 'instagram_token' }, 400);
+    }
+  }
+  const n = Number(b.followers);
+  if (!Number.isInteger(n) || n < 0 || n > 100_000_000) return c.json({ error: 'invalid', fields: ['followers'] }, 400);
+  return igReply(c, await setFollowersByHand(c.env.DB, n));
+});
+
+adminApi.post('/instagram/sync', async (c) => igReply(c, await syncInstagram(c.env, true)));
+
+adminApi.delete('/instagram', async (c) => igReply(c, await unlinkInstagram(c.env.DB)));
