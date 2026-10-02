@@ -3,6 +3,14 @@
 Three things that need an account only you or Greta can open. The code is in place; nothing here
 needs a code change.
 
+**Where the shop lives (since 2 October 2026):** the code in github.com/DressesByGreta/Webste-
+(this folder's `origin`; Luca's first repository stays as `luca`), and the shop in the business
+Cloudflare account (dressesbygreta@gmail.com): the Worker `www`, the D1 database `greta` and the
+KV namespace `PHOTOS`, all named in wrangler.jsonc with the account id. Deploying needs wrangler
+signed in to that account (`npx wrangler login`, or `npx wrangler login --device` to enter a code in
+any browser). Everything was copied from Luca's account unchanged: the 45 dresses with their
+prices, stock and 96 photographs (281 files), the settings and the admin password.
+
 **Deploying:** `npm run deploy` now applies the database migrations first
 (`wrangler d1 migrations apply greta --remote`). Migration 0002 adds the visit counts (`stats`) and
 `orders.source`; 0003 adds the date a dress stops being new. The new code needs them, so always
@@ -21,8 +29,8 @@ një lidhje për një postim"), copy it, and use it in the post or story.
 (New, Nouveauté) after its name, and the shop gets a "Të reja" filter while at least one dress is
 new: in the menu, the footer, and the header on wide screens (from 1180px; French from 1536px,
 where its longer words fit). In the dress's admin page, under the categories, Greta can start the
-14 days again (a dress back in stock) or end them now. The 39 dresses already in the shop are not
-new when they go live.
+14 days again (a dress back in stock) or end them now. The dresses imported from Instagram posts
+are not new when they go live; the ones Greta added herself become new when she publishes them.
 
 **Sales:** the admin's **Shitjet** tab, by week (Monday to Sunday) or by month, Tirana time, beside
 the period before: orders, their value, dresses sold, the average order and visits, then which
