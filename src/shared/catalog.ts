@@ -10,6 +10,35 @@ export const CATEGORIES = ['gowns', 'mini', 'black', 'tv'] as const;
 export type Category = (typeof CATEGORIES)[number];
 export const isCategory = (v: unknown): v is Category => typeof v === 'string' && (CATEGORIES as readonly string[]).includes(v);
 
+/**
+ * Occasions: what a dress is for, in the words people type into Google (fustane mbrëmjeje, mature,
+ * për dasma, koktej, me qera). Each has its own page; Greta ticks them per dress in the admin, next to
+ * the categories, and they are stored in the same list. Until she ticks one, its page shows the
+ * dresses of its fallback categories (an empty list there means every dress).
+ */
+export const OCCASIONS = ['evening', 'prom', 'wedding', 'cocktail', 'rental'] as const;
+export type Occasion = (typeof OCCASIONS)[number];
+export const isOccasion = (v: unknown): v is Occasion => typeof v === 'string' && (OCCASIONS as readonly string[]).includes(v);
+export const OCCASION_PATH: Record<Occasion, string> = {
+  evening: '/fustane-mbremjeje',
+  prom: '/fustane-mature',
+  wedding: '/fustane-per-dasma',
+  cocktail: '/fustane-koktej',
+  rental: '/fustane-me-qera',
+};
+const OCCASION_FALLBACK: Record<Occasion, Category[]> = { evening: ['gowns'], prom: ['gowns', 'mini'], wedding: ['gowns', 'mini'], cocktail: ['mini'], rental: [] };
+/** A category or an occasion: what the admin stores in a dress's list. */
+export type Tag = Category | Occasion;
+export const isTag = (v: unknown): v is Tag => isCategory(v) || isOccasion(v);
+
+/** The dresses an occasion page shows: those Greta ticked, or its fallback while she has ticked none. */
+export function forOccasion(all: Product[], o: Occasion): Product[] {
+  const ticked = all.filter((p) => p.occasions.includes(o));
+  if (ticked.length) return ticked;
+  const cats = OCCASION_FALLBACK[o];
+  return cats.length ? all.filter((p) => p.categories.some((c) => cats.includes(c))) : all;
+}
+
 /** A dress counts as new for two weeks from its first publication; the admin can restart or end them. */
 export const NEW_DAYS = 14;
 /** The shop's filters: the categories Greta ticks, and the new dresses, which the shop works out itself. */
@@ -57,6 +86,7 @@ export interface Product {
   comparePrice: number | null;
   color: string;
   categories: Category[];
+  occasions: Occasion[];
   featured: boolean;
   instagramUrl: string;
   stock: Stock;

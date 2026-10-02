@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, NEW_DAYS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { returnsSection, sellerText, type Business, type Returns } from '../shared/legal';
@@ -28,6 +28,7 @@ import { XLSX_TYPE } from './xlsx';
 
 const root = document.getElementById('admin')!;
 const cats = copy.sq.categories;
+const occ = copy.sq.occasions;
 const lek = (n: number) => formatLek(n, 'sq');
 
 const STATUS: Record<OrderStatus, string> = {
@@ -150,8 +151,10 @@ const sourceLabel = (s: string): string => {
 };
 
 function frame(active: 'products' | 'orders' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
+  // On desktop the tabs stand as a numbered index down the left rail, like the shop's contents.
+  let n = 0;
   const tab = (key: typeof active, href: string, label: string, extra: Raw | string = '') =>
-    html`<a class="adm-tab${active === key ? ' is-on' : ''}" href="${href}" data-link${active === key ? raw(' aria-current="page"') : ''}>${label}${extra}</a>`;
+    html`<a class="adm-tab${active === key ? ' is-on' : ''}" href="${href}" data-link${active === key ? raw(' aria-current="page"') : ''}><span class="adm-tab__no" aria-hidden="true">${pad2(++n)}</span><span class="adm-tab__label">${label}</span>${extra}</a>`;
   return html`<header class="adm-top">
       <a class="adm-brand" href="/admin" data-link aria-label="Dresses by Greta, Admin">${raw(nameSvg('adm-brand__name'))}<span class="adm-brand__sub">Admin</span></a>
       <nav class="adm-tabs" aria-label="Admin">
@@ -317,19 +320,20 @@ async function productsView(): Promise<void> {
     const fresh = p.status === 'published' && p.newUntil !== null && p.newUntil > now;
     return html`<li class="adm-row" data-id="${p.id}" draggable="true">
       <span class="adm-row__grip" aria-hidden="true">${icon.grip}</span>
-      <a class="adm-row__thumb" href="/admin/produkt/${p.id}" data-link tabindex="-1" aria-hidden="true">${cover ? html`<img src="${photoAt(cover, 480)}" alt="" loading="lazy" width="48" height="64" />` : ''}</a>
+      <span class="adm-row__no" aria-hidden="true">${pad2(i + 1)}</span>
+      <a class="adm-row__thumb" href="/admin/produkt/${p.id}" data-link tabindex="-1" aria-hidden="true">${cover ? html`<img src="${photoAt(cover, 480)}" alt="" loading="lazy" width="60" height="80" />` : ''}</a>
       <span class="adm-row__main">
         <a class="adm-row__name" href="/admin/produkt/${p.id}" data-link>${p.nameSq}</a>
         <span class="adm-row__meta">
-          <span class="adm-pill${p.status === 'published' ? ' is-live' : ''}">${p.status === 'published' ? 'Publikuar' : 'Draft'}</span>
-          ${fresh ? html`<span class="adm-pill">Te «Të reja»</span>` : ''}
-          ${p.featured ? html`<span class="adm-pill">Në kryefaqe</span>` : ''}
+          <span class="adm-state${p.status === 'published' ? ' is-live' : ''}">${p.status === 'published' ? 'Publikuar' : 'Draft'}</span>
+          ${fresh ? html`<span class="adm-row__note">Te «Të reja»</span>` : ''}
+          ${p.featured ? html`<span class="adm-row__note">Në kryefaqe</span>` : ''}
           ${sold ? html`<span class="adm-pill is-warn">Pa gjendje</span>` : ''}
           ${p.photos.some((ph) => ph.w < PHOTO_SHARP_WIDTH) ? html`<span class="adm-pill">Foto të vogla</span>` : ''}
-          <span>${p.price !== null ? lek(p.price) : 'Pa çmim'}</span>
         </span>
       </span>
-      <span class="adm-row__stock" aria-label="Gjendja sipas masës">${SIZES.map((s) => html`<span class="${p.stock[s] ? '' : 'is-zero'}"><b>${s}</b>${p.stock[s]}</span>`)}</span>
+      <span class="adm-row__price${p.price === null ? ' is-missing' : ''}">${p.price !== null ? lek(p.price) : 'Pa çmim'}</span>
+      <span class="adm-row__stock" aria-label="Gjendja sipas masës">${SIZES.map((s) => html`<span class="adm-cell${p.stock[s] ? '' : ' is-zero'}"><b>${s}</b>${p.stock[s]}</span>`)}</span>
       <span class="adm-row__order">
         <button class="adm-icon" type="button" data-move="-1" aria-label="Lëvize lart"${i === 0 ? raw(' disabled') : ''}>${icon.up}</button>
         <button class="adm-icon" type="button" data-move="1" aria-label="Lëvize poshtë"${i === n - 1 ? raw(' disabled') : ''}>${icon.down}</button>
@@ -356,24 +360,26 @@ async function productsView(): Promise<void> {
     const c = counts();
     const shown = visible();
     const canReorder = filter === 'all' && !query;
+    // The filters are the page's figures: one ledger cell each, the count large, the open one in ink.
     const f = (key: string, label: string, n: number) =>
-      html`<button type="button" class="adm-filter${filter === key ? ' is-on' : ''}" data-filter="${key}" aria-pressed="${String(filter === key)}">${label} <span>${n}</span></button>`;
+      html`<button type="button" class="adm-ledger__cell${filter === key ? ' is-on' : ''}" data-filter="${key}" aria-pressed="${String(filter === key)}"><span class="adm-ledger__n">${n}</span><span class="adm-ledger__l">${label}</span></button>`;
     mount(
       frame(
         'products',
         html`<div class="adm-head">
-          <h1 class="adm-h1">Fustanet</h1>
+          <h1 class="adm-h1">Fustanet <span class="adm-count">${c.all}</span></h1>
           <form class="adm-new" data-new>
             <label class="sr-only" for="adm-new-name">Emri i fustanit të ri</label>
             <input class="adm-input" id="adm-new-name" name="name" placeholder="Emri i fustanit të ri" maxlength="80" required />
             <button class="btn" type="submit">Shto fustan</button>
           </form>
         </div>
-        <div class="adm-bar">
-          <div class="adm-filters" role="group" aria-label="Filtro">
-            ${f('all', 'Të gjitha', c.all)}${f('published', 'Publikuar', c.published)}${f('draft', 'Draft', c.draft)}${f('empty', 'Pa gjendje', c.empty)}
-          </div>
-          <input class="adm-input adm-search" type="search" placeholder="Kërko" aria-label="Kërko fustane" value="${query}" data-search />
+        <div class="adm-ledger" role="group" aria-label="Filtro">
+          ${f('all', 'Të gjitha', c.all)}${f('published', 'Publikuar', c.published)}${f('draft', 'Draft', c.draft)}${f('empty', 'Pa gjendje', c.empty)}
+        </div>
+        <div class="adm-toolbar">
+          <p class="adm-toolbar__shown">${shown.length === list.length ? `${shown.length} fustane` : `${shown.length} nga ${list.length}`}</p>
+          <input class="adm-input adm-search" type="search" placeholder="Kërko sipas emrit ose ngjyrës" aria-label="Kërko fustane" value="${query}" data-search />
         </div>
         ${shown.length
           ? html`<ol class="adm-list${canReorder ? '' : ' no-order'}" data-list>${shown.map((p, i) => row(p, i, shown.length))}</ol>`
@@ -623,6 +629,10 @@ async function editor(id: string): Promise<void> {
             <fieldset class="adm-checks">
               <legend class="adm-label">Kategoritë</legend>
               ${CATEGORIES.map((c) => html`<label class="adm-check"><input type="checkbox" name="cat" value="${c}"${d.categories.includes(c) ? raw(' checked') : ''} /> ${cats[c]}</label>`)}
+            </fieldset>
+            <fieldset class="adm-checks">
+              <legend class="adm-label">Për çfarë rasti (faqet për Google)</legend>
+              ${OCCASIONS.map((o) => html`<label class="adm-check"><input type="checkbox" name="cat" value="${o}"${d.categories.includes(o) ? raw(' checked') : ''} /> ${occ[o].label}</label>`)}
             </fieldset>
             ${newState(p)}
             <div class="adm-grid2">

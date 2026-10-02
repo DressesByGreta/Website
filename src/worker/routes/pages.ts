@@ -1,6 +1,6 @@
 /** Server-rendered storefront routes. */
 import { Hono, type Context } from 'hono';
-import { inStock, isShopFilter, isSize, photoAt, type Product, type Size } from '../../shared/catalog';
+import { forOccasion, inStock, isShopFilter, OCCASIONS, OCCASION_PATH, isSize, photoAt, type Product, type Size } from '../../shared/catalog';
 import { copy, isLang } from '../../shared/copy';
 import { html } from '../../shared/html';
 import { countNew, getLegalSettings, getSetting, getVisibleBySlug, getZones, listVisible } from '../db';
@@ -8,13 +8,14 @@ import { followerCount } from '../instagram';
 import { getOrder } from '../orders';
 import { gatewayFor } from '../payments';
 import { SITE } from '../site';
-import type { AppEnv } from '../types';
+import type { AppEnv, ExtraEnv } from '../types';
 import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
-import { HERO_SIZES, heroSrcset, homeView, storeJsonLd } from '../views/home';
-import { assetTags, page, setDemo, setFollowers, setNewCount } from '../views/layout';
+import { HERO_SIZES, heroSrcset, homeView, storeJsonLd, websiteJsonLd } from '../views/home';
+import { assetTags, page, setDemo, setFollowers, setNewCount, setVerification } from '../views/layout';
+import { occasionView } from '../views/occasion';
 import { legalIntro, legalTitle, legalView } from '../views/legal';
-import { productJsonLd, productView } from '../views/product';
+import { breadcrumbJsonLd, productJsonLd, productView } from '../views/product';
 import { shopView, type ShopState } from '../views/shop';
 
 export const pages = new Hono<AppEnv>();
@@ -23,6 +24,7 @@ let settingsRead = 0;
 pages.use('*', async (c, next) => {
   const q = c.req.query('lang');
   c.set('lang', isLang(q) ? q : 'sq');
+  setVerification((c.env as Env & ExtraEnv).GOOGLE_SITE_VERIFICATION);
   // the demo flag, the follower count and the number of new dresses change rarely: read them once a
   // minute per instance (the admin refreshes the new count of its own instance when it saves a dress)
   if (Date.now() - settingsRead > 60_000) {
@@ -55,7 +57,7 @@ pages.get('/', async (c) => {
       overPhoto: true,
       preload: { srcset: heroSrcset('webp'), sizes: HERO_SIZES, type: 'image/webp' },
       body: homeView(lang, visible),
-      jsonLd: [storeJsonLd(origin(c), business)],
+      jsonLd: [storeJsonLd(origin(c), business), websiteJsonLd(origin(c), lang)],
     }),
   );
 });
@@ -88,11 +90,32 @@ pages.get('/dyqani', async (c) => {
   );
 });
 
+for (const o of OCCASIONS) {
+  pages.get(OCCASION_PATH[o], async (c) => {
+    const lang = c.get('lang');
+    const oc = copy[lang].occasions[o];
+    const list = forOccasion(await listVisible(c.env.DB, lang), o);
+    return send(
+      c,
+      page({
+        lang,
+        origin: origin(c),
+        path: OCCASION_PATH[o],
+        title: oc.title,
+        description: oc.description,
+        kind: 'shop',
+        image: list[0]?.photos[0] ? photoAt(list[0].photos[0], 1600) : undefined,
+        body: occasionView(lang, o, list),
+      }),
+    );
+  });
+}
+
 pages.get('/fustan/:slug', async (c) => {
   const lang = c.get('lang');
   const p = await getVisibleBySlug(c.env.DB, c.req.param('slug'), lang);
   if (!p) return notFound(c);
-  const all = await listVisible(c.env.DB, lang);
+  const [all, { returns }, zones] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB)]);
   const index = Math.max(0, all.findIndex((x) => x.id === p.id));
   const next = all.length > 1 ? (all[(index + 1) % all.length] ?? null) : null;
   const masa = c.req.query('masa');
@@ -106,8 +129,8 @@ pages.get('/fustan/:slug', async (c) => {
       description: p.description.slice(0, 155) || copy[lang].meta.shopDescription,
       kind: 'product',
       image: p.photos[0] ? photoAt(p.photos[0], 1600) : undefined,
-      body: productView(lang, p, index, all.length, next, isSize(masa) ? (masa as Size) : undefined),
-      jsonLd: [productJsonLd(origin(c), lang, p)],
+      body: productView(lang, p, index, all.length, next, zones, isSize(masa) ? (masa as Size) : undefined),
+      jsonLd: [productJsonLd(origin(c), lang, p, returns), breadcrumbJsonLd(origin(c), lang, p)],
     }),
   );
 });

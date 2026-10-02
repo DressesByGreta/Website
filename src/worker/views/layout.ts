@@ -3,7 +3,7 @@
  * header, <main> (the only part the client router swaps), the footer.
  */
 import { markSvg, nameSvg } from '../../shared/brand';
-import { CATEGORIES, SIZES, SIZE_LETTER, type ShopFilter } from '../../shared/catalog';
+import { CATEGORIES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, type ShopFilter } from '../../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
@@ -54,6 +54,11 @@ export const setFollowers = (n: number): void => {
 let newCount = 0;
 export const setNewCount = (n: number): void => {
   newCount = n;
+};
+/** Google Search Console's ownership code (env GOOGLE_SITE_VERIFICATION), when set. */
+let verification = '';
+export const setVerification = (code: string | undefined): void => {
+  verification = code ?? '';
 };
 const filters = (): ShopFilter[] => (newCount > 0 ? ['new', ...CATEGORIES] : [...CATEGORIES]);
 const ldJson = (o: object): string => JSON.stringify(o).replace(/</g, `${B}u003c`);
@@ -119,6 +124,10 @@ function footer(lang: Lang, o: PageOptions): Raw {
           ${filters().map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
           <span class="foot__sizes">${SIZES.map((s) => html`<a href="${href('/dyqani', lang, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}">${s}</a>`)}</span>
         </div>
+        <div class="foot__col">
+          <h2>${t.occasions.heading}</h2>
+          ${OCCASIONS.map((x) => html`<a href="${href(OCCASION_PATH[x], lang)}">${t.occasions[x].label}</a>`)}
+        </div>
       </div>
       <div class="foot__seal">
         <a class="foot__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(markSvg('foot__mark'))}</a>
@@ -149,6 +158,7 @@ export function page(o: PageOptions): string {
     <title>${o.title}</title>
     <meta name="description" content="${o.description}" />
     ${o.noindex ? raw('<meta name="robots" content="noindex" />') : ''}
+    ${verification ? html`<meta name="google-site-verification" content="${verification}" />` : ''}
     <link rel="canonical" href="${canonical}" />
     ${LANGS.map((l) => html`<link rel="alternate" hreflang="${l}" href="${alt(l)}" />`)}
     <link rel="alternate" hreflang="x-default" href="${alt('sq')}" />

@@ -1,6 +1,6 @@
 /** /api/admin/*: Greta's back office. Every route below the sign-in block requires a session. */
 import { Hono, type Context } from 'hono';
-import { CATEGORIES, NEW_DAYS, SIZES, isCategory, slugify, type Stock } from '../../shared/catalog';
+import { CATEGORIES, NEW_DAYS, OCCASIONS, SIZES, isTag, slugify, type Stock } from '../../shared/catalog';
 import type { Business, Returns } from '../../shared/legal';
 import { isDay } from '../../shared/time';
 import { clearHits, adminGet, adminList, countNew, getLegalSettings, getSetting, getZones, hit, setSetting, uniqueSlug } from '../db';
@@ -126,7 +126,7 @@ adminApi.put('/products/:id', async (c) => {
   if (price === undefined) errors.push('price');
   const comparePrice = 'comparePrice' in b ? lek(b.comparePrice) : cur.comparePrice;
   if (comparePrice === undefined) errors.push('comparePrice');
-  const categories = Array.isArray(b.categories) ? [...new Set(b.categories.filter(isCategory))] : cur.categories;
+  const categories = Array.isArray(b.categories) ? [...new Set(b.categories.filter(isTag))] : cur.categories;
   const featured = typeof b.featured === 'boolean' ? b.featured : cur.featured;
   const instagramUrl = text(b.instagramUrl, 200) ?? cur.instagramUrl;
   if (instagramUrl && !/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_./?=&-]+$/.test(instagramUrl)) errors.push('instagramUrl');
@@ -316,7 +316,7 @@ adminApi.patch('/orders/:id', async (c) => {
 /* -------------------------------------------------------------- settings --------------------------------------------------------------- */
 
 adminApi.get('/settings', async (c) =>
-  c.json({ zones: await getZones(c.env.DB), shopPhone: (await getSetting(c.env.DB, 'shop_phone')) ?? '', card: Boolean(gatewayFor(c.env)), categories: CATEGORIES }),
+  c.json({ zones: await getZones(c.env.DB), shopPhone: (await getSetting(c.env.DB, 'shop_phone')) ?? '', card: Boolean(gatewayFor(c.env)), categories: CATEGORIES, occasions: OCCASIONS }),
 );
 
 adminApi.put('/settings', async (c) => {

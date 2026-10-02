@@ -61,3 +61,15 @@ export function storeJsonLd(origin: string, b: Business) {
     geo: { '@type': 'GeoCoordinates', latitude: SITE.geo.lat, longitude: SITE.geo.lng },
   };
 }
+
+/** The site's name for Google's results (the name shown above the link), in the page's language. */
+export function websiteJsonLd(origin: string, lang: Lang) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    alternateName: SITE.handle,
+    url: origin + '/',
+    inLanguage: lang,
+  };
+}
