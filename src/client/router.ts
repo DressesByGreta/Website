@@ -47,6 +47,12 @@ export function startRouter(init: PageInit): void {
     const url = eligible(a, e);
     if (!url) return;
     e.preventDefault();
+    // The page already open (the header logo on home): back to the top instead of a reload. On
+    // home that runs the logo's hand-over in reverse, the name flying back into the G.
+    if (url.pathname === location.pathname && url.search === location.search) {
+      window.scrollTo({ top: 0, behavior: reducedMotion() ? 'instant' : 'smooth' });
+      return;
+    }
     // The flight leaves from whichever copy of the dress's photograph is on screen (on desktop the
     // index shows one preview plate for all its lines).
     const card = a.closest('.spread, .toc__item, .next-dress');
@@ -80,11 +86,14 @@ export function startRouter(init: PageInit): void {
 
     try {
       const folding = Boolean(o.fold && current.querySelector('.spread'));
+      // A transform on <main> would become the frame of the hero's screen-fixed logo and throw it
+      // out of place, so a page holding that logo only fades.
+      const drift = !flight && !current.querySelector('.hero__mark.is-docking');
       const out = folding
         ? foldAway(current, o.fold!)
         : reducedMotion()
           ? gsap.to(current, { opacity: 0, duration: 0.12, ease: 'none' })
-          : gsap.to(current, { opacity: 0, y: flight ? 0 : -10, duration: flight ? 0.3 : 0.22, ease: 'power2.in' });
+          : gsap.to(current, { opacity: 0, ...(drift ? { y: -10 } : {}), duration: flight ? 0.3 : 0.22, ease: 'power2.in' });
       const [doc] = await Promise.all([docP, out]);
       const next = doc.querySelector<HTMLElement>('main');
       if (!next) throw new Error('no main');
@@ -109,14 +118,17 @@ export function startRouter(init: PageInit): void {
       current.replaceWith(fresh);
       if (o.push) history.pushState({ scroll: 0 }, '', url.href);
       const hash = url.hash ? document.getElementById(url.hash.slice(1)) : null;
-      window.scrollTo(0, o.scroll ?? (hash ? hash.getBoundingClientRect().top + window.scrollY : 0));
+      // instant: html has scroll-behavior: smooth (for in-page anchors), and a smooth jump here was
+      // cut short by the ScrollTrigger refresh, leaving the new page where the old one had been
+      window.scrollTo({ left: 0, top: o.scroll ?? (hash ? hash.getBoundingClientRect().top + window.scrollY : 0), behavior: 'instant' });
 
       cleanup = init(fresh, Boolean(flight));
       if (flight) {
         gsap.fromTo(fresh, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power2.out', delay: 0.2 });
         await land(flight, fresh);
       } else if (!folding) {
-        gsap.fromTo(fresh, { opacity: 0, y: reducedMotion() ? 0 : 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'expo.out', clearProps: 'transform' });
+        const rise = !reducedMotion() && !fresh.querySelector('.hero__mark');
+        gsap.fromTo(fresh, { opacity: 0, ...(rise ? { y: 10 } : {}) }, { opacity: 1, ...(rise ? { y: 0 } : {}), duration: 0.4, ease: 'expo.out', clearProps: 'transform' });
       }
       fresh.focus({ preventScroll: true });
       document.dispatchEvent(new CustomEvent('greta:navigated'));

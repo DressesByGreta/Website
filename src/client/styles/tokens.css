@@ -30,6 +30,11 @@
   --scrim: #000000;
   --stage: #0b0b0b;
   --on-photo: #ffffff;
+  /* the logo's own colours, sampled from Greta's Instagram picture; logo artwork only */
+  --gold: #a28d51;
+  --gold-light: #d9c48c; /* the same gold lifted for the photograph and the dark menu */
+  --gold-deep: #857240; /* the same gold deepened for the small name line on white (4.7:1) */
+  --ivory: #f3f3e7;
 
   /* type */
   --font: 'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;

@@ -101,6 +101,14 @@ summary::-webkit-details-marker {
   outline-offset: 3px;
 }
 
+/* the page's one copy of the logo's outlines (views/brand.ts); placements point into it */
+.brand-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
 input,
 textarea {
   caret-color: var(--ink);
@@ -141,8 +149,8 @@ textarea {
   padding-inline: var(--gutter);
 }
 
-/* type roles: the reference has no display type; hierarchy is uppercase 12px labels,
-   14px body, and the wordmark. */
+/* type roles: the reference has no display type; hierarchy is uppercase 12px labels and
+   14px body. The logo is a drawing, not type (brand.css). */
 .ui {
   font-size: var(--fs-ui);
   line-height: 1.4;
@@ -201,12 +209,4 @@ textarea {
   .link:hover {
     text-decoration-color: var(--ink);
   }
-}
-
-.wordmark {
-  font-size: var(--fs-ui);
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  white-space: nowrap;
 }

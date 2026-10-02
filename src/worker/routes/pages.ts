@@ -8,8 +8,9 @@ import { getOrder } from '../orders';
 import { gatewayFor } from '../payments';
 import { SITE } from '../site';
 import type { AppEnv } from '../types';
+import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
-import { homeView, storeJsonLd } from '../views/home';
+import { HERO_SIZES, heroSrcset, homeView, storeJsonLd } from '../views/home';
 import { assetTags, page, setDemo } from '../views/layout';
 import { productJsonLd, productView } from '../views/product';
 import { shopView, type ShopState } from '../views/shop';
@@ -45,7 +46,7 @@ pages.get('/', async (c) => {
       description: t.meta.homeDescription,
       kind: 'home',
       overPhoto: true,
-      preload: SITE.heroImage,
+      preload: { srcset: heroSrcset('webp'), sizes: HERO_SIZES, type: 'image/webp' },
       body: homeView(lang, visible),
       jsonLd: [storeJsonLd(origin(c))],
     }),
@@ -176,10 +177,12 @@ function adminShell(c: Context<AppEnv>) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Admin, ${SITE.name}</title>
-    <link rel="icon" href="/brand/monogram.jpg" />
+    <link rel="icon" href="/brand/favicon-32.png" sizes="32x32" />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
     ${assetTags('admin')}
   </head>
   <body>
+    ${brandSprite()}
     <div id="admin" class="adm-root"></div>
   </body>
 </html>`.value,

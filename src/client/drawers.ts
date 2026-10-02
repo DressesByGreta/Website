@@ -2,6 +2,7 @@
  * Menu (left), bag (right), search (top) drawers and the follow card. All native <dialog>
  * elements; GSAP slides them (one engine). Escape and the backdrop close them; focus returns.
  */
+import { markSvg } from '../shared/brand';
 import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt } from '../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
@@ -56,7 +57,7 @@ export class Drawers {
     d.dataset.kind = kind;
     const title = kind === 'menu' ? this.t.nav.menu : kind === 'bag' ? this.t.bag.title : this.t.search.title;
     d.setAttribute('aria-label', title);
-    d.innerHTML = kind === 'menu' ? html`<div class="drawer__bar drawer__bar--x"><button class="drawer__x" type="button" data-close aria-label="${this.t.nav.close}">${ICON.close}</button><p class="drawer__title sr-only">${title}</p></div><div class="drawer__body" data-body></div><div class="drawer__foot" data-foot hidden></div>`.value : html`<div class="drawer__bar">
+    d.innerHTML = kind === 'menu' ? html`<div class="drawer__bar drawer__bar--x"><button class="drawer__x" type="button" data-close aria-label="${this.t.nav.close}">${ICON.close}</button><p class="drawer__title sr-only">${title}</p><a class="drawer__brand" href="${href('/', this.lang)}" aria-label="${this.t.a11y.wordmark}">${raw(markSvg('drawer__mark'))}</a></div><div class="drawer__body" data-body></div><div class="drawer__foot" data-foot hidden></div>`.value : html`<div class="drawer__bar">
         <p class="drawer__title">${title}</p>
         <button class="drawer__close" type="button" data-close>${this.t.nav.close}</button>
       </div>
@@ -305,7 +306,7 @@ export class Drawers {
       p.innerHTML = html`<button class="popup__close" type="button" data-close aria-label="${t.popup.close}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.2" /></svg>
         </button>
-        <p class="wordmark">${t.hero.wordmark}</p>
+        <span class="popup__avatar" role="img" aria-label="${t.hero.wordmark}">${raw(markSvg('popup__mark'))}</span>
         <p class="popup__lead">${t.popup.lead}</p>
         <p class="small">${t.popup.body}</p>
         <a class="btn btn--wide" href="${INSTAGRAM}" target="_blank" rel="noopener">${t.popup.cta}</a>`.value;

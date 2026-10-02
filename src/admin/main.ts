@@ -3,6 +3,7 @@
  * their photographs (upload, order, delete), stock per size, orders, delivery fees.
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
+import { nameSvg } from '../shared/brand';
 import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt, type Zone } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
@@ -88,7 +89,7 @@ function frame(active: 'products' | 'orders' | 'settings', body: Raw, badge = 0)
   const tab = (key: typeof active, href: string, label: string, extra: Raw | string = '') =>
     html`<a class="adm-tab${active === key ? ' is-on' : ''}" href="${href}" data-link${active === key ? raw(' aria-current="page"') : ''}>${label}${extra}</a>`;
   return html`<header class="adm-top">
-      <a class="adm-brand" href="/admin" data-link><span class="wordmark">Dresses by Greta</span><span class="adm-brand__sub">Admin</span></a>
+      <a class="adm-brand" href="/admin" data-link aria-label="Dresses by Greta, Admin">${raw(nameSvg('adm-brand__name'))}<span class="adm-brand__sub">Admin</span></a>
       <nav class="adm-tabs" aria-label="Admin">
         ${tab('products', '/admin', 'Fustanet')}
         ${tab('orders', '/admin/porosi', 'Porositë', badge ? html`<span class="adm-badge">${badge}</span>` : '')}
@@ -168,7 +169,7 @@ async function route(): Promise<void> {
 
 function login(devLogin: boolean, passwordSet: boolean): void {
   mount(html`<div class="adm-login">
-    <p class="wordmark">Dresses by Greta</p>
+    <p><span class="sr-only">Dresses by Greta</span>${raw(nameSvg('adm-brand__name'))}</p>
     <h1 class="adm-h1">Hyr në admin</h1>
     ${passwordSet
       ? html`<form class="adm-stack" data-login>

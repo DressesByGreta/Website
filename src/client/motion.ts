@@ -2,7 +2,9 @@
  * Motion. GSAP is the only engine and gsap.ticker the only scheduler (DESIGN.md); no pin, no snap,
  * no smooth-scroll library. Every entrance starts from the visible default in CSS (--p: 1,
  * opacity 1); hidden start states are set only inside the no-preference branch, so a
- * reduced-motion visitor or a failed script still sees the complete page.
+ * reduced-motion visitor or a failed script still sees the complete page. Delayed from() tweens
+ * take lazy: false: a start state left to render at the end of the tick was wiped when the next
+ * ScrollTrigger was created in the same task, so the element showed, then blinked out on cue.
  *
  * The page turn: spreads are sticky sheets; as the next one slides up over the last, the last
  * recedes to 0.94 and 45% and the newcomer prints in under the scan bar.
@@ -27,25 +29,34 @@ export function pageMotion(main: HTMLElement, opts: { arrivedByFlight: boolean }
   const nav = document.querySelector<HTMLElement>('[data-nav]');
 
   mm.add('(prefers-reduced-motion: no-preference)', () => {
-    if (kind === 'home') hero(main);
+    const undo: Array<() => void> = [];
+    if (kind === 'home') undo.push(hero(main));
     if (kind === 'home' || kind === 'shop') shop(main, opts.arrivedByFlight);
     if (kind === 'product') product(main, opts.arrivedByFlight);
     if (kind === 'confirmation') confirmation(main);
+    return () => undo.forEach((f) => f());
   });
 
   // State, not decoration: over the hero the header is transparent; it turns solid once the
-  // photograph has left. Every other page keeps it solid.
+  // photograph has left. Every other page keeps it solid. On home the header's logo line waits
+  // (data-dock) until the hero's logo hands it over.
   mm.add('all', () => {
     if (!nav) return;
     const overPhoto = main.dataset.navMode === 'photo';
     nav.classList.toggle('is-solid', !overPhoto);
     nav.classList.remove('is-scrolled');
+    nav.toggleAttribute('data-dock', Boolean(main.querySelector('.hero-brand')));
     if (overPhoto && main.querySelector('#hero')) {
       ScrollTrigger.create({ trigger: '#hero', start: 'bottom 60px', end: 'max', toggleClass: { targets: nav, className: 'is-scrolled' } });
     }
   });
 
-  requestAnimationFrame(() => ScrollTrigger.refresh());
+  // The router has already put the page where it belongs (the top, a #hash, or the remembered spot
+  // on back/forward). Without clearing, the refresh scrolls back to where the previous page was.
+  requestAnimationFrame(() => {
+    ScrollTrigger.clearScrollMemory();
+    ScrollTrigger.refresh();
+  });
 }
 
 /** Prints a plate (0 to 1 on --p) once, after its photograph has decoded (never waits over 2.5 s). */
@@ -71,13 +82,81 @@ export function printPlate(plate: HTMLElement, delay = 0, duration = 0.9): void 
   void Promise.race([ready, new Promise((r) => setTimeout(r, 2500))]).then(() => tween.play());
 }
 
-function hero(main: HTMLElement): void {
-  gsap.from('.hero__title', { opacity: 0, letterSpacing: '0.3em', duration: 0.9, ease: 'expo.out' });
-  gsap.from('.hero__content', { opacity: 0, y: 10, duration: 0.5, ease: 'expo.out', delay: 0.3 });
+function hero(main: HTMLElement): () => void {
+  gsap.from('.hero__content', { opacity: 0, y: 10, duration: 0.5, ease: 'expo.out', delay: 0.3, lazy: false });
   const plate = main.querySelector<HTMLElement>('.hero__plate');
   if (plate) printPlate(plate, 0, 1.1);
-  gsap.to('.hero__plate', { '--drift': '-6%', ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
-  gsap.to('.hero__mark', { opacity: 0, yPercent: 20, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
+  // The photograph lags the page (it drifts down inside its frame), so the edge it uncovers is
+  // always the top one, already scrolled out of sight. Drifting up showed the blurred stand-in.
+  gsap.to('.hero__plate', { '--drift': '6%', ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
+  // The logo itself has no entrance: it is on the first paint and stays there (hiding it to
+  // reveal it again blinked); its one motion is the hand-over below.
+  return dock(main);
+}
+
+/**
+ * The name leaves the logo for the header. While the top of the photograph scrolls away the
+ * hero's logo is held on screen: the G fades and recedes, and the line of capitals travels and
+ * shrinks onto the header's own copy, which then takes over as the header turns to paper. Both
+ * are fixed to the screen, so the hand-over is exact and nothing has to chase the page's native
+ * scroll. Scrolling back up (or the header logo on home, router.ts) runs it in reverse.
+ */
+function dock(main: HTMLElement): () => void {
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const target = nav?.querySelector<SVGSVGElement>('.nav__name');
+  const mark = main.querySelector<HTMLElement>('.hero__mark');
+  const name = main.querySelector<HTMLElement>('.hero-brand__name');
+  const g = main.querySelector<HTMLElement>('.hero-brand__g');
+  if (!nav || !target || !mark || !name || !g) return () => undefined;
+  mark.classList.add('is-docking');
+
+  let docked = false;
+  const handOver = (on: boolean): void => {
+    if (on === docked) return;
+    docked = on;
+    nav.classList.toggle('is-docked', on);
+    mark.style.visibility = on ? 'hidden' : '';
+  };
+  // Where the name has to go, measured without the travel applied.
+  const geo = { dx: 0, dy: 0, s: 1 };
+  const measure = (): void => {
+    const keep = name.style.transform;
+    name.style.transform = 'none';
+    const a = name.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    name.style.transform = keep;
+    geo.dx = b.left - a.left;
+    geo.dy = b.top - a.top;
+    geo.s = a.width > 0 ? b.width / a.width : 1;
+  };
+  measure();
+
+  const tl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      trigger: '#hero',
+      start: 'top top',
+      end: () => `+=${Math.round(window.innerHeight * 0.55)}`,
+      scrub: 0.5,
+      onRefreshInit: measure,
+      // A refresh (load, resize, rotation, zoom, Back to a scrolled home) re-renders the
+      // timeline without its callbacks; take the state from where the page actually is.
+      onRefresh: (self) => handOver(self.progress > 0.999),
+    },
+    onUpdate: () => handOver(tl.progress() > 0.999),
+  });
+  tl.fromTo(name, { x: 0, y: 0, scale: 1 }, { x: () => geo.dx, y: () => geo.dy, scale: () => geo.s, ease: 'power2.inOut', duration: 1 }, 0).fromTo(
+    g,
+    { opacity: 1, scale: 1, yPercent: 0 },
+    { opacity: 0, scale: 0.94, yPercent: -3, ease: 'power1.out', duration: 0.6 },
+    0,
+  );
+
+  return () => {
+    nav.classList.remove('is-docked');
+    mark.classList.remove('is-docking');
+    mark.style.visibility = '';
+  };
 }
 
 function shop(main: HTMLElement, arrivedByFlight: boolean): void {
@@ -165,7 +244,7 @@ function product(main: HTMLElement, arrivedByFlight: boolean): void {
     gsap.set(pl, { '--p': 0 });
     ScrollTrigger.create({ trigger: pl, start: 'top 85%', once: true, onEnter: () => printPlate(pl, 0, 0.8) });
   });
-  gsap.from(main.querySelectorAll('.product__hold > *'), { opacity: 0, y: 10, duration: 0.55, ease: 'expo.out', stagger: 0.04, delay: arrivedByFlight ? 0.35 : 0.15 });
+  gsap.from(main.querySelectorAll('.product__hold > *'), { opacity: 0, y: 10, duration: 0.55, ease: 'expo.out', stagger: 0.04, delay: arrivedByFlight ? 0.35 : 0.15, lazy: false });
   const next = main.querySelector<HTMLElement>('.next-dress__plate');
   if (next) {
     gsap.set(next, { '--p': 0 });

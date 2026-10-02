@@ -2,10 +2,12 @@
  * The document shell every storefront page shares: head (SEO, alternates, assets), the three-zone
  * header, <main> (the only part the client router swaps), the footer.
  */
+import { markSvg, nameSvg } from '../../shared/brand';
 import { CATEGORIES, SIZES, SIZE_LETTER } from '../../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
+import { brandSprite } from './brand';
 
 export interface PageOptions {
   lang: Lang;
@@ -26,7 +28,8 @@ export interface PageOptions {
   jsonLd?: object[];
   /** Serialised into data-page for the client (escaped as an attribute). */
   data?: object;
-  preload?: string;
+  /** The page's main photograph, fetched before anything else (a single file or a responsive set). */
+  preload?: string | { srcset: string; sizes: string; type: string };
 }
 
 const B = String.fromCharCode(92);
@@ -57,7 +60,7 @@ export const assetTags = assets;
 
 function header(lang: Lang, o: PageOptions): Raw {
   const t = copy[lang];
-  return html`<header class="nav${o.overPhoto ? '' : ' is-solid'}" data-nav>
+  return html`<header class="nav${o.overPhoto ? '' : ' is-solid'}" data-nav${o.kind === 'home' ? raw(' data-dock') : ''}>
     <div class="nav__left">
       <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
       <nav class="nav__list" aria-label="${t.nav.shop}">
@@ -65,7 +68,7 @@ function header(lang: Lang, o: PageOptions): Raw {
         ${CATEGORIES.map((c) => html`<a class="tlink" href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
       </nav>
     </div>
-    <a class="nav__wordmark wordmark" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${t.hero.wordmark}</a>
+    <a class="nav__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(nameSvg('nav__name'))}</a>
     <div class="nav__right">
       <span class="nav__langs">${LANGS.map((l) => html`<a class="tlink" href="${href(o.path, l, o.params ?? {})}" hreflang="${l}" lang="${l}" data-lang-link="${l}" data-no-router${l === lang ? raw(' aria-current="true"') : ''}>${copy[l].langShort}</a>`)}</span>
       <button class="tlink" type="button" data-open="search" aria-haspopup="dialog">${t.nav.search}</button>
@@ -97,6 +100,10 @@ function footer(lang: Lang, o: PageOptions): Raw {
           ${CATEGORIES.map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
           <span class="foot__sizes">${SIZES.map((s) => html`<a href="${href('/dyqani', lang, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}">${s}</a>`)}</span>
         </div>
+      </div>
+      <div class="foot__seal">
+        <a class="foot__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(markSvg('foot__mark'))}</a>
+        <p class="foot__line" lang="en">${t.shop.tagline}</p>
       </div>
       <div class="foot__bottom">
         <span>${SITE.name}, ${t.footer.city}</span>
@@ -135,13 +142,19 @@ export function page(o: PageOptions): string {
     <meta property="og:type" content="${o.kind === 'product' ? 'product' : 'website'}" />
     <meta property="og:locale" content="${{ sq: 'sq_AL', en: 'en_GB', fr: 'fr_FR' }[o.lang]}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="/brand/monogram.jpg" />
-    <link rel="apple-touch-icon" href="/brand/monogram.jpg" />
-    ${o.preload ? html`<link rel="preload" as="image" href="${o.preload}" fetchpriority="high" />` : ''}
+    <link rel="icon" href="/brand/favicon-32.png" sizes="32x32" />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    ${typeof o.preload === 'string'
+      ? html`<link rel="preload" as="image" href="${o.preload}" fetchpriority="high" />`
+      : o.preload
+        ? html`<link rel="preload" as="image" imagesrcset="${o.preload.srcset}" imagesizes="${o.preload.sizes}" type="${o.preload.type}" fetchpriority="high" />`
+        : ''}
     ${assets('store')}
     ${ld}
   </head>
   <body data-lang="${o.lang}">
+    ${brandSprite()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}
     <main id="main" tabindex="-1" data-page="${o.kind}" data-nav-mode="${o.overPhoto ? 'photo' : 'solid'}" data-page-json="${o.data ? JSON.stringify(o.data) : ''}">

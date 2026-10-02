@@ -16,13 +16,11 @@ colors:
   on-photo: "#ffffff"
   error: "#b3261e"
   ok: "#1d6b3a"
+  gold: "#a28d51"
+  gold-light: "#d9c48c"
+  gold-deep: "#857240"
+  ivory: "#f3f3e7"
 typography:
-  wordmark-hero:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    fontSize: "clamp(1.5rem, 8.4vw, 5.5rem)"
-    fontWeight: 600
-    lineHeight: 1.05
-    letterSpacing: "0.14em"
   display-order:
     fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "clamp(88px, 22vw, 260px)"
@@ -85,11 +83,6 @@ typography:
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "0.02em"
-  wordmark:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    fontSize: "12px"
-    fontWeight: 600
-    letterSpacing: "0.22em"
   micro:
     fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "10px"
@@ -214,10 +207,12 @@ The shop is Greta's lookbook, printed in the client's pinned house style. The ma
 
 Density is calm on the storefront and tight in the admin. The storefront gives one dress per viewport, lets the photograph take seven of eleven columns, and keeps everything else in 12px uppercase so the dress is the only loud thing on the screen. Hierarchy comes from size contrast inside one family (12px labels against 20px prices, 22px size numerals and 56 to 96px page numerals) rather than from weight, colour or a second typeface. The admin (Operate mode, Albanian) shares every token and trades the white page for a grey ground with white cards and dense rows.
 
-Motion carries the book metaphor and nothing else: the page turn, the print under a 1px scan bar, the photograph's flight from spread to product page, the size fold, the drop into the bag. GSAP is the only engine and `gsap.ticker` the only scheduler; there is no pin, no snap, no smooth-scroll library. Rejected, and confirmed by the brief: the square product grid with badges and a filter sidebar.
+The shop signs with its own logo, the gold script G with DRESSES BY GRETA across it from its Instagram picture (see Brand under Components). The logo is a drawing kept in its own gold; it is not type and not an accent colour.
+
+Motion carries the book metaphor and one brand moment, nothing else: the page turn, the print under a 1px scan bar, the photograph's flight from spread to product page, the size fold, the drop into the bag, and on home the logo's name handing over from the hero to the header. GSAP is the only engine and `gsap.ticker` the only scheduler; there is no pin, no snap, no smooth-scroll library. Rejected, and confirmed by the brief: the square product grid with badges and a filter sidebar.
 
 **Key Characteristics:**
-- White ground, black ink, the dresses as the only colour.
+- White ground, black ink, the dresses as the only colour; the logo alone keeps its gold.
 - One Helvetica stack, no webfont; 12px uppercase chrome, 14px body, large numerals as the only display type.
 - Square corners everywhere; 1px hairlines and 1px ink rules as the only structure.
 - One dress per spread: photograph in columns 1 to 7, second photograph or page numeral plus caption in columns 8 to 11.
@@ -225,7 +220,7 @@ Motion carries the book metaphor and nothing else: the page turn, the print unde
 
 ## Colors
 
-A monochrome page whose only colour arrives in the photographs.
+A monochrome page whose only colour arrives in the photographs, plus the gold of Greta's own logo.
 
 ### Primary
 - **Press Black** (ink): all primary text, the filled buttons, the selected size toggle, the scan bar, the 1px ink rules that open a numeral block, the contents list and the checkout head. There is no accent; black is the action colour.
@@ -247,8 +242,14 @@ A monochrome page whose only colour arrives in the photographs.
 - **Signal Red** (error): errors only: invalid field borders, field messages, the checkout error box, the bag's "no longer available" warning. Never decoration, never a sale price.
 - **Ledger Green** (ok): admin only, on the status pills for live dresses and new or confirmed orders. Never on the storefront.
 
+### Brand (the logo's own colours, sampled from the Instagram picture)
+- **Logo Gold** (gold): the logo on paper at full size: the footer seal, the follow-card avatar, the icons and the link preview.
+- **Logo Gold Deep** (gold-deep): the same gold deepened for the small name line on white (4.7:1): the header once solid, the admin top bar and sign-in (Luca's choice, 2026-10-02).
+- **Logo Gold Light** (gold-light): the same gold lifted for the hero photograph, the transparent header over it, and the dark menu's seal.
+- **Ivory** (ivory): the logo's ground: the follow card's avatar disc, the tab icon and the link-preview card. Never a page or panel ground.
+
 ### Named Rules
-**The Dresses-Only Rule.** No accent colour, no tinted surfaces, no coloured badges. If a pixel on the storefront has hue, it belongs to a photograph (or to an error).
+**The Dresses-and-Seal Rule.** No accent colour, no tinted surfaces, no coloured badges. If a pixel on the storefront has hue, it belongs to a photograph, to an error, or to the logo. The logo's gold never colours type, rules, controls, hover or focus.
 
 **The Two-Line Rule.** Structure is drawn with exactly two lines: the 1px hairline that separates, and the 1px ink rule that opens a block (the page numeral, the contents list, the confirmation title, the checkout head, the INDEKSI cell, the order total).
 
@@ -261,7 +262,6 @@ A monochrome page whose only colour arrives in the photographs.
 **Character:** One grotesque in two registers: small uppercase chrome that reads as a garment label, and large tight-tracked numerals that read as the folio of a printed book. Prices and every number use tabular figures.
 
 ### Hierarchy
-- **Hero wordmark** (600, clamp(1.5rem, 8.4vw, 5.5rem) on phones, clamp(2rem, 5.6vw, 5.5rem) on one line from 768px, 1.05, 0.14em, uppercase, white): the one large word on the site, centred on the hero photograph, with a soft legibility lift (text-shadow 0 1px 28px at 40% black).
 - **Order numeral** (400, clamp(88px, 22vw, 260px), 0.8, -0.05em): the confirmation page's order number, the one display moment allowed past the cap.
 - **Page numeral** (400, clamp(56px, 6.4vw, 96px), 0.8, -0.04em): a one-photograph dress's page number in the spread's side column, with "/ 39" at 12px beside it. The test-bank amount uses the sibling scale clamp(40px, 8vw, 96px).
 - **Size numeral** (400, 22px, 1, -0.01em): the desktop size index cells.
@@ -270,13 +270,12 @@ A monochrome page whose only colour arrives in the photographs.
 - **Body** (400, 14px, 1.55, max 60ch) and **Body large** (16px, 1.5, max 56ch): descriptions, notes, empty states.
 - **Heading** (400, 12px, 1.4, 0.08em, uppercase): section and page titles (SHOP bar, spread names, checkout legends, confirmation label).
 - **Label** (400, 12px, 1.4, 0.02em, uppercase): all chrome: nav, buttons, text controls, folios, accordion rows, field labels, totals.
-- **Wordmark** (600, 12px, 0.22em, uppercase): the header and popup mark.
 - **Micro** (400, 10px, 0.04em): size letters (XS to XL) under numerals and the stock counts on the size index.
 
 ### Named Rules
-**The One-Stack Rule.** One family, no webfont, no display serif. Hierarchy is size and tracking, never a second face.
+**The One-Stack Rule.** One family, no webfont, no display serif. Hierarchy is size and tracking, never a second face. The logo is a drawing: its serif capitals (Libre Baskerville, fitted to the Instagram picture) exist only as outlines in the page's sprite and are never set as live text.
 
-**The Six-Rem Cap.** Display numerals stop at 6rem (96px). Only the confirmation order number and the hero wordmark may exceed it.
+**The Six-Rem Cap.** Display numerals stop at 6rem (96px). Only the confirmation order number may exceed it (the hero logo is a drawing, not type).
 
 **The Folio-Below Rule.** Folios ("01 / 39") live in the foot row of a caption or product page, beside the SHIKO FUSTANIN or back link, never above a heading.
 
@@ -287,7 +286,7 @@ The pinned stack renders as true Helvetica only on Apple devices; on Windows and
 
 A mobile-first page with gutters of 16px, 24px from 640px and 40px from 1024px, a 49px header on phones and 54px from 1024px, and a 4px spacing scale (4 to 128). Breakpoints: 640, 768, 1024 (the admin adds 900).
 
-**Header.** Fixed, three zones. Transparent with white text over the hero, solid white with a hairline once the hero has scrolled past, on every other page, and while a drawer is open. Phones: MENU, wordmark, ÇANTA. From 1024px: SHOP and the category list left (open one underlined), wordmark centre, EN, KËRKO, ÇANTA right; side padding 30px.
+**Header.** Fixed, three zones. Transparent with white text over the hero, solid white with a hairline once the hero has scrolled past (on home with motion: the moment the logo's name lands in it), on every other page, and while a drawer is open. Phones: MENU, the logo's name line, ÇANTA. From 1024px: SHOP and the category list left (open one underlined), the name line centre, SQ, EN, FR, KËRKO, ÇANTA right; side padding 30px. Known: at 1024 to 1100px the English and French category labels "Mini & midi" and the TV link wrap to two lines (they did with the old wordmark too).
 
 **The Shop.** Under the header a 44px bar. From 1024px it is the slim SHOP bar (title plus count, sticky, hairline below); below 1024px it is replaced by the sticky size strip, a horizontally scrolling row (TË GJITHA, 34 to 42 with a raised count, INDEKSI at the right end, a category chip with a drawn X when a category is open). From 1024px the body is two columns: the spreads, and a 132px size index with a hairline on its left, sticky, cells for TË GJITHA and 34 to 42 (22px numeral, size letter, count at top right, hairline between) and INDEKSI closing the column under an ink rule.
 
@@ -308,14 +307,14 @@ A mobile-first page with gutters of 16px, 24px from 640px and 40px from 1024px, 
 
 ## Elevation & Depth
 
-Flat. There are no box shadows, no glass, no blur on interface surfaces. Depth is conveyed by stacking and motion: sticky sheets slide over each other, the previous sheet recedes to 0.94 scale and 45% opacity, drawers slide over a 20% black backdrop (35% for the follow card), and a flying photograph travels above everything (z 70). The only shadow on the site is the hero wordmark's legibility lift, which belongs with the hero overlays; the square radio marks use an inset 3px ring in the ground colour to draw the gap between frame and fill, which is a drawing technique, not elevation.
+Flat. There are no box shadows, no glass, no blur on interface surfaces. Depth is conveyed by stacking and motion: sticky sheets slide over each other, the previous sheet recedes to 0.94 scale and 45% opacity, drawers slide over a 20% black backdrop (35% for the follow card), and a flying photograph travels above everything (z 70). There is no shadow on the site; the square radio marks use an inset 3px ring in the ground colour to draw the gap between frame and fill, which is a drawing technique, not elevation.
 
 ### Named Rules
 **The Paper Rule.** Surfaces are paper: white, flat, separated by hairlines. Depth appears only while something moves.
 
 ## Shapes
 
-Every corner is square (0px), including inputs (the browser radius is reset). Form comes from 1px frames: square size toggles (48px, 44px in a phone caption, 52px in the menu drawer) with a hairline frame that turns ink on hover and fills black when chosen; a sold-out toggle is struck corner to corner by one hairline at -24 degrees and stays visible. Radio marks are 14px (16px in the admin) squares that fill black. The accordion chevron is two 1px borders of a 9px square, rotated. The bag's quantity control draws its plus and minus as 1.2px SVG strokes; closing X marks are drawn the same way. Photographs are 3:4 wells in lists and cover-cropped full-height plates on spreads and product pages; the viewer alone shows them whole.
+Every corner is square (0px), including inputs (the browser radius is reset) and the tab icon. The one circle on the site is the follow card's avatar disc, which quotes the Instagram profile picture. Form comes from 1px frames: square size toggles (48px, 44px in a phone caption, 52px in the menu drawer) with a hairline frame that turns ink on hover and fills black when chosen; a sold-out toggle is struck corner to corner by one hairline at -24 degrees and stays visible. Radio marks are 14px (16px in the admin) squares that fill black. The accordion chevron is two 1px borders of a 9px square, rotated. The bag's quantity control draws its plus and minus as 1.2px SVG strokes; closing X marks are drawn the same way. Photographs are 3:4 wells in lists and cover-cropped full-height plates on spreads and product pages; the viewer alone shows them whole.
 
 ## Components
 
@@ -351,6 +350,16 @@ Desktop: a 132px sticky column of cells separated by hairlines; the chosen size 
 - **Focus:** frame and a 1px outline both turn ink, outline offset 0.
 - **Error:** the frame turns signal red and a 12px red message follows. Choices (zone, payment) are full-width hairline-framed rows with a square radio mark; the frame turns ink when chosen.
 
+### Brand
+The logo comes from the shop's own Instagram picture (raw/instagram/brand/profile-hd.jpg, 399px): tools/brand-logo.py traces the G and sets the 10px line of capitals in Libre Baskerville 600 at the original letter positions, writing src/shared/brand-logo.ts and public/brand/logo.svg; tools/brand-assets.mjs makes the icons and the link preview. Never redraw, recolour or re-letter it; regenerate it. Every page carries one inline sprite of the outlines; each placement is an `<svg>` with `<use>` coloured through `currentColor`, aria-hidden, its link or heading named in words.
+- **Header:** the name line alone: phones min(206px, 100vw - 180px), never under 140px; from 1024px 160px rising to 236px at 1280px. Gold light over the hero photograph, gold deep once the header is solid.
+- **Hero:** the whole logo, gold light, where the photograph is quiet and never on the dress (Luca's choice, 2026-10-02): in portrait screens centred in the dark trees above her head, min(80vw, 22svh) wide, 2.5svh under the header; in landscape screens in the dark left third, min(26vw, 44svh, 440px) wide, 6vw from the left edge, centred in height. It is the h1 (with the shop's name as hidden text). No shade behind it.
+- **Menu:** a 64px gold-light seal centred in the dark sheet's bar, linking home.
+- **Footer:** the whole logo in gold, 208px (248px from 1024px), with "Elegance that endures" under it in 12px uppercase at 0.22em in ink 55, between the link columns and the bottom row.
+- **Follow card:** an 88px ivory disc holding the 66px logo, the picture visitors will find on Instagram.
+- **Admin:** the name line at 168px in gold deep on the top bar and the sign-in screen.
+- **Icons and previews:** square ivory tab icon (SVG and 32px PNG) with the G's strokes thickened for small sizes; 180px apple-touch icon; a 1200 by 630 ivory link-preview card with the gold logo (home and shop; product pages keep their dress).
+
 ### Navigation and drawers
 Native dialogs over a 20% backdrop. Menu from the left (min(370px, 92vw)): categories 12px parents, 14px uppercase children, five 52px size squares, language and search rows. Bag from the right: 72 by 96px thumbnails, size and price row, the drawn plus/minus quantity box, remove as an underlined text control, total and one black button in the hairline-topped foot. Search from the top: a 54px field and 3:4 result wells in 2, 4 then 6 columns.
 
@@ -374,29 +383,34 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 - **The flight:** a clone of the photograph flies from the spread or the contents preview to the same dress on the product page, 0.75s expo.inOut, then hands over in 0.18s.
 - **The size fold:** visible spreads without the tapped size close upward (clip to the top) in 0.42s power3.in, staggered 0.04s, while the staying captions dim to 35%; then the list swaps.
 - **The drop into the bag:** the photograph shrinks to a 28px 3:4 clone into the header's bag link, 0.6s power3.in; the count pops from 1.6 scale.
-- **Drawers:** 0.42s power3.out in, 0.26s power3.in out. **Hero:** the wordmark resolves from 0.3em tracking, the photograph drifts 6% and the wordmark fades on scroll.
-- **Reduced motion:** no slide, turn, flight, fold or drift; drawers open without travel; everything is visible by default.
+- **Drawers:** 0.42s power3.out in, 0.26s power3.in out. **Hero:** the photograph drifts 6% downward inside its frame as the hero scrolls (it lags the page, so the edge it uncovers is already out of sight). The logo has no entrance: it is on the first paint and stays.
+- **The hand-over (home):** over the first 55% of a viewport of scroll (scrub 0.5) the hero's logo is held on screen (fixed, in a box the hero's own small-viewport height, so a collapsing phone toolbar does not move it): the G fades and recedes to 0.94, and the name line travels and shrinks (power2.inOut) onto the header's own copy, which takes over exactly as the header turns to paper. Any refresh re-syncs the state. Scrolling back up, or the header logo on home (a smooth scroll to the top instead of a reload), runs it in reverse.
+- **Delayed entrances** use `lazy: false`: a lazily rendered start state was wiped by the next ScrollTrigger created in the same task, and the element blinked.
+- **Reduced motion:** no slide, turn, flight, fold, drift or hand-over (both logos simply show); drawers open without travel; everything is visible by default.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the page white, the ink black and the photographs the only colour.
+- **Do** keep the page white, the ink black and the photographs the only colour besides the logo's own gold.
+- **Do** place the logo only from the page's sprite: gold on paper, gold deep for the small name line on white, gold light on photographs and the dark menu.
+- **Do** keep the hero logo off the dress, where the photograph is quiet.
 - **Do** set every piece of chrome in 12px uppercase at 0.02em (0.08em for headings) and body at 14px.
 - **Do** give each dress its own spread: photograph in columns 1 to 7, second photograph or page numeral under a 1px ink rule plus the caption in columns 8 to 11.
 - **Do** use one full-width black button per caption and per product page.
 - **Do** keep sold-out sizes visible and struck (diagonal hairline in toggles, line-through in lists).
 - **Do** put folios in foot rows and set every number in tabular figures.
 - **Do** span the phone caption flush across the photograph's lower edge.
-- **Do** cap display numerals at 6rem, except the confirmation order number and the hero wordmark.
+- **Do** cap display numerals at 6rem, except the confirmation order number.
 - **Do** use signal red (#b3261e) only for errors, and ledger green only in the admin.
 - **Do** keep every motion inside GSAP with a reduced-motion fallback where the finished page is the CSS default.
 
 ### Don't:
-- **Don't** add an accent colour, a tinted surface or a coloured badge.
+- **Don't** add an accent colour, a tinted surface or a coloured badge; the logo's gold is not an accent and never colours type, rules, controls, hover or focus.
 - **Don't** use gradients beyond the hero overlay and its header gradient.
-- **Don't** use box shadows, glass or backdrop blur; the hero wordmark's legibility lift is the only shadow.
-- **Don't** round a corner.
-- **Don't** add a second font or a display serif.
+- **Don't** use box shadows, glass or backdrop blur.
+- **Don't** round a corner; the follow card's avatar disc is the one circle.
+- **Don't** add a second font or a display serif; the logo's capitals are drawing, never live text.
+- **Don't** redraw, recolour or re-letter the logo; regenerate it with tools/brand-logo.py.
 - **Don't** put eyebrows or kickers above headings, or a folio above a heading.
 - **Don't** add section numbers or scroll cues to marketing sections.
 - **Don't** build a square product grid with badges and a filter sidebar.
@@ -408,5 +422,9 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 
 - **Menu:** a dark sheet copied from the Babyboo mobile menu Luca pinned: ground #1f1f1f, white ink, secondary text at 62%, rules at 20% white; rows are 13px uppercase at 0.22em tracking, 80px tall, each opening in place under a hairline plus that turns into a minus; grey sentence-case secondary links; the three languages; the Instagram mark at the foot; a thin X closes it from the top left. It is the second dark surface after the hero photograph and the only dark chrome.
 - **Languages:** Albanian, English and French. The header shows SQ, EN and FR on desktop with the current one underlined; phones choose in the menu. French reads the English product names and descriptions (the admin keeps two languages).
-- **Hero:** the rose-garden photograph (pink and mint tulle gown), framed at 50% 42% so the face sits above the wordmark on desktop.
+- **Hero:** the rose-garden photograph (pink and mint tulle gown), framed at 50% 42%.
 - **Empty shop:** the brand line "Elegance that endures" in English in every language, 600 weight uppercase at clamp(30px, 6vw, 84px), with the Instagram button.
+- **Branding** (Luca: "make it with branding", then "get the instagram logo"): the shop's Instagram logo replaces the 12px Helvetica wordmark in the header and the big hero wordmark, seals the dark menu and the footer, becomes the follow card's avatar, the icons and the link preview (see Brand). The hero's name line hands over to the header on scroll. Checked by an Impeccable critique (dual review, 20/32 before fixes); fixed from it: the hand-over re-syncs on every refresh, the header turns to paper as the name lands, a white focus ring over the photograph, no logo entrance (it blinked), the 1024px header back to the old wordmark's width, a larger footer seal, a square tab icon. Fixed on the way: the hero photograph drifted up and showed its blurred stand-in, and client navigation kept the previous page's scroll (smooth scroll on html plus the ScrollTrigger refresh).
+
+- **Hero photograph in HD (2026-10-02, Luca: "on pc it very blury"):** the 825px copy is replaced by the same photograph from the shop's own Reel cover (1216 by 2160, a slightly narrower 9:16 frame), enlarged 2x with Real-ESRGAN general-x4v3 blended 70/30 with Lanczos (tools/hero-upscale.py), served as WebP with JPEG fallbacks at 828, 1216, 1824 and 2432px with sizes 100vw and a matching preload (tools/hero-variants.py, which also rewrites the blurred stand-in). A 1440 or 1920px screen now gets a file wider than itself.
+- **Decided 2026-10-02 (Luca, after the critique):** the hero logo moved off the dress into the quiet foliage (above her head in portrait, the left third in landscape) and the shade behind it went; the header's name line takes the deepened gold on white.

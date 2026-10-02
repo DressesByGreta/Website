@@ -271,8 +271,10 @@
     border-color var(--d-nav) var(--ease-color);
 }
 
+/* is-docked: on home the header turns to paper the moment the logo's name lands in it */
 .nav.is-scrolled,
 .nav.is-solid,
+.nav.is-docked,
 html.drawer-open .nav {
   background: var(--ground);
   color: var(--ink);
@@ -308,13 +310,6 @@ html.drawer-open .nav {
 .nav__list {
   display: none;
   gap: var(--s-1);
-}
-
-.nav__wordmark {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 var(--s-3);
 }
 
 .nav__count {

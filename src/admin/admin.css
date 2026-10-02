@@ -73,9 +73,18 @@ body {
 
 .adm-brand {
   display: flex;
-  align-items: baseline;
-  gap: var(--s-2);
+  align-items: center;
+  gap: var(--s-3);
   padding: var(--s-3) 0;
+}
+
+/* the shop's logo line (its sprite is in the admin shell), in the gold deepened for small sizes */
+.adm-brand__name {
+  display: block;
+  width: 168px;
+  height: auto;
+  color: var(--gold-deep);
+  overflow: visible;
 }
 
 .adm-brand__sub {

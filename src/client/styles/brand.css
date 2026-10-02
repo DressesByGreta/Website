@@ -1,0 +1,187 @@
+/* The brand: Greta's own logo, traced from her Instagram picture (tools/brand-logo.py), in its
+   own gold (tokens.css). The site stays black on white; the gold belongs to the logo alone.
+   One copy of the outlines per page (the sprite, base.css); every placement is an <svg> that
+   points into it. */
+
+/* ---------- header: the logo's line of capitals in the centre zone ---------- */
+.nav__brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  color: var(--gold-light);
+  transition: color var(--d-nav) var(--ease-color);
+}
+
+/* on white the 8px line takes the deepened gold so it reads (Luca's choice, 2026-10-02) */
+.nav.is-scrolled .nav__brand,
+.nav.is-solid .nav__brand,
+.nav.is-docked .nav__brand,
+html.drawer-open .nav .nav__brand {
+  color: var(--gold-deep);
+}
+
+/* on phones the name takes what MENU and the bag (with its count) leave of the bar */
+.nav__name {
+  display: block;
+  width: clamp(140px, calc(100vw - 180px), 206px);
+  height: auto;
+  overflow: visible;
+}
+
+/* from 1024 it grows with the bar: at 1024 no wider than the old 12px wordmark, so the links
+   beside it keep the room they had; full size from 1280 */
+@media (min-width: 1024px) {
+  .nav__name {
+    width: clamp(160px, calc(30vw - 147px), 236px);
+  }
+}
+
+/* Home (data-dock): the name is still part of the logo in the hero until motion.ts hands it
+   over up here. The hand-over is exact, so it needs no fade. Once the header is paper the name
+   always shows, whatever the hand-over state. Without motion both simply show. */
+@media (prefers-reduced-motion: no-preference) {
+  .nav[data-dock]:not(.is-docked):not(.is-scrolled) .nav__brand {
+    visibility: hidden;
+  }
+}
+
+/* over the photograph the black focus ring would vanish */
+.nav:not(.is-scrolled):not(.is-solid):not(.is-docked) :focus-visible {
+  outline-color: var(--on-photo);
+}
+
+/* ---------- hero: the whole logo where the photograph is quiet, never on the dress ---------- */
+.hero-brand {
+  position: relative;
+  display: block;
+  color: var(--gold-light);
+}
+
+/* Portrait: the dark trees above her head (her head starts about 30% down the frame). */
+@media (max-aspect-ratio: 1/1) {
+  .hero__mark {
+    place-items: start center;
+    padding-top: calc(var(--header-h) + env(safe-area-inset-top) + 2.5svh);
+  }
+  .hero-brand {
+    width: min(80vw, 22svh);
+  }
+}
+
+/* Landscape: the dark left third, beside her raised arm. */
+@media (min-aspect-ratio: 1/1) {
+  .hero__mark {
+    place-items: center start;
+    padding-left: 6vw;
+  }
+  .hero-brand {
+    width: min(26vw, 44svh, 440px);
+  }
+}
+
+.hero-brand__g,
+.hero-brand__name {
+  position: absolute;
+  display: block;
+}
+
+.hero-brand__g svg,
+.hero-brand__name svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.hero-brand__name {
+  transform-origin: 0 0;
+}
+
+/* While the name travels to the header the logo is held on screen; the photograph scrolls
+   away beneath it and the G fades (motion.ts). Its box is the hero's own (small viewport
+   height), so a phone toolbar that collapses mid-scroll does not move it. Without motion it
+   simply scrolls with the hero. */
+.hero__mark.is-docking {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: max(100svh, 560px);
+  z-index: calc(var(--z-nav) - 1);
+}
+
+.hero__mark.is-docking .hero-brand__g,
+.hero__mark.is-docking .hero-brand__name {
+  will-change: transform, opacity;
+}
+
+/* ---------- menu: the logo as a seal in the dark sheet's bar ---------- */
+.drawer__bar--x {
+  position: relative;
+}
+
+.drawer__brand {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 7px);
+  left: 50%;
+  translate: -50% 0;
+  display: block;
+  color: var(--gold-light);
+}
+
+.drawer__mark {
+  display: block;
+  width: 64px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ---------- footer: the logo signs the page, large enough for its name to read ---------- */
+.foot__seal {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-8);
+}
+
+.foot__brand {
+  display: block;
+  color: var(--gold);
+}
+
+.foot__mark {
+  display: block;
+  width: 208px;
+  height: auto;
+  overflow: visible;
+}
+
+.foot__line {
+  font-size: var(--fs-ui);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@media (min-width: 1024px) {
+  .foot__mark {
+    width: 248px;
+  }
+}
+
+/* ---------- follow card: the picture people will find on Instagram (the one circle) ---------- */
+.popup__avatar {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--ivory);
+  color: var(--gold);
+}
+
+.popup__mark {
+  display: block;
+  width: 66px;
+  height: auto;
+  overflow: visible;
+}

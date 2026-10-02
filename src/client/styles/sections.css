@@ -68,28 +68,9 @@
   pointer-events: none;
 }
 
+/* the title is the logo (brand.css); its words are there for readers and search */
 .hero__title {
-  font-size: clamp(1.5rem, 8.4vw, 5.5rem);
-  line-height: 1.05;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-align: center;
-  text-wrap: balance;
-  max-width: 100%;
-  /* soft lift so the wordmark reads over busy, bright fabric on phones */
-  text-shadow: 0 1px 28px rgba(0, 0, 0, 0.4);
-}
-
-@media (min-width: 768px) {
-  .hero__title {
-    font-size: clamp(2rem, 5.6vw, 5.5rem);
-    white-space: nowrap;
-  }
-}
-
-.hero__title .amp {
-  display: none;
+  line-height: 0;
 }
 
 .hero__content {
