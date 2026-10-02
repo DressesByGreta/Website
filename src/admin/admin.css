@@ -120,6 +120,10 @@ body {
   border-bottom-color: var(--ink);
 }
 
+.adm-tab__no {
+  display: none;
+}
+
 /* Phones: the name and the two links on one row, the tabs on the next; five tabs are wider than a
    phone, so the row scrolls sideways, fades where more tabs wait, and shows the open one. */
 @media (max-width: 767.98px) {
@@ -223,14 +227,29 @@ body {
 }
 
 .adm-h1 {
-  font-size: 20px;
+  font-size: clamp(32px, 4.4vw, 64px);
   font-weight: 400;
-  letter-spacing: 0.02em;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: var(--s-3);
-  margin-bottom: var(--s-5);
+  gap: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-6);
+  overflow-wrap: anywhere;
+}
+
+/* the count rides the title's cap height, small and grey, like a footnote figure */
+.adm-h1 .adm-count {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  line-height: 1;
+  padding-top: 0.35em;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-h1 .adm-pill {
+  align-self: center;
 }
 
 .adm-head .adm-h1 {
@@ -445,7 +464,7 @@ body {
   max-width: 520px;
 }
 
-.adm-bar {
+.adm-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-3);
@@ -455,7 +474,7 @@ body {
 }
 
 .adm-search {
-  max-width: 260px;
+  max-width: 320px;
 }
 
 .adm-filters {
@@ -501,19 +520,25 @@ body {
 
 .adm-list {
   display: grid;
-  gap: 1px;
-  background: var(--hairline);
-  border: 1px solid var(--hairline);
+  container-type: inline-size;
+  border-top: 1px solid var(--ink);
+  background: var(--ground);
 }
 
+/* A row reads like a catalogue line: number, photograph, name and state, price, stock by size. */
 .adm-row {
   display: grid;
-  grid-template-columns: 16px 48px minmax(0, 1fr) auto;
-  grid-template-areas: 'grip thumb main order' 'grip thumb stock order';
+  grid-template-columns: 16px 60px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'grip thumb main order'
+    'grip thumb price order'
+    'stock stock stock stock';
   align-items: center;
-  gap: 4px var(--s-3);
-  padding: var(--s-2) var(--s-3);
+  gap: 6px var(--s-3);
+  padding: var(--s-3);
   background: var(--ground);
+  border-bottom: 1px solid var(--hairline);
+  transition: background-color var(--d-hover) var(--ease-color);
 }
 
 .adm-row.is-drag {
@@ -526,6 +551,15 @@ body {
   cursor: grab;
 }
 
+.adm-row__no {
+  display: none;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
 .adm-list.no-order .adm-row__grip,
 .adm-list.no-order .adm-row__order {
   visibility: hidden;
@@ -533,59 +567,135 @@ body {
 
 .adm-row__thumb {
   grid-area: thumb;
-  width: 48px;
-  height: 64px;
+  width: 60px;
+  height: 80px;
+  overflow: hidden;
   background: var(--ground-2);
 }
 
 .adm-row__thumb img {
-  width: 48px;
-  height: 64px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 22%;
+  transition: transform 0.6s var(--ease-out);
 }
 
 .adm-row__main {
   grid-area: main;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
+  align-self: end;
 }
 
 .adm-row__name {
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
   text-decoration: underline;
   text-underline-offset: 0.2em;
-  text-decoration-color: rgba(0, 0, 0, 0.25);
+  text-decoration-color: transparent;
+  justify-self: start;
+  transition: text-decoration-color var(--d-hover) var(--ease-color);
 }
 
 .adm-row__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px var(--s-2);
+  gap: 6px var(--s-3);
   font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
   color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
 }
 
+/* state as words with a square mark: filled ledger green when live, an open frame for a draft */
+.adm-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.adm-state::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink-3);
+}
+
+.adm-state.is-live {
+  color: var(--ok);
+}
+
+.adm-state.is-live::before {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.adm-row__note {
+  color: var(--ink-3);
+}
+
+.adm-row__price {
+  grid-area: price;
+  font-size: 20px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  align-self: start;
+}
+
+.adm-row__price.is-missing {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--error);
+}
+
+/* stock by size as the shop's size toggles: a hairline square each, an empty size struck across */
 .adm-row__stock {
   grid-area: stock;
-  display: flex;
-  gap: var(--s-2);
-  font-size: var(--fs-ui);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   font-variant-numeric: tabular-nums;
 }
 
-.adm-row__stock b {
-  font-weight: 400;
-  color: var(--ink-3);
-  margin-right: 3px;
+.adm-cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 0 5px;
+  border: 1px solid var(--hairline);
+  margin-left: -1px;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1;
 }
 
-.adm-row__stock .is-zero {
+.adm-cell b {
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.04em;
   color: var(--ink-3);
 }
+
+.adm-cell.is-zero {
+  color: var(--ink-3);
+}
+
+.adm-cell.is-zero::after {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 50%;
+  border-top: 1px solid var(--hairline);
+  transform: rotate(-24deg);
+}
+
 
 .adm-row__order {
   grid-area: order;
@@ -593,12 +703,122 @@ body {
   gap: 2px;
 }
 
-@media (min-width: 900px) {
+@media (hover: hover) and (pointer: fine) {
+  .adm-row:hover {
+    background: #fafafa;
+  }
+  .adm-row:hover .adm-row__thumb img {
+    transform: scale(1.06);
+  }
+  .adm-row:hover .adm-row__name {
+    text-decoration-color: var(--ink);
+  }
+}
+
+@container (min-width: 600px) {
   .adm-row {
-    grid-template-columns: 16px 48px minmax(0, 1fr) auto auto;
-    grid-template-areas: 'grip thumb main stock order';
+    grid-template-columns: 16px 60px minmax(0, 1fr) 220px auto;
+    grid-template-areas:
+      'grip thumb main stock order'
+      'grip thumb price stock order';
+    gap: 6px var(--s-4);
+    padding: var(--s-3) var(--s-4);
+  }
+}
+
+@container (min-width: 940px) {
+  .adm-row {
+    grid-template-columns: 16px 36px 60px minmax(0, 1fr) 128px 240px auto;
+    grid-template-areas: 'grip no thumb main price stock order';
     gap: var(--s-4);
   }
+  .adm-row__no {
+    display: block;
+    grid-area: no;
+  }
+  .adm-row__main {
+    align-self: center;
+  }
+  .adm-row__price {
+    align-self: center;
+    text-align: right;
+  }
+}
+
+/* ---------- the ledger: the dress list's filters as its figures ---------- */
+.adm-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--hairline);
+  border-left: 1px solid var(--hairline);
+  margin-bottom: var(--s-6);
+}
+
+.adm-ledger__cell {
+  display: grid;
+  align-content: space-between;
+  gap: var(--s-5);
+  min-height: 88px;
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  background: var(--ground);
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  transition: background-color var(--d-hover) var(--ease-color), color var(--d-hover) var(--ease-color);
+}
+
+.adm-ledger__n {
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-ledger__l {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.adm-ledger__cell.is-on {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.adm-ledger__cell.is-on .adm-ledger__l {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .adm-ledger__cell:not(.is-on):hover {
+    background: #fafafa;
+  }
+}
+
+@media (min-width: 768px) {
+  .adm-ledger {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .adm-ledger__cell {
+    min-height: 120px;
+    padding: var(--s-4);
+  }
+}
+
+@media (max-width: 639.98px) {
+  .adm-toolbar .adm-search {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+}
+
+.adm-toolbar__shown {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
 }
 
 .adm-pill {
@@ -1075,8 +1295,10 @@ body {
 }
 
 .adm-kpis dd {
-  margin: 4px 0 0;
-  font-size: 22px;
+  margin: var(--s-2) 0 0;
+  font-size: clamp(28px, 3vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1355,4 +1577,94 @@ body {
 
 .adm-toast.is-out {
   opacity: 0;
+}
+
+/* ---------- the rail: from 1024px the top bar stands down the left edge as a numbered index ---------- */
+@media (min-width: 1024px) {
+  :root {
+    --rail: 248px;
+  }
+  .adm-top {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--rail);
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+    padding: var(--s-6) var(--s-5) var(--s-5);
+    border-bottom: 0;
+    border-right: 1px solid var(--hairline);
+  }
+  .adm-brand {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+    padding: 0 0 var(--s-8);
+  }
+  .adm-tabs {
+    flex-direction: column;
+    gap: 0;
+    overflow: visible;
+    border-top: 1px solid var(--hairline);
+  }
+  .adm-tab {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    min-height: 48px;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid var(--hairline);
+    transition: color var(--d-hover) var(--ease-color), padding var(--d-hover) var(--ease-out);
+  }
+  .adm-tab__no {
+    display: block;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .adm-tab.is-on {
+    border-bottom-color: var(--ink);
+  }
+  .adm-tab.is-on .adm-tab__no {
+    color: var(--ink);
+  }
+  .adm-top__end {
+    margin: auto 0 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-1);
+  }
+  .adm-main,
+  .adm-demo {
+    margin-left: var(--rail);
+  }
+  .adm-main {
+    max-width: 1280px;
+    padding: var(--s-8) var(--s-7) var(--s-9);
+  }
+  .adm-savebar {
+    left: var(--rail);
+  }
+  .adm-toast {
+    left: calc(50% + var(--rail) / 2);
+  }
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .adm-tab:not(.is-on):hover {
+    color: var(--ink);
+    padding-left: var(--s-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-row__thumb img,
+  .adm-row__name,
+  .adm-tab {
+    transition: none;
+  }
+  .adm-row:hover .adm-row__thumb img {
+    transform: none;
+  }
 }
