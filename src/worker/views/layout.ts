@@ -3,7 +3,7 @@
  * header, <main> (the only part the client router swaps), the footer.
  */
 import { markSvg, nameSvg } from '../../shared/brand';
-import { CATEGORIES, SIZES, SIZE_LETTER, type ShopFilter } from '../../shared/catalog';
+import { CATEGORIES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, type ShopFilter } from '../../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
@@ -123,6 +123,10 @@ function footer(lang: Lang, o: PageOptions): Raw {
           <a href="${href('/dyqani', lang)}">${t.nav.lookbook}</a>
           ${filters().map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
           <span class="foot__sizes">${SIZES.map((s) => html`<a href="${href('/dyqani', lang, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}">${s}</a>`)}</span>
+        </div>
+        <div class="foot__col">
+          <h2>${t.occasions.heading}</h2>
+          ${OCCASIONS.map((x) => html`<a href="${href(OCCASION_PATH[x], lang)}">${t.occasions[x].label}</a>`)}
         </div>
       </div>
       <div class="foot__seal">

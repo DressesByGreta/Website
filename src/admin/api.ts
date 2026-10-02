@@ -1,5 +1,5 @@
 /** Thin client for /api/admin. Every call carries the session cookie; errors become ApiError. */
-import type { Category, Photo, Stock, Zone } from '../shared/catalog';
+import type { Photo, Tag, Stock, Zone } from '../shared/catalog';
 import type { Business, Returns } from '../shared/legal';
 
 export class ApiError extends Error {
@@ -26,7 +26,7 @@ export interface AdminProduct {
   price: number | null;
   comparePrice: number | null;
   color: string;
-  categories: Category[];
+  categories: Tag[];
   status: 'draft' | 'published';
   featured: boolean;
   instagramUrl: string;

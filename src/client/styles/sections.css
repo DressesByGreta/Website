@@ -131,7 +131,7 @@
 
 .foot__cols {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--s-5) var(--s-3);
 }
 
@@ -227,7 +227,47 @@
 
 @media (min-width: 1024px) {
   .foot__cols {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--s-6);
   }
+}
+
+/* Occasion pages (/fustane-mbremjeje and the rest): the words people search for, then the dresses. */
+.occasion {
+  padding-block: var(--section) var(--s-6);
+  display: grid;
+  gap: var(--s-4);
+  justify-items: start;
+}
+
+.occasion__intro {
+  max-width: 60ch;
+}
+
+.occasion__usp {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.occasion-links {
+  padding-block: var(--section);
+  border-top: 1px solid var(--hairline);
+}
+
+.occasion-links__h {
+  font-size: var(--fs-ui);
+  font-weight: 400;
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  margin-bottom: var(--s-4);
+}
+
+.occasion-links ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  list-style: none;
+  padding: 0;
 }

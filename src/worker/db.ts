@@ -1,5 +1,5 @@
 /** D1 access: catalogue reads for the storefront, full records for the admin, settings. */
-import { SIZES, emptyStock, isCategory, isSize, ZONES, type Category, type Photo, type Product, type Size, type Stock, type Zone } from '../shared/catalog';
+import { SIZES, emptyStock, isCategory, isOccasion, isSize, isTag, ZONES, type Category, type Occasion, type Tag, type Photo, type Product, type Size, type Stock, type Zone } from '../shared/catalog';
 import type { Lang } from '../shared/copy';
 import { EMPTY_BUSINESS, EMPTY_RETURNS, UPDATED, type Business, type Returns } from '../shared/legal';
 
@@ -54,7 +54,7 @@ export interface AdminProduct {
   price: number | null;
   comparePrice: number | null;
   color: string;
-  categories: Category[];
+  categories: Tag[];
   status: 'draft' | 'published';
   featured: boolean;
   instagramUrl: string;
@@ -66,14 +66,17 @@ export interface AdminProduct {
   newUntil: string | null;
 }
 
-const parseCategories = (json: string): Category[] => {
+const parseList = <T>(json: string, keep: (v: unknown) => v is T): T[] => {
   try {
     const v = JSON.parse(json) as unknown;
-    return Array.isArray(v) ? v.filter(isCategory) : [];
+    return Array.isArray(v) ? v.filter(keep) : [];
   } catch {
     return [];
   }
 };
+const parseCategories = (json: string): Category[] => parseList(json, isCategory);
+const parseOccasions = (json: string): Occasion[] => parseList(json, isOccasion);
+const parseTags = (json: string): Tag[] => parseList(json, isTag);
 
 const parseWidths = (json: string): number[] => {
   try {
@@ -120,6 +123,7 @@ function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang
     comparePrice: r.compare_price,
     color: r.color,
     categories: parseCategories(r.categories),
+    occasions: parseOccasions(r.categories),
     featured: r.featured === 1,
     instagramUrl: r.instagram_url,
     stock: stock.get(r.id) ?? emptyStock(),
@@ -174,7 +178,7 @@ function toAdmin(r: ProductRow, sizes: SizeRow[], images: ImageRow[]): AdminProd
     price: r.price,
     comparePrice: r.compare_price,
     color: r.color,
-    categories: parseCategories(r.categories),
+    categories: parseTags(r.categories),
     status: r.status,
     featured: r.featured === 1,
     instagramUrl: r.instagram_url,

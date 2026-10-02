@@ -6,7 +6,7 @@
  * assistants (ChatGPT, Perplexity, Google's AI answers), which quote it when asked about the shop.
  */
 import { Hono } from 'hono';
-import { CATEGORIES, photoAt, SIZES } from '../../shared/catalog';
+import { CATEGORIES, OCCASIONS, OCCASION_PATH, photoAt, SIZES } from '../../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { getLegalSettings, listVisible } from '../db';
 import { SITE } from '../site';
@@ -35,6 +35,7 @@ seo.get('/sitemap.xml', async (c) => {
   const pages: { path: string; params?: Record<string, string>; lastmod?: string; images?: string[] }[] = [
     { path: '/' },
     { path: '/dyqani' },
+    ...OCCASIONS.map((o) => ({ path: OCCASION_PATH[o] })),
     // only categories that hold a dress: an empty one would be a thin page
     ...CATEGORIES.filter((cat) => products.some((p) => p.categories.includes(cat))).map((cat) => ({ path: '/dyqani', params: { kategoria: cat } })),
     ...products.map((p) => ({ path: `/fustan/${p.slug}`, lastmod: updated.get(p.slug), images: p.photos.slice(0, 6).map((ph) => origin + photoAt(ph, 1600)) })),
@@ -67,12 +68,13 @@ seo.get('/llms.txt', async (c) => {
     '',
     `> ${t.meta.homeDescription}`,
     '',
-    `${SITE.name} is a dress boutique in Tirana, Albania, at ${SITE.address}, with an online shop in Albanian, English and French. Prices are in Albanian lek (ALL). Orders are placed online and paid on delivery.`,
+    `${SITE.name} is a dress boutique in Tirana, Albania, at ${SITE.address}, with an online shop in Albanian, English and French. Prices are in Albanian lek (ALL). Orders are placed online and paid on delivery. Dresses can also be rented: message the shop on Instagram with the dress, size and date.`,
     '',
     '## Shop',
     '',
     `- [All dresses](${all('en')}): every dress with its price and the sizes in stock (also in [Albanian](${all('sq')}) and [French](${all('fr')}))`,
     ...CATEGORIES.filter((cat) => products.some((p) => p.categories.includes(cat))).map((cat) => `- [${t.categories[cat]}](${origin + href('/dyqani', 'en', { kategoria: cat })})`),
+    ...OCCASIONS.map((o) => `- [${t.occasions[o].label}](${origin + href(OCCASION_PATH[o], 'en')}): ${t.occasions[o].description}`),
     `- [Terms and returns](${origin + href('/kushtet', 'en')})`,
     `- [Privacy](${origin + href('/privatesia', 'en')})`,
     '',

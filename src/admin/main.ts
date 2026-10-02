@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, NEW_DAYS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { returnsSection, sellerText, type Business, type Returns } from '../shared/legal';
@@ -28,6 +28,7 @@ import { XLSX_TYPE } from './xlsx';
 
 const root = document.getElementById('admin')!;
 const cats = copy.sq.categories;
+const occ = copy.sq.occasions;
 const lek = (n: number) => formatLek(n, 'sq');
 
 const STATUS: Record<OrderStatus, string> = {
@@ -623,6 +624,10 @@ async function editor(id: string): Promise<void> {
             <fieldset class="adm-checks">
               <legend class="adm-label">Kategoritë</legend>
               ${CATEGORIES.map((c) => html`<label class="adm-check"><input type="checkbox" name="cat" value="${c}"${d.categories.includes(c) ? raw(' checked') : ''} /> ${cats[c]}</label>`)}
+            </fieldset>
+            <fieldset class="adm-checks">
+              <legend class="adm-label">Për çfarë rasti (faqet për Google)</legend>
+              ${OCCASIONS.map((o) => html`<label class="adm-check"><input type="checkbox" name="cat" value="${o}"${d.categories.includes(o) ? raw(' checked') : ''} /> ${occ[o].label}</label>`)}
             </fieldset>
             ${newState(p)}
             <div class="adm-grid2">

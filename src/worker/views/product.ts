@@ -1,5 +1,5 @@
 /** A dress: every photograph down the left, the caption held beside it, the next dress at the foot. */
-import { photoAt, type Product, type Size } from '../../shared/catalog';
+import { formatLek, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { Returns } from '../../shared/legal';
@@ -7,7 +7,15 @@ import { SITE } from '../site';
 import { bagData } from './shop';
 import { flipId, folio, newTag, plate, price, sizePicker } from './parts';
 
-export function productView(lang: Lang, p: Product, index: number, total: number, next: Product | null, size?: Size): Raw {
+/** Where the shop delivers and for how much, as set in the admin (a fee left empty is confirmed by phone). */
+function deliveryZones(lang: Lang, zones: Zone[]): Raw | '' {
+  const t = copy[lang];
+  const on = zones.filter((z) => z.enabled);
+  if (!on.length) return '';
+  return html`<ul class="body acc__list">${on.map((z) => html`<li>${t.product.deliveryZone(t.checkout.zones[z.id], z.fee === null ? t.product.feeByPhone : z.fee === 0 ? '0' : formatLek(z.fee, lang))}</li>`)}</ul>`;
+}
+
+export function productView(lang: Lang, p: Product, index: number, total: number, next: Product | null, zones: Zone[], size?: Size): Raw {
   const t = copy[lang];
   const sold = !Object.values(p.stock).some((n) => n > 0);
   const paragraphs = p.description.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
@@ -44,7 +52,7 @@ export function productView(lang: Lang, p: Product, index: number, total: number
           ${paragraphs.length
             ? html`<details class="acc" open><summary class="acc__sum">${t.product.description}</summary><div class="acc__body">${paragraphs.map((s) => html`<p class="body">${s}</p>`)}</div></details>`
             : ''}
-          <details class="acc"><summary class="acc__sum">${t.product.delivery}</summary><div class="acc__body"><p class="body">${t.product.deliveryBody}</p></div></details>
+          <details class="acc"><summary class="acc__sum">${t.product.delivery}</summary><div class="acc__body"><p class="body">${t.product.deliveryBody}</p>${deliveryZones(lang, zones)}</div></details>
           <p class="product__links">
             <a class="tlink" href="${SITE.message}" target="_blank" rel="noopener">${t.product.rent}</a>
             ${p.instagramUrl ? html`<a class="tlink" href="${p.instagramUrl}" target="_blank" rel="noopener">${t.product.instagram}</a>` : ''}
