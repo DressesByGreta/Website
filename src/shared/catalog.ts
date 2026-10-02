@@ -19,8 +19,14 @@ export interface Zone {
   enabled: boolean;
 }
 
-/** Widths the admin produces for every photograph; the largest is capped by the original. */
-export const PHOTO_WIDTHS = [480, 960, 1600] as const;
+/** Widths the admin produces for every photograph; the largest is capped by the original. 2400 is
+ *  for the original photographs: big and retina screens, and the full-screen viewer. */
+export const PHOTO_WIDTHS = [480, 960, 1600, 2400] as const;
+/** Narrower photographs look soft on large screens (the Instagram copies are about 1160 px wide):
+ *  the admin marks them and asks for the original. */
+export const PHOTO_SHARP_WIDTH = 1600;
+/** Largest single file the Worker stores (the admin re-encodes smaller if a width comes out bigger). */
+export const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 
 export interface Photo {
   id: string;

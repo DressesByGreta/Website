@@ -22,69 +22,69 @@ colors:
   ivory: "#f3f3e7"
 typography:
   display-order:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "clamp(88px, 22vw, 260px)"
     fontWeight: 400
     lineHeight: 0.8
     letterSpacing: "-0.05em"
     fontFeature: "tnum"
   numeral-page:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "clamp(56px, 6.4vw, 96px)"
     fontWeight: 400
     lineHeight: 0.8
     letterSpacing: "-0.04em"
     fontFeature: "tnum"
   numeral-amount:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "clamp(40px, 8vw, 96px)"
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.03em"
     fontFeature: "tnum"
   numeral-index:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "22px"
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.01em"
     fontFeature: "tnum"
   price:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "20px"
     fontWeight: 400
     lineHeight: 1.2
     fontFeature: "tnum"
   title-product:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.3
     letterSpacing: "0.06em"
   body-lg:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.5
   body:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.55
   heading:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "0.08em"
   label:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "0.02em"
   micro:
-    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif"
     fontSize: "10px"
     fontWeight: 400
     lineHeight: 1
@@ -203,7 +203,7 @@ components:
 
 **Creative North Star: "The Lookbook"**
 
-The shop is Greta's lookbook, printed in the client's pinned house style. The material is the reference she chose on 2026-09-16 (vivetofficial.com): a white page, black ink, one Helvetica stack with no webfont, 12px uppercase chrome at 0.02em, 14px body, square corners, filled black buttons, 1px hairlines, and photographs as the only colour. That material is fixed. What the 2026-09-23 system change added is the book structure on top of it: every dress is a spread, the spreads are turned page by page as she scrolls, the index view is the lookbook's contents page, and a column of size numerals runs down the page edge. The home page is the hero photograph followed directly by the Shop (named "Shop" in both languages); the camera try-on, the featured rail, the catalogue grid and the sizes band no longer exist.
+The shop is Greta's lookbook, printed in the client's pinned house style. The material is the reference she chose on 2026-09-16 (vivetofficial.com): a white page, black ink, one Helvetica stack (Apple's own Helvetica Neue, Greta Sans on every other device), 12px uppercase chrome at 0.02em, 14px body, square corners, filled black buttons, 1px hairlines, and photographs as the only colour. That material is fixed. What the 2026-09-23 system change added is the book structure on top of it: every dress is a spread, the spreads are turned page by page as she scrolls, the index view is the lookbook's contents page, and a column of size numerals runs down the page edge. The home page is the hero photograph followed directly by the Shop (named "Shop" in both languages); the camera try-on, the featured rail, the catalogue grid and the sizes band no longer exist.
 
 Density is calm on the storefront and tight in the admin. The storefront gives one dress per viewport, lets the photograph take seven of eleven columns, and keeps everything else in 12px uppercase so the dress is the only loud thing on the screen. Hierarchy comes from size contrast inside one family (12px labels against 20px prices, 22px size numerals and 56 to 96px page numerals) rather than from weight, colour or a second typeface. The admin (Operate mode, Albanian) shares every token and trades the white page for a grey ground with white cards and dense rows.
 
@@ -213,7 +213,7 @@ Motion carries the book metaphor and one brand moment, nothing else: the page tu
 
 **Key Characteristics:**
 - White ground, black ink, the dresses as the only colour; the logo alone keeps its gold.
-- One Helvetica stack, no webfont; 12px uppercase chrome, 14px body, large numerals as the only display type.
+- One Helvetica on every device (Greta Sans where the system has none); 12px uppercase chrome, 14px body, large numerals as the only display type.
 - Square corners everywhere; 1px hairlines and 1px ink rules as the only structure.
 - One dress per spread: photograph in columns 1 to 7, second photograph or page numeral plus caption in columns 8 to 11.
 - Motion as page-turning: slide over, recede, print, fly.
@@ -256,7 +256,7 @@ A monochrome page whose only colour arrives in the photographs, plus the gold of
 ## Typography
 
 **Display Font:** none; display moments are Helvetica numerals.
-**Body Font:** 'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif (system, no webfont)
+**Body Font:** 'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif. Apple devices draw their own Helvetica Neue and never download anything. Windows, Android and Linux draw Greta Sans: TeX Gyre Heros (GUST e-foundry, a Helvetica clone with Helvetica's widths), subset to Latin, renamed and self-hosted as two 21KB WOFF2 files, 400 and 700 (tools/web-font.py, public/fonts, cached as immutable, the 400 preloaded). Its line metrics are overridden to Helvetica Neue's (ascent 95.2%, descent 21.3%, line gap 2.8%), so text sits in its line the same way on every device. There is no bare "Helvetica" in the stack: Windows maps that name to Arial and Android to Roboto before the clone is reached.
 **Label Font:** the same stack, 12px uppercase.
 
 **Character:** One grotesque in two registers: small uppercase chrome that reads as a garment label, and large tight-tracked numerals that read as the folio of a printed book. Prices and every number use tabular figures.
@@ -273,20 +273,20 @@ A monochrome page whose only colour arrives in the photographs, plus the gold of
 - **Micro** (400, 10px, 0.04em): size letters (XS to XL) under numerals and the stock counts on the size index.
 
 ### Named Rules
-**The One-Stack Rule.** One family, no webfont, no display serif. Hierarchy is size and tracking, never a second face. The logo is a drawing: its serif capitals (Libre Baskerville, fitted to the Instagram picture) exist only as outlines in the page's sprite and are never set as live text.
+**The One-Stack Rule.** One family (Greta Sans is the same Helvetica for devices that lack it, not a second face), no display serif. Hierarchy is size and tracking, never a second face. The logo is a drawing: its serif capitals (Libre Baskerville, fitted to the Instagram picture) exist only as outlines in the page's sprite and are never set as live text.
 
 **The Six-Rem Cap.** Display numerals stop at 6rem (96px). Only the confirmation order number may exceed it (the hero logo is a drawing, not type).
 
 **The Folio-Below Rule.** Folios ("01 / 39") live in the foot row of a caption or product page, beside the SHIKO FUSTANIN or back link, never above a heading.
 
-### Open decision
-The pinned stack renders as true Helvetica only on Apple devices; on Windows and Android it falls through to Arial or Roboto. Options: license Helvetica Now as a webfont, or self-host a free clone (TeX Gyre Heros). The client decides; until then the stack stays as written.
+### Decided 2026-10-02
+Windows and Android used to fall through to Arial or Roboto. Of the two fixes (a Helvetica Now webfont licence, or a free clone), the free clone was built when Luca asked for the font fix: Greta Sans, above. A licence is a purchase only the client can make; if Helvetica Now is bought later, it replaces the two files and the @font-face rules in tokens.css, and nothing else changes.
 
 ## Layout
 
-A mobile-first page with gutters of 16px, 24px from 640px and 40px from 1024px, a 49px header on phones and 54px from 1024px, and a 4px spacing scale (4 to 128). Breakpoints: 640, 768, 1024 (the admin adds 900).
+A mobile-first page with gutters of 16px, 24px from 640px and 40px from 1024px, a 49px header on phones and 54px from 1024px, and a 4px spacing scale (4 to 128). Breakpoints: 640, 768, 1024 (the admin adds 900; the header adds 1120 for French and 1280).
 
-**Header.** Fixed, three zones. Transparent with white text over the hero, solid white with a hairline once the hero has scrolled past (on home with motion: the moment the logo's name lands in it), on every other page, and while a drawer is open. Phones: MENU, the logo's name line, ÇANTA. From 1024px: SHOP and the category list left (open one underlined), the name line centre, SQ, EN, FR, KËRKO, ÇANTA right; side padding 30px. Known: at 1024 to 1100px the English and French category labels "Mini & midi" and the TV link wrap to two lines (they did with the old wordmark too).
+**Header.** Fixed, three zones. Transparent with white text over the hero, solid white with a hairline once the hero has scrolled past (on home with motion: the moment the logo's name lands in it), on every other page, and while a drawer is open. Phones: MENU, the logo's name line, ÇANTA. From 1024px: SHOP and the category list left (open one underlined), the name line centre, SQ, EN, FR, KËRKO, ÇANTA right; side padding 30px from 1280px. From 1024 to 1279px (iPad landscape, small laptops) the side padding is 18px and the links sit closer (8px each side instead of 12px), so every label stays on one line with at least 30px before the name. French, whose labels are longest, keeps MENU below 1120px, as tablets do.
 
 **The Shop.** Under the header a 44px bar. From 1024px it is the slim SHOP bar (title plus count, sticky, hairline below); below 1024px it is replaced by the sticky size strip, a horizontally scrolling row (TË GJITHA, 34 to 42 with a raised count, INDEKSI at the right end, a category chip with a drawn X when a category is open). From 1024px the body is two columns: the spreads, and a 132px size index with a hairline on its left, sticky, cells for TË GJITHA and 34 to 42 (22px numeral, size letter, count at top right, hairline between) and INDEKSI closing the column under an ink rule.
 
@@ -373,7 +373,7 @@ The order number at display scale under an ink rule with its 12px label on the b
 A full-width black bar with white 12px text at the top of the flow, local testing only; it never overlays content and never ships to the live shop.
 
 ### Admin (Operate)
-Grey ground, white sticky top bar with 12px uppercase tabs underlined in ink when active and square black count badges; white hairline cards; list rows with a grip, a 48 by 64px thumbnail, underlined name, 12px meta and stock per size (zero in ink-55); square 16px radios; hairline status pills (ledger green for live and confirmed, struck for cancelled); a save bar opened by an ink rule.
+Grey ground, white sticky top bar with 12px uppercase tabs underlined in ink when active and square black count badges; white hairline cards; list rows with a grip, a 48 by 64px thumbnail, underlined name, 12px meta and stock per size (zero in ink-55); square 16px radios; hairline status pills (ledger green for live and confirmed, struck for cancelled); a save bar opened by an ink rule. A dress with any photograph under 1600px wide (the Instagram copies are about 1160px) carries a FOTO TË VOGLA pill in the list, and each such photograph a 12px ink-80 note under its card asking for the original. Uploads are resized in the browser to 480, 960, 1600 and 2400px (capped by the original), each file under 4MB (the quality steps down from 0.82 if a busy fabric comes out heavier).
 
 ### Motion
 GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hidden start state is set inside a `prefers-reduced-motion: no-preference` branch, so CSS defaults are the finished page.
@@ -428,3 +428,12 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 
 - **Hero photograph in HD (2026-10-02, Luca: "on pc it very blury"):** the 825px copy is replaced by the same photograph from the shop's own Reel cover (1216 by 2160, a slightly narrower 9:16 frame), enlarged 2x with Real-ESRGAN general-x4v3 blended 70/30 with Lanczos (tools/hero-upscale.py), served as WebP with JPEG fallbacks at 828, 1216, 1824 and 2432px with sizes 100vw and a matching preload (tools/hero-variants.py, which also rewrites the blurred stand-in). A 1440 or 1920px screen now gets a file wider than itself.
 - **Decided 2026-10-02 (Luca, after the critique):** the hero logo moved off the dress into the quiet foliage (above her head in portrait, the left third in landscape) and the shade behind it went; the header's name line takes the deepened gold on white.
+
+## Changes 2026-10-02 (Luca picked items from the list of next steps)
+
+- **Font:** Greta Sans on Windows, Android and Linux (see Typography). The widths match Arial's, so no layout moved; measured on Windows Chrome, every text node draws in it.
+- **Header at 1024 to 1279px:** no label wraps in any language (see Layout).
+- **Original photographs:** a 2400px width for big and retina screens and the full-screen viewer; the admin marks the Instagram copies (see Admin).
+- **Search:** colour words in Albanian and French find dresses (the colour is stored as an English word; copy.ts holds each language's words), and accents are ignored, so "e zeze" finds "e zezë". The hint under an empty search used to name colours that found nothing in those languages.
+- **French spacing:** a non-breaking space before a colon and after "n°".
+- **Copy review:** tools/copy-review.mjs builds a page with every Albanian and French line for a native speaker to approve or correct on a phone; it composes one message with the changes and their keys in copy.ts. Our open questions sit on the lines concerned (Albanian: «Çanta» or «Shporta», the agreement of «E shitur» and «E fundit» with «fustan»; French: «épuisée», «Valider la commande» and others).

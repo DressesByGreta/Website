@@ -1,0 +1,341 @@
+<title>Greta Copy Review</title>
+<style>
+@font-face { font-family: 'Greta Sans'; src: url(data:font/woff2;base64,__FONT_400__) format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Greta Sans'; src: url(data:font/woff2;base64,__FONT_700__) format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* One column of lines to approve, read on a phone, with a fixed progress bar at the foot.
+   The shop's own world: white, black, Helvetica, 12px uppercase labels, square corners, the logo's gold. */
+:root {
+  --bg: #ffffff;
+  --panel: #f6f5f0;
+  --fg: #0a0a0a;
+  --fg-2: #46453f;
+  --fg-3: #6f6d63;
+  --rule: #e4e2d9;
+  --gold: #857240;
+  --ok: #1d6b3a;
+  --danger: #b3261e;
+  --on-fg: #ffffff;
+  --sans: 'Greta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --fs-ui: 12px;
+  --track: 0.06em;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b0b0b; --panel: #171612; --fg: #f3f3e7; --fg-2: #d2cfc2; --fg-3: #9b988b; --rule: #2c2b26; --gold: #d9c48c; --ok: #8acaa2; --danger: #f2a49c; --on-fg: #0b0b0b; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0b0b0b; --panel: #171612; --fg: #f3f3e7; --fg-2: #d2cfc2; --fg-3: #9b988b; --rule: #2c2b26; --gold: #d9c48c; --ok: #8acaa2; --danger: #f2a49c; --on-fg: #0b0b0b; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+.wrap { max-width: 680px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 128px; }
+
+.brand { color: var(--gold); }
+.brand svg { display: block; width: min(232px, 70%); height: auto; }
+.switch { display: flex; width: max-content; max-width: 100%; margin-top: 28px; border: 1px solid var(--fg); }
+.switch button { min-height: 44px; padding: 0 20px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: var(--fs-ui); letter-spacing: var(--track); text-transform: uppercase; cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--fg); color: var(--on-fg); }
+h1 { margin: 26px 0 0; font-size: clamp(26px, 6vw, 34px); line-height: 1.12; font-weight: 700; letter-spacing: -0.015em; text-wrap: balance; }
+.lede { display: grid; gap: 10px; margin-top: 14px; color: var(--fg-2); max-width: 62ch; }
+.lede p { margin: 0; }
+
+.group { margin-top: 44px; }
+.group__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0; padding-bottom: 10px; border-bottom: 1px solid var(--fg); font-size: var(--fs-ui); font-weight: 400; letter-spacing: var(--track); text-transform: uppercase; }
+.group__n { color: var(--fg-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; gap: 8px; padding: 18px 0; border-bottom: 1px solid var(--rule); min-width: 0; }
+.row__text { margin: 0; font-size: 18px; line-height: 1.4; overflow-wrap: anywhere; }
+.row.is-changed .row__text { color: var(--fg-3); text-decoration: line-through; text-decoration-thickness: 1px; }
+.row__en { margin: 0; color: var(--fg-3); font-size: 13px; overflow-wrap: anywhere; }
+.row__en b { margin-right: 8px; padding: 1px 4px; border: 1px solid var(--rule); font-size: 10px; font-weight: 400; letter-spacing: var(--track); }
+.row__where { margin: 0; color: var(--fg-3); font-size: 13px; }
+.row__q { margin: 2px 0 0; padding: 10px 12px; background: var(--panel); color: var(--fg-2); font-size: 14px; }
+.row__q b { display: block; margin-bottom: 2px; color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: var(--track); text-transform: uppercase; }
+
+.acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--fg); background: transparent; color: var(--fg); font: inherit; font-size: var(--fs-ui); letter-spacing: var(--track); text-transform: uppercase; text-decoration: none; cursor: pointer; }
+.btn:active { opacity: 0.7; }
+.btn.is-on, .btn[aria-pressed="true"] { background: var(--fg); color: var(--on-fg); }
+.btn svg { width: 12px; height: 12px; }
+.state { font-size: var(--fs-ui); letter-spacing: var(--track); text-transform: uppercase; }
+.state.is-ok { color: var(--ok); }
+.state.is-changed { color: var(--gold); }
+.edit { display: grid; gap: 12px; margin-top: 6px; }
+.field { display: grid; gap: 6px; }
+.field span { font-size: var(--fs-ui); letter-spacing: var(--track); text-transform: uppercase; color: var(--fg-2); }
+textarea, input { width: 100%; padding: 10px 12px; border: 1px solid var(--fg-3); border-radius: 0; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; line-height: 1.4; }
+textarea { resize: vertical; min-height: 64px; }
+.edit .btn { justify-self: start; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.send { display: grid; gap: 14px; margin-top: 56px; padding: 20px; background: var(--panel); }
+.send h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.send p { margin: 0; color: var(--fg-2); }
+.send textarea { min-height: 220px; font-size: 14px; }
+.hint { min-height: 1.5em; font-size: 14px; }
+.link { justify-self: start; padding: 10px 0; border: 0; background: none; color: var(--fg-2); font: inherit; font-size: var(--fs-ui); letter-spacing: var(--track); text-transform: uppercase; text-decoration: underline; text-underline-offset: 0.3em; cursor: pointer; }
+.link[data-armed] { color: var(--danger); }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--fg); background: var(--bg); }
+.bar p { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 0; }
+.bar b { font-weight: 700; }
+
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">__NAME_SVG__</div>
+    <div class="switch" role="group" aria-label="Gjuha / Langue">
+      <button type="button" id="lang-sq" data-lang="sq" lang="sq">Shqip</button>
+      <button type="button" id="lang-fr" data-lang="fr" lang="fr">Français</button>
+    </div>
+    <h1 id="h1"></h1>
+    <div class="lede" id="lede"></div>
+  </header>
+
+  <main id="groups"></main>
+
+  <section class="send" id="send" aria-labelledby="send-h">
+    <h2 id="send-h"></h2>
+    <p id="send-body"></p>
+    <textarea id="msg" readonly rows="10" aria-labelledby="send-h"></textarea>
+    <div class="acts">
+      <button class="btn is-on" type="button" id="copy"></button>
+      <a class="btn" id="wa" target="_blank" rel="noopener" href="https://wa.me/"></a>
+    </div>
+    <p class="hint" id="copy-state" aria-live="polite"></p>
+    <button class="link" type="button" id="reset"></button>
+  </section>
+</div>
+
+<div class="bar">
+  <p id="progress" aria-live="polite"></p>
+  <button class="btn" type="button" id="to-send"></button>
+</div>
+
+<script>
+const DATA = __DATA__;
+const KEY = 'greta-copy-review-v1';
+const CHECK = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => String(o[k]));
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || '{}');
+    return { lang: s.lang, sq: s.sq || {}, fr: s.fr || {} };
+  } catch (e) {
+    return { sq: {}, fr: {} };
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+}
+
+const store = load();
+const fromHash = (location.hash || '').slice(1);
+let lang = fromHash === 'sq' || fromHash === 'fr' ? fromHash : store.lang === 'fr' ? 'fr' : 'sq';
+
+const rowsOf = () => DATA.langs[lang].flatMap((g) => g.rows);
+const find = (id) => rowsOf().find((r) => r.id === id);
+
+function stateOf(row) {
+  const s = store[lang][row.id] || {};
+  const text = typeof s.text === 'string' ? s.text : row.text;
+  const note = s.note || '';
+  const changed = text.trim() !== row.text.trim() || note.trim() !== '';
+  return { ok: !!s.ok && !changed, changed, editing: !!s.editing || changed, text, note };
+}
+const checked = (row) => { const s = stateOf(row); return s.ok || s.changed; };
+
+function rowHtml(row) {
+  const u = DATA.ui[lang];
+  const s = stateOf(row);
+  const cls = s.changed ? ' is-changed' : s.ok ? ' is-ok' : '';
+  const state = s.changed ? `<span class="state is-changed">${esc(u.isChanged)}</span>` : '';
+  return `<li class="row${cls}" id="r-${esc(row.id)}" data-id="${esc(row.id)}">
+    <p class="row__text" lang="${lang}">${esc(row.text)}</p>
+    ${row.en ? `<p class="row__en"><b>${esc(u.meaning)}</b><span lang="en">${esc(row.en)}</span></p>` : ''}
+    ${row.keys.length > 1 ? `<p class="row__where">${esc(fmt(u.places, { n: row.keys.length }))}</p>` : ''}
+    ${row.note ? `<div class="row__q" lang="${lang}"><b>${esc(u.question)}</b>${esc(row.note)}</div>` : ''}
+    <div class="acts">
+      ${s.editing ? '' : `<button class="btn" type="button" data-act="ok" aria-pressed="${s.ok}">${CHECK}${esc(u.ok)}</button>`}
+      ${s.editing ? '' : `<button class="btn" type="button" data-act="edit">${esc(u.edit)}</button>`}
+      ${state}
+    </div>
+    ${s.editing ? `<div class="edit">
+      <label class="field" for="t-${esc(row.id)}"><span>${esc(u.fix)}</span><textarea id="t-${esc(row.id)}" data-field="text" rows="2" lang="${lang}">${esc(s.text)}</textarea></label>
+      <label class="field" for="n-${esc(row.id)}"><span>${esc(u.note)}</span><input id="n-${esc(row.id)}" data-field="note" lang="${lang}" value="${esc(s.note)}" /></label>
+      <button class="btn" type="button" data-act="cancel">${esc(u.cancel)}</button>
+    </div>` : ''}
+  </li>`;
+}
+
+function render() {
+  const u = DATA.ui[lang];
+  document.documentElement.lang = lang;
+  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+  $('h1').textContent = u.h1;
+  $('lede').innerHTML = u.lede.map((p) => `<p>${esc(p)}</p>`).join('');
+  $('groups').innerHTML = DATA.langs[lang]
+    .map((g) => `<section class="group" aria-labelledby="g-${g.id}">
+      <h2 class="group__head" id="g-${g.id}"><span>${esc(g.title)}</span><span class="group__n" data-n="${g.id}"></span></h2>
+      <ol class="rows">${g.rows.map(rowHtml).join('')}</ol>
+    </section>`)
+    .join('');
+  $('send-h').textContent = u.sendTitle;
+  $('send-body').textContent = u.sendBody;
+  $('copy').textContent = u.copy;
+  $('wa').textContent = u.whatsapp;
+  $('to-send').textContent = u.toSend;
+  disarm();
+  $('copy-state').textContent = '';
+  summary();
+}
+
+function rerow(id) {
+  const row = find(id);
+  const el = $('r-' + id);
+  if (!row || !el) return;
+  el.outerHTML = rowHtml(row);
+}
+
+/** Classes and the state label only, so typing keeps the cursor where it is. */
+function restyle(id) {
+  const row = find(id);
+  const el = $('r-' + id);
+  if (!row || !el) return;
+  const s = stateOf(row);
+  el.classList.toggle('is-changed', s.changed);
+  el.classList.toggle('is-ok', s.ok);
+  const acts = el.querySelector('.acts');
+  const label = acts.querySelector('.state');
+  if (s.changed && !label) acts.insertAdjacentHTML('beforeend', `<span class="state is-changed">${esc(DATA.ui[lang].isChanged)}</span>`);
+  if (!s.changed && label) label.remove();
+}
+
+function message() {
+  const u = DATA.ui[lang];
+  const rows = rowsOf();
+  const done = rows.filter(checked).length;
+  const changed = rows.filter((r) => stateOf(r).changed);
+  const lines = [u.head, fmt(u.checked, { n: done, t: rows.length })];
+  if (!changed.length) lines.push(u.allOk);
+  changed.forEach((r, i) => {
+    const s = stateOf(r);
+    lines.push('', `${i + 1}) ${u.now}: ${r.text}`);
+    if (s.text.trim() !== r.text.trim()) lines.push(`${u.becomes}: ${s.text.trim()}`);
+    if (s.note.trim()) lines.push(`${u.noteLabel}: ${s.note.trim()}`);
+    lines.push(`[${r.keys.join(', ')}]`);
+  });
+  return lines.join('\n');
+}
+
+function summary() {
+  const u = DATA.ui[lang];
+  const rows = rowsOf();
+  const done = rows.filter(checked).length;
+  const changes = rows.filter((r) => stateOf(r).changed).length;
+  const ch = changes === 1 ? u.changes.one : fmt(u.changes.many, { n: changes });
+  $('progress').innerHTML = `<b>${esc(fmt(u.progress, { n: done, t: rows.length }))}</b> · ${esc(ch)}`;
+  for (const g of DATA.langs[lang]) {
+    const el = document.querySelector(`[data-n="${g.id}"]`);
+    if (el) el.textContent = `${g.rows.filter(checked).length} / ${g.rows.length}`;
+  }
+  const msg = message();
+  $('msg').value = msg;
+  const wa = $('wa');
+  if (msg.length > 3000) {
+    wa.hidden = true;
+    $('copy-state').textContent = u.tooLong;
+  } else {
+    wa.hidden = false;
+    wa.href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  }
+}
+
+$('groups').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const id = btn.closest('[data-id]').dataset.id;
+  const mine = store[lang];
+  const act = btn.dataset.act;
+  if (act === 'ok') mine[id] = mine[id] && mine[id].ok ? {} : { ok: true };
+  if (act === 'edit') mine[id] = { editing: true };
+  if (act === 'cancel') delete mine[id];
+  save();
+  rerow(id);
+  summary();
+  if (act === 'edit') {
+    const t = $('t-' + id);
+    if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  }
+  if (act === 'cancel' || act === 'ok') {
+    const next = $('r-' + id).querySelector('[data-act]');
+    if (next && act === 'cancel') next.focus();
+  }
+});
+
+$('groups').addEventListener('input', (e) => {
+  const field = e.target.closest('[data-field]');
+  if (!field) return;
+  const id = field.closest('[data-id]').dataset.id;
+  const mine = store[lang];
+  mine[id] = Object.assign({ editing: true }, mine[id], { [field.dataset.field]: field.value });
+  delete mine[id].ok;
+  save();
+  restyle(id);
+  summary();
+});
+
+for (const b of document.querySelectorAll('[data-lang]')) {
+  b.addEventListener('click', () => {
+    lang = b.dataset.lang;
+    store.lang = lang;
+    save();
+    try { history.replaceState(null, '', '#' + lang); } catch (e) {}
+    render();
+  });
+}
+
+$('to-send').addEventListener('click', () => $('send').scrollIntoView({ block: 'start' }));
+
+$('copy').addEventListener('click', () => {
+  const u = DATA.ui[lang];
+  const msg = $('msg').value;
+  const fallback = () => {
+    $('msg').focus();
+    $('msg').select();
+    $('copy-state').textContent = u.copyFail;
+  };
+  try {
+    navigator.clipboard.writeText(msg).then(() => { $('copy-state').textContent = u.copied; }, fallback);
+  } catch (e) {
+    fallback();
+  }
+});
+
+let armed = 0;
+function disarm() {
+  clearTimeout(armed);
+  armed = 0;
+  const r = $('reset');
+  r.removeAttribute('data-armed');
+  r.textContent = DATA.ui[lang].reset;
+}
+$('reset').addEventListener('click', () => {
+  const r = $('reset');
+  if (!r.hasAttribute('data-armed')) {
+    r.setAttribute('data-armed', '');
+    r.textContent = DATA.ui[lang].resetAgain;
+    armed = setTimeout(disarm, 4000);
+    return;
+  }
+  store[lang] = {};
+  save();
+  render();
+});
+
+render();
+</script>

@@ -1,5 +1,32 @@
 /* Dresses by Greta: design tokens. Light, Helvetica, 12px uppercase chrome, square corners.
    The visual language follows the client's reference (vivetofficial.com, Shopify Horizon). */
+
+/* Helvetica on every device. Apple devices have Helvetica Neue; Windows, Android and Linux have
+   none (they fell back to Arial or Roboto) and get Greta Sans: TeX Gyre Heros, a Helvetica clone
+   with the same widths, subset to Latin (tools/web-font.py). Its line metrics are set to Helvetica
+   Neue's, so text sits in its line the same way everywhere. */
+@font-face {
+  font-family: 'Greta Sans';
+  src: url('/fonts/greta-sans-400.v1.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 95.2%;
+  descent-override: 21.3%;
+  line-gap-override: 2.8%;
+}
+
+@font-face {
+  font-family: 'Greta Sans';
+  src: url('/fonts/greta-sans-700.v1.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 95.2%;
+  descent-override: 21.3%;
+  line-gap-override: 2.8%;
+}
+
 @property --p {
   syntax: '<number>';
   inherits: true;
@@ -37,7 +64,8 @@
   --ivory: #f3f3e7;
 
   /* type */
-  --font: 'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* no plain Helvetica: Windows and Android alias that name to Arial and Roboto */
+  --font: 'Helvetica Now Text', 'Helvetica Neue', 'Greta Sans', Arial, sans-serif;
   --fs-ui: 12px;
   --fs-body: 14px;
   --track-ui: 0.02em;

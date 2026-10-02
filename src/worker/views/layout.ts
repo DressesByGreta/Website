@@ -34,6 +34,10 @@ export interface PageOptions {
 
 const B = String.fromCharCode(92);
 
+/** Windows and Android read the shop in Greta Sans (tools/web-font.py); fetched with the styles so the
+ *  first paint is already in it. Apple devices use their own Helvetica Neue and leave it unused. */
+const FONT_PRELOAD = '/fonts/greta-sans-400.v1.woff2';
+
 /** Set from the settings table: the catalogue holds invented demo prices (local testing only). */
 let demoData = false;
 export const setDemo = (on: boolean): void => {
@@ -150,6 +154,7 @@ export function page(o: PageOptions): string {
       : o.preload
         ? html`<link rel="preload" as="image" imagesrcset="${o.preload.srcset}" imagesizes="${o.preload.sizes}" type="${o.preload.type}" fetchpriority="high" />`
         : ''}
+    <link rel="preload" as="font" type="font/woff2" href="${FONT_PRELOAD}" crossorigin />
     ${assets('store')}
     ${ld}
   </head>

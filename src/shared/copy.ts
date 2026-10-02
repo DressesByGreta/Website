@@ -10,6 +10,8 @@ export const LANGS: readonly Lang[] = ['sq', 'en', 'fr'];
 export const isLang = (v: unknown): v is Lang => v === 'sq' || v === 'en' || v === 'fr';
 
 const TAGLINE = 'Elegance that endures';
+/** French sets a non-breaking space before a colon, so the colon never starts a line. */
+const NBSP = String.fromCharCode(160);
 
 const sq = {
   lang: 'sq' as Lang,
@@ -171,6 +173,22 @@ const sq = {
     results: (n: number) => (n === 1 ? '1 fustan' : `${n} fustane`),
     none: 'Asnjë fustan me këtë emër. Provo një ngjyrë: e kuqe, blu, e zezë.',
     clear: 'Fshi',
+    /** Words a visitor may type for each colour the admin suggests (search folds ë and ç away). */
+    colors: {
+      black: 'i zi e zezë të zeza',
+      white: 'i bardhë e bardhë të bardha',
+      red: 'i kuq e kuqe të kuqe',
+      blue: 'blu i kaltër e kaltër',
+      green: 'jeshil jeshile i gjelbër e gjelbër',
+      pink: 'rozë',
+      purple: 'vjollcë lejla',
+      lilac: 'lejla jargavan',
+      gold: 'ari i artë e artë',
+      silver: 'argjend argjendi i argjendtë e argjendtë',
+      grey: 'gri hiri',
+      brown: 'kafe',
+      yellow: 'i verdhë e verdhë të verdha',
+    } as Record<string, string>,
   },
   visit: {
     title: 'Dyqani në Tiranë.',
@@ -370,6 +388,7 @@ const en: Copy = {
     results: (n: number) => (n === 1 ? '1 dress' : `${n} dresses`),
     none: 'No dress by that name. Try a colour: red, blue, black.',
     clear: 'Clear',
+    colors: { grey: 'gray', gold: 'golden', silver: 'silvery', lilac: 'lavender', purple: 'violet', pink: 'rose blush' },
   },
   visit: {
     title: 'The shop in Tirana.',
@@ -435,7 +454,7 @@ const fr: Copy = {
     next: 'Photo suivante',
     removeFilter: 'Retirer le filtre',
   },
-  demo: 'Données de démonstration : les prix et les stocks sont des exemples de test, pas ceux de la boutique.',
+  demo: `Données de démonstration${NBSP}: les prix et les stocks sont des exemples de test, pas ceux de la boutique.`,
   nav: {
     menu: 'Menu',
     close: 'Fermer',
@@ -460,7 +479,7 @@ const fr: Copy = {
     all: 'Toutes',
     count: (n: number) => (n === 1 ? '1 robe' : `${n} robes`),
     none: 'Aucune pour le moment',
-    guide: 'Tailles européennes : 34 correspond au XS, 36 au S, 38 au M, 40 au L, 42 au XL.',
+    guide: `Tailles européennes${NBSP}: 34 correspond au XS, 36 au S, 38 au M, 40 au L, 42 au XL.`,
     label: (size: string, letter: string) => `Taille ${size} (${letter})`,
   },
   home: {
@@ -549,7 +568,7 @@ const fr: Copy = {
   },
   confirmation: {
     label: 'Commande n°',
-    title: (n: number) => `Commande n° ${n}`,
+    title: (n: number) => `Commande n°${NBSP}${n}`,
     thanks: 'Merci. Votre commande est enregistrée.',
     next: 'La boutique vous appellera pour confirmer la commande et organiser la livraison.',
     paid: 'Paiement par carte reçu.',
@@ -565,8 +584,24 @@ const fr: Copy = {
     title: 'Rechercher',
     placeholder: 'Rechercher une robe ou une couleur',
     results: (n: number) => (n === 1 ? '1 robe' : `${n} robes`),
-    none: 'Aucune robe de ce nom. Essayez une couleur : rouge, bleu, noir.',
+    none: `Aucune robe de ce nom. Essayez une couleur${NBSP}: rouge, bleu, noir.`,
     clear: 'Effacer',
+    colors: {
+      black: 'noir noire',
+      white: 'blanc blanche',
+      red: 'rouge',
+      blue: 'bleu bleue',
+      green: 'vert verte',
+      pink: 'rose',
+      purple: 'violet violette',
+      lilac: 'lilas mauve',
+      gold: 'or doré dorée',
+      silver: 'argent argenté argentée',
+      grey: 'gris grise',
+      brown: 'marron brun brune',
+      yellow: 'jaune',
+      teal: 'bleu canard',
+    },
   },
   visit: {
     title: 'La boutique à Tirana.',

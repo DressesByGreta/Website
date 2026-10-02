@@ -4,10 +4,10 @@
  * responses are immutable and the ETag can be derived from the key itself.
  */
 import type { Context } from 'hono';
+import { PHOTO_MAX_BYTES as MAX_BYTES } from '../shared/catalog';
 import type { AppEnv } from './types';
 
 const KEY_RE = /^p\/[a-z0-9-]{6,40}\/[a-z0-9-]{6,40}\/\d{3,4}\.(webp|jpg)$/;
-const MAX_BYTES = 4 * 1024 * 1024;
 
 export async function serveImage(c: Context<AppEnv>): Promise<Response> {
   const key = c.req.path.slice('/img/'.length);

@@ -346,6 +346,30 @@ html.drawer-open .nav {
   }
 }
 
+/* iPad landscape and small laptops: the links sit closer, so the longest labels stay on one line
+   with room around the name (measured in sq, en and fr) */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .nav__left {
+    padding-left: 18px;
+  }
+  .nav__right {
+    padding-right: 18px;
+  }
+  .nav__list .tlink {
+    padding: 0 8px;
+  }
+}
+
+/* French labels are the longest: below 1120px they would touch the name, so MENU, as on tablets */
+@media (min-width: 1024px) and (max-width: 1119.98px) {
+  :root:lang(fr) .nav__menu {
+    display: inline-flex;
+  }
+  :root:lang(fr) .nav__list {
+    display: none;
+  }
+}
+
 /* ---------- drawers (menu left, bag right, search top) ---------- */
 .drawer {
   position: fixed;

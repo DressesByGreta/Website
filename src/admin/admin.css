@@ -663,6 +663,14 @@ body {
   text-transform: uppercase;
 }
 
+/* an Instagram-sized copy: Greta swaps it for the original photograph */
+.adm-photo__soft {
+  margin: 0;
+  font-size: var(--fs-ui);
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+
 .adm-photo__acts {
   display: flex;
   align-items: center;

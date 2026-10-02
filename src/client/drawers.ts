@@ -14,6 +14,8 @@ type Kind = keyof typeof SIDE;
 const INSTAGRAM = 'https://www.instagram.com/dressesbygreta/';
 const MESSAGE = 'https://ig.me/m/dressesbygreta';
 const MAPS = 'https://maps.google.com/?q=41.320034%2C19.812943';
+/** Search ignores case and accents: phones often type e for ë and c for ç. */
+const fold = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 const ICON = {
   close: raw('<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M3 3l16 16M19 3L3 19" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>'),
   out: raw('<svg class="macc__out" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>'),
@@ -262,7 +264,7 @@ export class Drawers {
     const t = this.t;
     const l = this.lang;
     const body = this.d.search;
-    const q = (body.querySelector<HTMLInputElement>('input')?.value ?? '').trim().toLowerCase();
+    const q = fold((body.querySelector<HTMLInputElement>('input')?.value ?? '').trim());
     const status = body.querySelector<HTMLElement>('[data-status]')!;
     const results = body.querySelector<HTMLElement>('[data-results]')!;
     let list;
@@ -273,7 +275,10 @@ export class Drawers {
       return;
     }
     const cats = copy[l].categories as Record<string, string>;
-    const hits = q ? list.filter((p) => `${p.name} ${p.color} ${p.categories.map((c) => `${c} ${cats[c] ?? ''}`).join(' ')}`.toLowerCase().includes(q)) : list.slice(0, 12);
+    // the colour is stored as an English word (red); the visitor may type it in her own language
+    const colors = copy[l].search.colors;
+    const words = (p: (typeof list)[number]) => fold(`${p.name} ${p.color} ${colors[p.color] ?? ''} ${p.categories.map((c) => `${c} ${cats[c] ?? ''}`).join(' ')}`);
+    const hits = q ? list.filter((p) => words(p).includes(q)) : list.slice(0, 12);
     status.textContent = q ? (hits.length ? t.search.results(hits.length) : t.search.none) : '';
     results.innerHTML = hits
       .slice(0, 24)

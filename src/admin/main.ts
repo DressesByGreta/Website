@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, photoAt, type Zone } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { api, ApiError, uploadPhoto, type AdminProduct, type OrderDetail, type OrderStatus, type OrderSummary } from './api';
@@ -227,6 +227,7 @@ async function productsView(): Promise<void> {
           <span class="adm-pill${p.status === 'published' ? ' is-live' : ''}">${p.status === 'published' ? 'Publikuar' : 'Draft'}</span>
           ${p.featured ? html`<span class="adm-pill">Në kryefaqe</span>` : ''}
           ${sold ? html`<span class="adm-pill is-warn">Pa gjendje</span>` : ''}
+          ${p.photos.some((ph) => ph.w < PHOTO_SHARP_WIDTH) ? html`<span class="adm-pill">Foto të vogla</span>` : ''}
           <span>${p.price !== null ? lek(p.price) : 'Pa çmim'}</span>
         </span>
       </span>
@@ -434,6 +435,7 @@ async function editor(id: string): Promise<void> {
       <label class="adm-field"><span>Anglisht</span><input class="adm-input" data-alt="en" value="${ph.altEn}" maxlength="160" /></label>
       <button class="adm-link" type="button" data-alt-save>Ruaj përshkrimin</button>
     </details>
+    ${ph.w < PHOTO_SHARP_WIDTH ? html`<p class="adm-photo__soft">Foto e vogël, del e turbullt në kompjuter. Ngarko origjinalin.</p>` : ''}
   </li>`;
 
   const draw = () => {
@@ -596,7 +598,8 @@ async function editor(id: string): Promise<void> {
       } catch (e) {
         uploads.splice(uploads.indexOf(entry), 1);
         replace(p, true);
-        toast(e instanceof Error && e.message === 'too_small' ? `${file.name}: fotoja është shumë e vogël.` : `${file.name}: ${errText(e)}`, 'err');
+        const why: Record<string, string> = { too_small: 'fotoja është shumë e vogël.', too_big: 'fotoja është shumë e rëndë.' };
+        toast(`${file.name}: ${(e instanceof Error && why[e.message]) || errText(e)}`, 'err');
       }
     }
   };

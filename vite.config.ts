@@ -13,7 +13,9 @@ const ENTRY_CSS = new Set(['styles.css', 'admin-styles.css']);
 
 export default defineConfig({
   plugins: [cloudflare()],
-  server: { port: 3640, strictPort: true, host: '127.0.0.1' },
+  // raw sources and tools are never served: a file being written there (a download, a probe) used
+  // to crash the dev server's watcher with EBUSY on Windows
+  server: { port: 3640, strictPort: true, host: '127.0.0.1', watch: { ignored: ['**/raw/**', '**/tools/**', '**/.impeccable/**'] } },
   preview: { port: 3641, strictPort: true },
   define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
   environments: {
