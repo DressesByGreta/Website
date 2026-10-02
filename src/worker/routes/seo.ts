@@ -2,12 +2,14 @@
  * For search engines: robots.txt, and a sitemap built from the live catalogue. Every page is listed
  * in the three languages with its alternates (hreflang, Albanian as x-default), and every dress with
  * its photographs, so the shop can also be found through image search. Drafts never appear: the
- * sitemap lists exactly what the shop shows.
+ * sitemap lists exactly what the shop shows. /llms.txt says the same in plain text for AI search
+ * assistants (ChatGPT, Perplexity, Google's AI answers), which quote it when asked about the shop.
  */
 import { Hono } from 'hono';
-import { CATEGORIES, photoAt } from '../../shared/catalog';
-import { href, LANGS, type Lang } from '../../shared/copy';
+import { CATEGORIES, photoAt, SIZES } from '../../shared/catalog';
+import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { getLegalSettings, listVisible } from '../db';
+import { SITE } from '../site';
 import type { AppEnv } from '../types';
 
 export const seo = new Hono<AppEnv>();
@@ -53,4 +55,46 @@ seo.get('/sitemap.xml', async (c) => {
     '',
   ].join('\n');
   return c.body(body, 200, { ...HOUR, 'content-type': 'application/xml; charset=utf-8' });
+});
+
+seo.get('/llms.txt', async (c) => {
+  const origin = new URL(c.req.url).origin;
+  const t = copy.en;
+  const [products, { business, returns }] = await Promise.all([listVisible(c.env.DB, 'en'), getLegalSettings(c.env.DB)]);
+  const all = (l: Lang) => origin + href('/dyqani', l);
+  const lines = [
+    `# ${SITE.name}`,
+    '',
+    `> ${t.meta.homeDescription}`,
+    '',
+    `${SITE.name} is a dress boutique in Tirana, Albania, at ${SITE.address}, with an online shop in Albanian, English and French. Prices are in Albanian lek (ALL). Orders are placed online and paid on delivery.`,
+    '',
+    '## Shop',
+    '',
+    `- [All dresses](${all('en')}): every dress with its price and the sizes in stock (also in [Albanian](${all('sq')}) and [French](${all('fr')}))`,
+    ...CATEGORIES.filter((cat) => products.some((p) => p.categories.includes(cat))).map((cat) => `- [${t.categories[cat]}](${origin + href('/dyqani', 'en', { kategoria: cat })})`),
+    `- [Terms and returns](${origin + href('/kushtet', 'en')})`,
+    `- [Privacy](${origin + href('/privatesia', 'en')})`,
+    '',
+    '## Dresses',
+    '',
+    ...(products.length
+      ? products.map((p) => {
+          const sizes = SIZES.filter((s) => p.stock[s] > 0);
+          const price = p.price !== null ? `${p.price.toLocaleString('en')} ALL` : 'price on request';
+          const stock = sizes.length ? `sizes ${sizes.join(', ')}` : 'sold out';
+          return `- [${p.name}](${origin + href(`/fustan/${p.slug}`, 'en')}): ${price}, ${stock}${p.description ? `. ${p.description.replace(/\s+/g, ' ').slice(0, 160)}` : ''}`;
+        })
+      : ['- New dresses are being added; see Instagram for the latest.']),
+    '',
+    '## Contact',
+    '',
+    `- Instagram: ${SITE.instagram} (messages: ${SITE.message})`,
+    `- Boutique: ${SITE.address} (map: ${SITE.maps})`,
+    ...(business.phone ? [`- Phone: ${business.phone}`] : []),
+    ...(business.email ? [`- Email: ${business.email}`] : []),
+    ...(returns.mode ? [`- Returns: see ${origin + href('/kushtet', 'en')}`] : []),
+    '',
+  ];
+  return c.text(lines.join('\n'), 200, { ...HOUR, 'content-type': 'text/plain; charset=utf-8' });
 });

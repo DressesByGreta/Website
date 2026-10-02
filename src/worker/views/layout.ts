@@ -55,6 +55,11 @@ let newCount = 0;
 export const setNewCount = (n: number): void => {
   newCount = n;
 };
+/** Google Search Console's ownership code (env GOOGLE_SITE_VERIFICATION), when set. */
+let verification = '';
+export const setVerification = (code: string | undefined): void => {
+  verification = code ?? '';
+};
 const filters = (): ShopFilter[] => (newCount > 0 ? ['new', ...CATEGORIES] : [...CATEGORIES]);
 const ldJson = (o: object): string => JSON.stringify(o).replace(/</g, `${B}u003c`);
 
@@ -149,6 +154,7 @@ export function page(o: PageOptions): string {
     <title>${o.title}</title>
     <meta name="description" content="${o.description}" />
     ${o.noindex ? raw('<meta name="robots" content="noindex" />') : ''}
+    ${verification ? html`<meta name="google-site-verification" content="${verification}" />` : ''}
     <link rel="canonical" href="${canonical}" />
     ${LANGS.map((l) => html`<link rel="alternate" hreflang="${l}" href="${alt(l)}" />`)}
     <link rel="alternate" hreflang="x-default" href="${alt('sq')}" />
