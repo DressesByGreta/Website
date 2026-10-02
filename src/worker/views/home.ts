@@ -33,8 +33,8 @@ export function homeView(lang: Lang, visible: Product[]): Raw {
     ${shopView(lang, visible, { view: 'spreads' }, { embedded: true })}
 
     <section class="visit container" id="visit">
-      <h2 class="heading">${t.visit.title}</h2>
-      <p class="visit__address">${SITE.address}</p>
+      <h2 class="heading" data-lines>${t.visit.title}</h2>
+      <p class="visit__address" data-lines>${SITE.address}</p>
       <div class="visit__cta">
         <a class="btn btn--line" href="${SITE.maps}" target="_blank" rel="noopener">${t.visit.maps}</a>
         <a class="btn" href="${SITE.message}" target="_blank" rel="noopener">${t.visit.ask}</a>

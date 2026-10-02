@@ -13,8 +13,8 @@ export function occasionView(lang: Lang, o: Occasion, list: Product[]): Raw {
   const t = copy[lang];
   const oc = t.occasions[o];
   return html`<section class="occasion container">
-      <h1 class="heading occasion__title">${oc.h1}</h1>
-      <p class="body-lg occasion__intro">${oc.intro}</p>
+      <h1 class="heading occasion__title" data-lines>${oc.h1}</h1>
+      <p class="body-lg occasion__intro" data-lines>${oc.intro}</p>
       <p class="occasion__usp">${t.occasions.usp}</p>
       ${o === 'rental'
         ? html`<div class="visit__cta">

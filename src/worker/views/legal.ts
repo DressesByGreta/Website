@@ -29,7 +29,7 @@ export function legalView(kind: 'privacy' | 'terms', lang: Lang, s: { business: 
   return html`<article class="legal container" aria-labelledby="legal-title">
     <span class="legal__progress" aria-hidden="true" data-read-progress></span>
     <header class="legal__head">
-      <h1 class="legal__title" id="legal-title">${d.title}</h1>
+      <h1 class="legal__title" id="legal-title" data-lines>${d.title}</h1>
       <p class="legal__date"><time datetime="${s.updated}">${updatedLine(s.updated, lang)}</time></p>
     </header>
     <p class="legal__intro">${typeset(d.intro, lang)}</p>

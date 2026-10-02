@@ -1,5 +1,5 @@
 /** What each server-rendered page does once it is on screen (first load and every swap). */
-import { SIZE_LETTER, formatLek, isSize, photoAt, type Zone } from '../shared/catalog';
+import { SIZE_LETTER, formatLek, isSize, pad2, photoAt, type Zone } from '../shared/catalog';
 import { copy, href, type Lang } from '../shared/copy';
 import { esc } from '../shared/html';
 import { bag, type Snap } from './bag';
@@ -21,7 +21,7 @@ export function initPage(lang: Lang, drawers: Drawers): PageInit {
     if (kind) trackView(kind);
     markNav();
     if (kind === 'home' || kind === 'shop') offs.push(indexPreview(main));
-    if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang));
+    if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang), loupe(main));
     if (kind === 'checkout') offs.push(checkoutPage(main, lang));
     if (kind === 'confirmation') confirmationPage(main);
     if (kind === 'pay') payPage(main);
@@ -57,9 +57,22 @@ function indexPreview(main: HTMLElement): () => void {
   const name = box?.querySelector<HTMLElement>('[data-preview-name]');
   if (!box || !plate || !img) return () => undefined;
   let current = plate.dataset.flipId ?? '';
+  // Resting on a line for a moment prints its second photograph: the other angle, without a click.
+  let rest = 0;
+  const second = (a: HTMLAnchorElement) => {
+    window.clearTimeout(rest);
+    if (!a.dataset.src2) return;
+    rest = window.setTimeout(() => {
+      if (current !== a.dataset.flip) return;
+      img.srcset = a.dataset.srcset2 ?? '';
+      img.src = a.dataset.src2 ?? '';
+      if (!reducedMotion()) printPlate(plate, 0, 0.55);
+    }, 700);
+  };
   const show = (e: Event) => {
     const a = (e.target as Element).closest<HTMLAnchorElement>('.toc__link');
     if (!a || !a.dataset.flip || a.dataset.flip === current || box.offsetParent === null) return;
+    second(a);
     current = a.dataset.flip;
     plate.dataset.flipId = current;
     img.srcset = a.dataset.srcset ?? '';
@@ -73,6 +86,7 @@ function indexPreview(main: HTMLElement): () => void {
   main.addEventListener('pointerover', show);
   main.addEventListener('focusin', show);
   return () => {
+    window.clearTimeout(rest);
     main.removeEventListener('pointerover', show);
     main.removeEventListener('focusin', show);
   };
@@ -154,6 +168,88 @@ function viewer(main: HTMLElement, lang: Lang): () => void {
   return () => main.removeEventListener('click', onClick);
 }
 
+/**
+ * The loupe: on a computer, the pointer over a dress's photograph carries a square of the fabric at
+ * two and a half times, read from the sharpest width the photograph has (the 2400px original where
+ * the admin has one), so sequins, lace and tulle can be seen before buying. Square like every corner
+ * on the site; it follows with a short ease (at once with reduced motion). Clicking still opens the viewer.
+ */
+const LOUPE = { size: 240, zoom: 2.5 };
+
+function sharpest(img: HTMLImageElement): string {
+  let best = { w: 0, url: img.currentSrc || img.src };
+  for (const part of img.srcset.split(',')) {
+    const [url, w] = part.trim().split(/\s+/);
+    const n = parseInt(w ?? '', 10);
+    if (url && n > best.w) best = { w: n, url };
+  }
+  return best.url;
+}
+
+function loupe(main: HTMLElement): () => void {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)').matches) return () => undefined;
+  const lens = document.createElement('span');
+  lens.className = 'loupe';
+  lens.setAttribute('aria-hidden', 'true');
+  const ease = reducedMotion() ? 0 : 0.28;
+  const xTo = gsap.quickTo(lens, 'x', { duration: ease, ease: 'power3.out' });
+  const yTo = gsap.quickTo(lens, 'y', { duration: ease, ease: 'power3.out' });
+  let host: HTMLElement | null = null;
+  let img: HTMLImageElement | null = null;
+
+  const place = (e: PointerEvent, now = false) => {
+    if (!host || !img || !img.naturalWidth) return;
+    const box = host.getBoundingClientRect();
+    const px = e.clientX - box.left;
+    const py = e.clientY - box.top;
+    // where the photograph really sits inside its frame (object-fit: cover and its object-position)
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const wide = ratio > box.width / box.height;
+    const w = wide ? box.height * ratio : box.width;
+    const h = wide ? box.height : box.width / ratio;
+    const [ox, oy] = getComputedStyle(img).objectPosition.split(' ').map((v) => parseFloat(v) / 100);
+    const left = (box.width - w) * (ox ?? 0.5);
+    const top = (box.height - h) * (oy ?? 0.5);
+    const fx = (px - left) / w;
+    const fy = (py - top) / h;
+    lens.style.backgroundSize = `${w * LOUPE.zoom}px ${h * LOUPE.zoom}px`;
+    lens.style.backgroundPosition = `${-(fx * w * LOUPE.zoom - LOUPE.size / 2)}px ${-(fy * h * LOUPE.zoom - LOUPE.size / 2)}px`;
+    const x = px - LOUPE.size / 2;
+    const y = py - LOUPE.size / 2;
+    if (now) gsap.set(lens, { x, y });
+    else {
+      xTo(x);
+      yTo(y);
+    }
+  };
+  const enter = (e: PointerEvent) => {
+    const b = (e.target as Element).closest<HTMLElement>('.product__zoom');
+    if (!b || b === host) return;
+    host = b;
+    img = b.querySelector<HTMLImageElement>('img');
+    if (!img) return;
+    lens.style.backgroundImage = `url("${sharpest(img)}")`;
+    b.appendChild(lens);
+    place(e, true);
+    gsap.fromTo(lens, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: reducedMotion() ? 0 : 0.3, ease: 'power3.out', overwrite: 'auto' });
+  };
+  const leave = (e: PointerEvent) => {
+    if (!host || (e.relatedTarget instanceof Node && host.contains(e.relatedTarget))) return;
+    host = null;
+    gsap.to(lens, { opacity: 0, scale: 0.9, duration: reducedMotion() ? 0 : 0.2, ease: 'power2.in', onComplete: () => lens.remove() });
+  };
+  const move = (e: PointerEvent) => place(e);
+  main.addEventListener('pointerover', enter);
+  main.addEventListener('pointerout', leave);
+  main.addEventListener('pointermove', move, { passive: true });
+  return () => {
+    main.removeEventListener('pointerover', enter);
+    main.removeEventListener('pointerout', leave);
+    main.removeEventListener('pointermove', move);
+    lens.remove();
+  };
+}
+
 /* --------------------------------------------------------------- add to bag --------------------------------------------------------------- */
 
 function addForm(form: HTMLFormElement, lang: Lang): void {
@@ -183,6 +279,12 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     say(r.dataset.left === '1' ? t.product.lastOne : '');
   });
 
+  // A sold-out size answers a tap with a small shake, so it reads as "not this one", not as broken.
+  form.addEventListener('click', (e) => {
+    const out = (e.target as Element).closest<HTMLElement>('.pick__size.is-out');
+    if (out && !reducedMotion()) gsap.fromTo(out, { x: -3 }, { x: 0, duration: 0.45, ease: 'elastic.out(1, 0.3)', overwrite: true });
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const picked = form.querySelector<HTMLInputElement>('input[type="radio"]:checked');
@@ -201,6 +303,8 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     const card = form.closest('.spread, .product');
     const plate = card?.querySelector<HTMLElement>('.spread__plate, .product__plate') ?? null;
     dropIntoBag(plate);
+    // a short tick on phones that can (Android); iPhones ignore it
+    if (window.matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(12);
     label(t.product.added);
     say('');
   });
@@ -253,20 +357,29 @@ function productPage(main: HTMLElement, lang: Lang): () => void {
   const observers: IntersectionObserver[] = [];
   const counter = main.querySelector<HTMLElement>('[data-gallery-i]');
   const gallery = main.querySelector<HTMLElement>('[data-gallery]');
+  const bar = main.querySelector<HTMLElement>('[data-gallery-bar]');
+  const offs: (() => void)[] = [];
   if (counter && gallery) {
     const io = new IntersectionObserver(
       (entries) => {
-        for (const en of entries) if (en.isIntersecting) counter.textContent = String([...gallery.children].indexOf(en.target) + 1);
+        for (const en of entries) if (en.isIntersecting) counter.textContent = pad2([...gallery.children].indexOf(en.target) + 1);
       },
       { root: gallery, threshold: 0.6 },
     );
     [...gallery.children].forEach((li) => io.observe(li));
     observers.push(io);
   }
+  // The hairline under the photographs fills as they are swiped: how far through the dress you are.
+  if (gallery && bar) {
+    const fill = () => bar.style.setProperty('--g', ((gallery.scrollLeft + gallery.clientWidth) / Math.max(1, gallery.scrollWidth)).toFixed(4));
+    gallery.addEventListener('scroll', fill, { passive: true });
+    offs.push(() => gallery.removeEventListener('scroll', fill));
+  }
 
   const form = main.querySelector<HTMLFormElement>('.product__form');
-  const bar = main.querySelector<HTMLElement>('[data-buybar]');
-  if (form && bar) {
+  const buybar = main.querySelector<HTMLElement>('[data-buybar]');
+  if (form && buybar) {
+    const bar = buybar;
     const io = new IntersectionObserver(([en]) => {
       const show = !!en && !en.isIntersecting && en.boundingClientRect.top < 0;
       if (show === !bar.hidden) return;
@@ -283,7 +396,10 @@ function productPage(main: HTMLElement, lang: Lang): () => void {
       window.setTimeout(() => form.querySelector<HTMLInputElement>('input[type="radio"]:not(:disabled)')?.focus({ preventScroll: true }), 400);
     });
   }
-  return () => observers.forEach((o) => o.disconnect());
+  return () => {
+    observers.forEach((o) => o.disconnect());
+    offs.forEach((off) => off());
+  };
 }
 
 /* ----------------------------------------------------------------- checkout --------------------------------------------------------------- */

@@ -82,10 +82,39 @@
   color: var(--ink-3);
 }
 
-.pick__size:has(input:checked) {
+/* the chosen size fills with ink wiped up from its foot (0.28s), not switched at once */
+.pick__size::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
   background: var(--ink);
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition: transform 0.28s var(--ease-out);
+}
+
+.pick__n,
+.pick__l {
+  position: relative;
+}
+
+.pick__size:has(input:checked) {
   border-color: var(--ink);
   color: var(--ground);
+}
+
+.pick__size:has(input:checked)::before {
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick__size::before {
+    transition: none;
+  }
+}
+
+[data-motion='off'] .pick__size::before {
+  transition: none;
 }
 
 .pick__size:has(input:checked) .pick__l {

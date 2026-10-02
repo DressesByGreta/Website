@@ -11,8 +11,9 @@
  */
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { SplitText } from 'gsap/SplitText';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, SplitText);
 ScrollTrigger.config({ ignoreMobileResize: true });
 ScrollTrigger.defaults({ invalidateOnRefresh: true });
 
@@ -64,9 +65,11 @@ export function pageMotion(main: HTMLElement, opts: { arrivedByFlight: boolean }
     if (motionStopped()) return;
     const undo: Array<() => void> = [];
     if (kind === 'home') undo.push(hero(main));
-    if (kind === 'home' || kind === 'shop') shop(main, opts.arrivedByFlight);
+    if (kind === 'home' || kind === 'shop') undo.push(shop(main, opts.arrivedByFlight));
     if (kind === 'product') product(main, opts.arrivedByFlight);
     if (kind === 'confirmation') confirmation(main);
+    printLines(main);
+    sealRises();
     return () => undo.forEach((f) => f());
   });
 
@@ -120,7 +123,9 @@ export function printPlate(plate: HTMLElement, delay = 0, duration = 0.9): void 
 }
 
 function hero(main: HTMLElement): () => void {
-  gsap.from('.hero__content', { opacity: 0, y: 10, duration: 0.5, ease: 'expo.out', delay: 0.3, lazy: false });
+  // Settles without fading: the button is the page's largest early paint (LCP), so it must never
+  // wait for the script to become visible.
+  gsap.from('.hero__content', { y: 10, duration: 0.5, ease: 'expo.out', delay: 0.3, lazy: false });
   const plate = main.querySelector<HTMLElement>('.hero__plate');
   if (plate) printPlate(plate, 0, 1.1);
   // The photograph lags the page (it drifts down inside its frame), so the edge it uncovers is
@@ -196,7 +201,8 @@ function dock(main: HTMLElement): () => void {
   };
 }
 
-function shop(main: HTMLElement, arrivedByFlight: boolean): void {
+function shop(main: HTMLElement, arrivedByFlight: boolean): () => void {
+  let off = () => undefined as void;
   const spreads = gsap.utils.toArray<HTMLElement>('.spread', main);
   const list = main.querySelector<HTMLElement>('.spreads');
   if (list && spreads.length) {
@@ -223,15 +229,23 @@ function shop(main: HTMLElement, arrivedByFlight: boolean): void {
         },
       });
     }
-    // Scroll positions are computed from the list (never from a stuck sheet, whose box moves).
-    const geo = () => {
-      const top = list.getBoundingClientRect().top + window.scrollY;
-      const h = first.getBoundingClientRect().height;
-      const stick = parseFloat(getComputedStyle(first).top) || 0;
-      return { top, h, stick };
-    };
-    spreads.forEach((sp, i) => {
-      if (i === 0) return;
+    // Scroll positions are computed from the list (never from a stuck sheet, whose box moves),
+    // measured once per refresh and shared: every sheet has five triggers, and each reading the
+    // layout itself cost a forced layout per trigger (over a second on a phone with 40 dresses).
+    let measured: { top: number; h: number; stick: number } | null = null;
+    const forget = () => (measured = null);
+    ScrollTrigger.addEventListener('refreshInit', forget);
+    off = () => ScrollTrigger.removeEventListener('refreshInit', forget);
+    const geo = () =>
+      (measured ??= {
+        top: list.getBoundingClientRect().top + window.scrollY,
+        h: first.getBoundingClientRect().height,
+        stick: parseFloat(getComputedStyle(first).top) || 0,
+      });
+    // Each sheet's five triggers are built only as it comes within a screen and a half of view: built
+    // all at once, 40 dresses' worth of writes and layout reads blocked a phone for over a second
+    // (Lighthouse). A sheet never approached keeps the finished CSS state, which is the page anyway.
+    const build = (sp: HTMLElement, i: number) => {
       const prev = spreads[i - 1]!;
       const enter = () => {
         const g = geo();
@@ -252,7 +266,24 @@ function shop(main: HTMLElement, arrivedByFlight: boolean): void {
       if (pageNo) gsap.fromTo(pageNo, { yPercent: 100 }, { yPercent: 0, ease: 'none', scrollTrigger: { start: at(0.25), end: at(0.8), scrub: true } });
       if (cap) gsap.fromTo(cap, { opacity: 0, y: 16 }, { opacity: 1, y: 0, ease: 'none', scrollTrigger: { start: at(0.4), end: stuck, scrub: true } });
       gsap.to(prev.querySelector('.spread__page'), { scale: 0.94, opacity: 0.45, ease: 'none', scrollTrigger: { start: enter, end: stuck, scrub: true } });
-    });
+    };
+    const near = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          if (!en.isIntersecting) continue;
+          near.unobserve(en.target);
+          const i = spreads.indexOf(en.target as HTMLElement);
+          if (i > 0) build(en.target as HTMLElement, i);
+        }
+      },
+      { rootMargin: '0px 0px 150% 0px' },
+    );
+    spreads.slice(1).forEach((sp) => near.observe(sp));
+    const unwatch = off;
+    off = () => {
+      unwatch();
+      near.disconnect();
+    };
   }
 
   // Index view: phones print each plate as it arrives; desktop prints the preview once.
@@ -269,6 +300,7 @@ function shop(main: HTMLElement, arrivedByFlight: boolean): void {
   if (preview && preview.offsetParent !== null && !arrivedByFlight) printPlate(preview, 0.1, 0.9);
   const rows = gsap.utils.toArray<HTMLElement>('.toc__link', main).slice(0, 14);
   if (rows.length && tiles.length === 0) gsap.from(rows, { opacity: 0, y: 8, duration: 0.5, ease: 'expo.out', stagger: 0.025 });
+  return off;
 }
 
 function product(main: HTMLElement, arrivedByFlight: boolean): void {
@@ -287,6 +319,43 @@ function product(main: HTMLElement, arrivedByFlight: boolean): void {
     gsap.set(next, { '--p': 0 });
     ScrollTrigger.create({ trigger: next, start: 'top 80%', once: true, onEnter: () => printPlate(next, 0, 0.9) });
   }
+}
+
+/**
+ * Headings and introductions marked data-lines print line by line, like the plates: each line rises
+ * out of its own mask while a 1px ink bar on the mask's foot fades, the scan bar of a print. Lines are
+ * measured by SplitText, which splits again when a resize rewraps them; the context reverts it.
+ */
+function printLines(main: HTMLElement): void {
+  gsap.utils.toArray<HTMLElement>('[data-lines]', main).forEach((el) => {
+    SplitText.create(el, {
+      type: 'lines',
+      mask: 'lines',
+      linesClass: 'ln',
+      // lines keep every word whole and in order, so screen readers read the text as it is (an
+      // aria-label on a paragraph is not allowed, and Lighthouse flagged it)
+      aria: 'none',
+      autoSplit: true,
+      onSplit: (self) => {
+        const masks = self.masks as HTMLElement[];
+        gsap.set(masks, { '--s': 1 });
+        const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
+        tl.from(self.lines, { yPercent: 105, duration: 0.9, ease: 'expo.out', stagger: 0.08 }, 0).to(masks, { '--s': 0, duration: 0.6, ease: 'power2.out', stagger: 0.08 }, 0.25);
+        return tl;
+      },
+    });
+  });
+}
+
+/** The end of the book: as the footer arrives, the gold logo rises into place and darkens to full. */
+function sealRises(): void {
+  const mark = document.querySelector<HTMLElement>('footer.foot .foot__brand');
+  if (!mark) return;
+  gsap.fromTo(
+    mark,
+    { yPercent: 40, opacity: 0.25, scale: 0.92 },
+    { yPercent: 0, opacity: 1, scale: 1, ease: 'none', scrollTrigger: { trigger: mark, start: 'top bottom', end: 'bottom bottom', scrub: 0.6 } },
+  );
 }
 
 function confirmation(main: HTMLElement): void {

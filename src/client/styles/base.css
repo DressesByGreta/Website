@@ -232,3 +232,21 @@ textarea {
     text-decoration-color: var(--ink);
   }
 }
+
+/* lines printed by SplitText (motion.ts printLines): each mask carries a 1px ink bar on its foot that
+   fades as the line rises through it */
+.ln-mask {
+  position: relative;
+}
+
+.ln-mask::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink);
+  opacity: var(--s, 0);
+  pointer-events: none;
+}

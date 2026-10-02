@@ -179,7 +179,7 @@ export function payTestView(lang: Lang, order: OrderRow): Raw {
 export function notFoundView(lang: Lang, dresses: Product[] = []): Raw {
   const t = copy[lang];
   return html`<div class="missing container">
-    <h1 class="co-title">${t.notFound.title}</h1>
+    <h1 class="co-title" data-lines>${t.notFound.title}</h1>
     <p class="body">${t.notFound.body}</p>
     <form class="missing__search" role="search" action="${href('/dyqani', lang)}" data-missing-search>
       <label class="sr-only" for="missing-q">${t.search.title}</label>

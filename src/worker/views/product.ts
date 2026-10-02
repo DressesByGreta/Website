@@ -1,5 +1,5 @@
 /** A dress: every photograph down the left, the caption held beside it, the next dress at the foot. */
-import { formatLek, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
+import { formatLek, pad2, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { Returns } from '../../shared/legal';
@@ -35,7 +35,10 @@ export function productView(lang: Lang, p: Product, index: number, total: number
               })}</button></li>`,
           )}
         </ol>
-        ${p.photos.length > 1 ? html`<p class="product__count" aria-hidden="true"><span data-gallery-i>1</span> / ${p.photos.length}</p>` : ''}
+        ${p.photos.length > 1
+          ? html`<p class="product__count" aria-hidden="true"><span data-gallery-i>01</span> / ${pad2(p.photos.length)}</p>
+              <span class="product__progress" aria-hidden="true"><span data-gallery-bar style="--g:${(1 / p.photos.length).toFixed(4)}"></span></span>`
+          : ''}
       </div>
 
       <div class="product__info">

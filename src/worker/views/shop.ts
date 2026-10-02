@@ -82,10 +82,11 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
 function tocItem(p: Product, i: number, lang: Lang, s: ShopState): Raw {
   const url = href(`/fustan/${p.slug}`, lang, { masa: s.size });
   const cover = p.photos[0];
+  const second = p.photos[1];
   return html`<li class="toc__item">
     <a class="toc__link" href="${url}" data-fly-link data-flip="${flipId(p)}" data-name="${p.name}"${
       cover ? html` data-src="${photoAt(cover, 960)}" data-srcset="${photoSrcset(cover)}" data-lqip="${cover.lqip}"` : ''
-    }>
+    }${second ? html` data-src2="${photoAt(second, 960)}" data-srcset2="${photoSrcset(second)}"` : ''}>
       <span class="toc__num">${pad2(i + 1)}</span>
       ${plate(cover, { alt: '', sizes: '(min-width: 768px) 24vw, 46vw', eager: i === 0, target: 480, flip: flipId(p), cls: 'toc__plate', tag: 'span' })}
       <span class="toc__name">${p.name}${s.category === 'new' ? '' : newTag(p, lang)}</span>
