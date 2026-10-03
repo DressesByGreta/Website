@@ -1668,3 +1668,109 @@ body {
     transform: none;
   }
 }
+
+/* ---------- phones and touch: every control a finger can hit, and the screen for the work ---------- */
+.adm-top {
+  transition: transform 0.3s var(--ease-out);
+}
+
+@media (max-width: 767.98px) {
+  .adm-top-away .adm-top {
+    transform: translateY(-100%);
+  }
+  .adm-main {
+    padding-top: var(--s-5);
+  }
+  .adm-card {
+    padding: var(--s-4);
+  }
+  /* figures two by two, not one long column */
+  .adm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-5) var(--s-3);
+  }
+  /* the save bar on one row: the status left, Ruaj right; the unsaved note above them when there is one */
+  .adm-savebar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'note note' 'status save';
+    gap: var(--s-1) var(--s-3);
+  }
+  .adm-savebar .adm-status {
+    grid-area: status;
+  }
+  .adm-savebar .adm-note {
+    grid-area: note;
+  }
+  .adm-savebar .adm-note:empty {
+    display: none;
+  }
+  .adm-savebar .btn {
+    grid-area: save;
+    margin: 0;
+    min-width: 112px;
+  }
+  .adm-savebar .adm-radio {
+    margin-right: var(--s-4);
+  }
+  /* a dress row opens from anywhere on it; the grip and the arrows sit above the stretched link */
+  .adm-row {
+    position: relative;
+  }
+  .adm-row__name::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .adm-row__grip,
+  .adm-row__order {
+    position: relative;
+    z-index: 1;
+  }
+  /* the size cells only show stock: a tap on them goes through to the row */
+  .adm-row__stock {
+    pointer-events: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .adm-link,
+  .adm-filter,
+  .adm-seg__item,
+  .adm-check,
+  .adm-radio,
+  .adm-photo__alt summary {
+    min-height: 44px;
+  }
+  .adm-link {
+    padding: 0 var(--s-1);
+    margin: 0 calc(var(--s-1) * -1);
+  }
+  .adm-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .adm-check input {
+    width: 22px;
+    height: 22px;
+  }
+  .adm-radio input {
+    width: 20px;
+    height: 20px;
+    box-shadow: inset 0 0 0 4px var(--ground);
+  }
+  .adm-brand {
+    min-height: 44px;
+  }
+  .adm-table td a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-top {
+    transition: none;
+  }
+}

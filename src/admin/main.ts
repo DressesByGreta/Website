@@ -212,6 +212,22 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('popstate', () => void route());
 
+// Phones: the top bar steps aside while scrolling down and comes back on the way up, so a form gets
+// the screen (two rows of bar and the save bar took a third of it). It stays while anything in it has focus.
+let lastY = 0;
+window.addEventListener(
+  'scroll',
+  () => {
+    const y = window.scrollY;
+    if (Math.abs(y - lastY) < 6) return;
+    const phone = window.matchMedia('(max-width: 767.98px)').matches;
+    const away = phone && y > 120 && y > lastY && !document.querySelector('.adm-top')?.contains(document.activeElement);
+    document.documentElement.classList.toggle('adm-top-away', away);
+    lastY = y;
+  },
+  { passive: true },
+);
+
 let newOrders = 0;
 let demo = false;
 async function refreshBadge(): Promise<void> {

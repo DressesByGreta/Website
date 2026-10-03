@@ -487,3 +487,12 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 - **Phone gallery:** the counter is set in two-digit folios (01 / 04) and a hairline under the photographs fills in ink as they are swiped.
 - **The seal (end of the book):** as the footer arrives, the gold logo rises from 40% below, 0.92 scale and 25% opacity into place, scrubbed to the scroll.
 - **Performance:** the hero's text block settles without fading, so the largest early paint never waits for the script. The spreads' page-turn triggers are built only as each sheet comes within a screen and a half (an IntersectionObserver) and share one measurement per refresh: built all at once they forced thousands of style and layout recalculations (Lighthouse, mobile: blocking time 1,030 ms to 60 to 140 ms, longest task 1.76 s to 0.17 to 0.33 s). A sheet never approached keeps the finished CSS state.
+
+## Changes 2026-10-03 (the admin on a phone)
+
+- **Touch targets:** on touch screens (pointer: coarse) every admin control is at least 44px: text links, filters, segmented controls, the photo description toggle, checkbox and radio labels (the boxes grow to 22px and 20px), table links, and the square icon buttons (32px to 44px).
+- **Dress rows on phones:** the whole row opens the dress (the name's link is stretched over it); the grip and the move arrows sit above it, and the stock cells let a tap through.
+- **The top bar steps aside:** on phones it slides up out of view while scrolling down (past 120px) and returns on the way up; it stays while anything in it has focus.
+- **The save bar:** one row on phones (Draft and Publikuar left, Ruaj right, the unsaved note above them only when there is one), 73px instead of two rows.
+- **Phones:** cards pad 16px; the sales and visit figures stand two by two.
+- **Checked:** no page of the shop or the admin scrolls sideways at 320px or 375px (French included); every storefront control was already 40px or more.
