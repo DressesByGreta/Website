@@ -6,7 +6,7 @@ import { clientIp } from '../auth';
 import { createOrder, getOrder, parseOrderInput, setOrderStatus, setPaymentStatus } from '../orders';
 import { gatewayFor } from '../payments';
 import { BOT_UA, count, parseHit, rowsFor, tooMany } from '../stats';
-import { createRequest, parseRequest } from '../requests';
+import { bookedOn, createRequest, parseRequest } from '../requests';
 import { orderAlert, requestAlert } from '../telegram';
 import type { AppEnv } from '../types';
 
@@ -24,6 +24,7 @@ publicApi.get('/products', async (c) => {
       price: p.price,
       color: p.color,
       categories: p.categories,
+      occasions: p.occasions,
       stock: p.stock,
       cover: p.photos[0] ?? null,
       isNew: p.isNew,
@@ -48,6 +49,13 @@ publicApi.post('/orders', async (c) => {
   // Telegram, after the response: cash orders now, card orders once the bank says paid
   if (res.created && !res.payUrl) c.executionCtx.waitUntil(orderAlert(c.env, origin, res.id));
   return c.json({ id: res.id, number: res.number, payUrl: res.payUrl ?? null }, 201);
+});
+
+/** The dresses booked on a day (confirmed rentals), for "shop by date": ids and sizes only. */
+publicApi.get('/booked', async (c) => {
+  const day = c.req.query('date') ?? '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return c.json({ error: 'invalid' }, 400);
+  return c.json({ date: day, booked: await bookedOn(c.env.DB, day) }, 200, { 'cache-control': 'public, max-age=60' });
 });
 
 /** A rental request or a "tell me when this size is back", from a dress page (requests.ts). */

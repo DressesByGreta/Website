@@ -123,10 +123,11 @@ export function productView(lang: Lang, p: Product, index: number, total: number
         <div class="product__hold">
           <h1 class="product__name">${p.name}${newTag(p, lang)}</h1>
           ${price(p, lang, 'price product__price')}
-          <form class="product__form" data-add data-product="${bagData(p)}" novalidate>
+          <form class="product__form" data-add data-product="${bagData(p)}" data-measures="${JSON.stringify(p.measures)}" novalidate>
             ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, 'size', size)}
             <p class="pick__hint small" data-pick-hint aria-live="polite"></p>
             ${p.fit ? html`<p class="small product__fit"><span>${t.product.fit}</span> ${p.fit}</p>` : ''}
+            <p class="small product__me"><span data-me-line></span> <button class="tlink" type="button" data-open="me" aria-haspopup="dialog" data-me-label>${t.me.find}</button></p>
             <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
           </form>
           <p class="product__trust"><span>${t.checkout.cod}</span><span aria-hidden="true">·</span><a href="${href('/', lang)}#visit">${t.nav.visit}</a></p>
@@ -143,6 +144,7 @@ export function productView(lang: Lang, p: Product, index: number, total: number
               ? html`<a class="tlink" href="https://wa.me/${x.whatsapp}?text=${encodeURIComponent(t.product.waText(p.name, null, ''))}" target="_blank" rel="noopener" data-wa="${x.whatsapp}" data-wa-name="${p.name}">${t.product.whatsapp}</a>`
               : html`<a class="tlink" href="${SITE.message}" target="_blank" rel="noopener">${t.product.ask}</a>`}
             ${p.instagramUrl ? html`<a class="tlink" href="${p.instagramUrl}" target="_blank" rel="noopener">${t.product.instagram}</a>` : ''}
+            <button class="tlink" type="button" data-save="${p.slug}" aria-pressed="false">${t.saved.save}</button>
             <button class="tlink" type="button" data-share>${t.product.share}</button>
             <span class="sr-only" aria-live="polite" data-share-status></span>
           </p>

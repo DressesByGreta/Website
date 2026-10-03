@@ -20,7 +20,7 @@ const xml = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 
 seo.get('/robots.txt', (c) => {
   const origin = new URL(c.req.url).origin;
-  const body = ['User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /api/', 'Disallow: /porosia', 'Disallow: /pagesa/', '', `Sitemap: ${origin}/sitemap.xml`, ''];
+  const body = ['User-agent: *', 'Allow: /', 'Disallow: /admin', 'Disallow: /api/', 'Disallow: /porosia', 'Disallow: /pagesa/', 'Disallow: /te-ruajtura', '', `Sitemap: ${origin}/sitemap.xml`, ''];
   return c.text(body.join('\n'), 200, HOUR);
 });
 

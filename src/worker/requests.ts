@@ -123,3 +123,12 @@ export async function waitingFor(db: D1Database, productId: string, sizes: Size[
     .all<{ size: string; n: number }>();
   return Object.fromEntries((rows.results ?? []).map((r) => [r.size, r.n]));
 }
+
+/** Every dress and size booked (confirmed rentals) on one day: what "shop by date" dims. No names. */
+export async function bookedOn(db: D1Database, day: string): Promise<{ id: string; size: Size }[]> {
+  const rows = await db
+    .prepare(`SELECT product_id AS id, size FROM requests WHERE kind = 'rental' AND status = 'confirmed' AND event_date = ?`)
+    .bind(day)
+    .all<{ id: string; size: Size }>();
+  return rows.results ?? [];
+}

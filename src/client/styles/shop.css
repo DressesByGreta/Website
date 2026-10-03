@@ -734,3 +734,145 @@
   text-underline-offset: 0.35em;
   text-decoration-thickness: 1px;
 }
+
+/* ---------- her size and her date (personal.ts): marks, never badges ---------- */
+
+/* her size: a short ink rule under the numeral, in the size picker and the shop's size strip */
+.pick__size.is-mine .pick__n,
+.si.is-mine .si__n {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.pick__size.is-mine:has(input:checked) .pick__n {
+  text-decoration-color: var(--ground);
+}
+
+/* a dress booked on her date, in her size: its photograph recedes like a turned sheet */
+.spread.is-booked .spread__plate .plate__img,
+.toc__item.is-booked .toc__plate .plate__img {
+  opacity: 0.45;
+}
+
+.toc__item.is-booked .toc__name {
+  color: var(--ink-3);
+}
+
+.spread__me {
+  color: var(--ink-2);
+}
+
+.lb-me {
+  min-height: 44px;
+}
+
+/* ---------- the size and date drawer ---------- */
+.me {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.me__sec {
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.me__h {
+  padding: 0;
+  font-size: var(--fs-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.me__fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.me__fields .field__input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the size, as she types: a large tabular numeral */
+.me__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  min-height: 1px;
+}
+
+.me__result:empty {
+  display: none;
+}
+
+.me__label {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}
+
+.me__size {
+  font-size: clamp(56px, 16vw, 72px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.me__letter {
+  font-size: var(--fs-ui);
+  color: var(--ink-3);
+}
+
+.me__note {
+  flex-basis: 100%;
+  color: var(--ink-2);
+}
+
+.me__date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+.me__date .field__input {
+  flex: 1 1 180px;
+}
+
+.me__privacy {
+  color: var(--ink-3);
+}
+
+.me__clear {
+  display: block;
+  min-height: 44px;
+  margin: var(--s-2) auto 0;
+}
+
+/* ---------- saved dresses ---------- */
+.saved {
+  display: grid;
+  gap: var(--s-4);
+  justify-items: start;
+  padding-block: var(--section) var(--s-6);
+}
+
+.saved__acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-4);
+}
+
+.saved__empty {
+  max-width: 46ch;
+  color: var(--ink-2);
+}

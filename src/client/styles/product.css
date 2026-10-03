@@ -526,3 +526,8 @@
 .rq-booked {
   color: var(--ink-2);
 }
+
+/* her size for this dress, under the sizes */
+.product__me {
+  color: var(--ink-2);
+}

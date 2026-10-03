@@ -6,6 +6,7 @@ import { bag, type Snap } from './bag';
 import type { Drawers } from './drawers';
 import { dropIntoBag, gsap, pageMotion, printPlate, reducedMotion } from './motion';
 import { navigate, type PageInit } from './router';
+import { personal } from './personal';
 import { trackForm, trackView, visitSource } from './stats';
 
 interface ProductData extends Snap {
@@ -21,6 +22,7 @@ export function initPage(lang: Lang, drawers: Drawers): PageInit {
     if (kind) trackView(kind);
     markNav();
     if (kind === 'home' || kind === 'shop') offs.push(indexPreview(main));
+    if (kind === 'home' || kind === 'shop' || kind === 'product') offs.push(personal(main, lang));
     if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang), loupe(main));
     if (kind === 'checkout') offs.push(checkoutPage(main, lang));
     if (kind === 'confirmation') confirmationPage(main);

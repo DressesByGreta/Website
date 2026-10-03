@@ -18,7 +18,7 @@ import { legalIntro, legalTitle, legalView } from '../views/legal';
 import { breadcrumbJsonLd, productJsonLd, productView, waNumber, type ProductExtras } from '../views/product';
 import { bookedDates } from '../requests';
 import { addDays, tiranaDay } from '../../shared/time';
-import { shopView, type ShopState } from '../views/shop';
+import { savedView, shopView, type ShopState } from '../views/shop';
 
 export const pages = new Hono<AppEnv>();
 
@@ -135,6 +135,35 @@ pages.get('/fustan/:slug', async (c) => {
       image: p.photos[0] ? photoAt(p.photos[0], 1600) : undefined,
       body: productView(lang, p, index, all.length, next, zones, extras, isSize(masa) ? (masa as Size) : undefined),
       jsonLd: [productJsonLd(origin(c), lang, p, returns), breadcrumbJsonLd(origin(c), lang, p)],
+    }),
+  );
+});
+
+/** Saved dresses: the list travels in the link, so it can be sent to someone (never indexed). */
+pages.get('/te-ruajtura', async (c) => {
+  const lang = c.get('lang');
+  const t = copy[lang];
+  const asked = (c.req.query('f') ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => /^[a-z0-9-]{1,80}$/.test(x))
+    .slice(0, 40);
+  const all = asked.length ? await listVisible(c.env.DB, lang) : [];
+  const bySlug = new Map(all.map((p) => [p.slug, p]));
+  const list = asked.map((x) => bySlug.get(x)).filter((p): p is NonNullable<typeof p> => !!p);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: '/te-ruajtura',
+      params: { f: asked.join(',') || undefined },
+      title: t.saved.metaTitle,
+      description: t.saved.metaDescription,
+      kind: 'shop',
+      noindex: true,
+      image: list[0]?.photos[0] ? photoAt(list[0].photos[0], 1600) : undefined,
+      body: savedView(lang, list, asked.length),
     }),
   );
 });

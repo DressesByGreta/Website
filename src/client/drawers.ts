@@ -3,13 +3,14 @@
  * elements; GSAP slides them (one engine). Escape and the backdrop close them; focus returns.
  */
 import { markSvg } from '../shared/brand';
-import { CATEGORIES, SIZES, SIZE_LETTER, formatLek, photoAt } from '../shared/catalog';
+import { CATEGORIES, MEASURES, SIZES, SIZE_LETTER, formatLek, isSize, photoAt, recommendSize, type Body } from '../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type Line } from './bag';
+import * as me from './me';
 import { gsap, motionStopped, reducedMotion } from './motion';
 
-const SIDE = { menu: 'left', bag: 'right', search: 'top' } as const;
+const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right' } as const;
 type Kind = keyof typeof SIDE;
 const INSTAGRAM = 'https://www.instagram.com/dressesbygreta/';
 const MESSAGE = 'https://ig.me/m/dressesbygreta';
@@ -36,7 +37,7 @@ export class Drawers {
   private opener: Element | null = null;
 
   constructor(private lang: Lang) {
-    this.d = { menu: this.make('menu'), bag: this.make('bag'), search: this.make('search') };
+    this.d = { menu: this.make('menu'), bag: this.make('bag'), search: this.make('search'), me: this.make('me') };
     this.buildMenu();
     this.buildSearch();
     document.addEventListener('click', (e) => {
@@ -57,7 +58,7 @@ export class Drawers {
     const d = document.createElement('dialog');
     d.className = `drawer drawer--${SIDE[kind]}${kind === 'menu' ? ' drawer--dark' : ''}`;
     d.dataset.kind = kind;
-    const title = kind === 'menu' ? this.t.nav.menu : kind === 'bag' ? this.t.bag.title : this.t.search.title;
+    const title = kind === 'menu' ? this.t.nav.menu : kind === 'bag' ? this.t.bag.title : kind === 'me' ? this.t.me.title : this.t.search.title;
     d.setAttribute('aria-label', title);
     d.innerHTML = kind === 'menu' ? html`<div class="drawer__bar drawer__bar--x"><button class="drawer__x" type="button" data-close aria-label="${this.t.nav.close}">${ICON.close}</button><p class="drawer__title sr-only">${title}</p><a class="drawer__brand" href="${href('/', this.lang)}" aria-label="${this.t.a11y.wordmark}">${raw(markSvg('drawer__mark'))}</a></div><div class="drawer__body" data-body></div><div class="drawer__foot" data-foot hidden></div>`.value : html`<div class="drawer__bar">
         <p class="drawer__title">${title}</p>
@@ -87,6 +88,7 @@ export class Drawers {
     for (const other of Object.values(this.d)) if (other.open && other !== d) other.close();
     this.opener = opener ?? document.activeElement;
     if (kind === 'bag') void bag.refresh(this.lang);
+    if (kind === 'me') this.renderMe();
     d.showModal();
     document.documentElement.classList.add('drawer-open');
     const side = SIDE[kind];
@@ -156,6 +158,8 @@ export class Drawers {
       <div class="mnav__secondary">
         <a href="${MESSAGE}" target="_blank" rel="noopener">${t.visit.ask}</a>
         <a href="${INSTAGRAM}" target="_blank" rel="noopener">${t.footer.rules}</a>
+        <button type="button" data-menu-me>${t.me.open}</button>
+        <a href="${href('/te-ruajtura', l)}">${t.saved.title}</a>
         <button type="button" data-menu-search>${t.nav.search}</button>
         <button type="button" data-motion-toggle>${motionStopped() ? t.motion.play : t.motion.stop}</button>
       </div>
@@ -177,6 +181,11 @@ export class Drawers {
       this.d.menu.close();
       document.documentElement.classList.remove('drawer-open');
       this.open('search');
+    });
+    this.d.menu.querySelector('[data-menu-me]')!.addEventListener('click', () => {
+      this.d.menu.close();
+      document.documentElement.classList.remove('drawer-open');
+      this.open('me');
     });
   }
 
@@ -242,6 +251,85 @@ export class Drawers {
         if (line) bag.remove(line.id, line.size);
       }),
     );
+  }
+
+  /* -------------------------------------------------------- size and date -------------------------------------------------------- */
+
+  /**
+   * Find my size and shop by date: her measurements (or a size picked directly) and the date of her
+   * event. The size shows as she types; Save keeps it on this phone and every page marks it.
+   */
+  private renderMe(): void {
+    const t = this.t;
+    const now = me.get();
+    const body = this.d.me.querySelector<HTMLElement>('[data-body]')!;
+    const foot = this.d.me.querySelector<HTMLElement>('[data-foot]')!;
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+    body.innerHTML = html`<form class="me" data-me-form novalidate>
+      <fieldset class="me__sec">
+        <legend class="me__h">${t.me.measuresTitle}</legend>
+        <p class="small">${t.me.measuresHint}</p>
+        <div class="me__fields">${MEASURES.map(
+          (k) => html`<div class="field"><label class="field__label" for="me-${k}">${t.product.measure[k]}</label><input class="field__input" id="me-${k}" name="${k}" inputmode="numeric" maxlength="3" autocomplete="off" value="${now.body[k] ?? ''}" /></div>`,
+        )}</div>
+        <p class="me__result" data-me-result aria-live="polite"></p>
+      </fieldset>
+      <fieldset class="me__sec">
+        <legend class="me__h">${t.me.orPick}</legend>
+        <div class="pick__row">${SIZES.map(
+          (s) => html`<label class="pick__size"><input type="radio" name="size" value="${s}"${now.size === s ? raw(' checked') : ''} /><span class="pick__n">${s}</span><span class="pick__l">${SIZE_LETTER[s]}</span></label>`,
+        )}</div>
+      </fieldset>
+      <fieldset class="me__sec">
+        <legend class="me__h">${t.me.dateTitle}</legend>
+        <p class="small">${t.me.dateHint}</p>
+        <div class="me__date"><input class="field__input" type="date" name="date" min="${today}" value="${now.date && now.date >= today ? now.date : ''}" aria-label="${t.me.dateTitle}" /><button class="tlink" type="button" data-me-nodate>${t.me.clearDate}</button></div>
+      </fieldset>
+      <p class="small me__privacy">${t.me.privacy}</p>
+    </form>`.value;
+    foot.hidden = false;
+    foot.innerHTML = html`<button class="btn btn--wide" type="button" data-me-save>${t.me.save}</button><button class="tlink me__clear" type="button" data-me-clear>${t.me.clear}</button>`.value;
+    const form = body.querySelector<HTMLFormElement>('[data-me-form]')!;
+    const result = form.querySelector<HTMLElement>('[data-me-result]')!;
+    const read = (): Body => {
+      const b: Body = {};
+      for (const k of MEASURES) {
+        const n = parseInt((form.elements.namedItem(k) as HTMLInputElement).value.replace(/\D/g, ''), 10);
+        if (n >= 40 && n <= 200) b[k] = n;
+      }
+      return b;
+    };
+    const show = () => {
+      const rec = recommendSize(read());
+      if (!rec) return void (result.textContent = '');
+      // her size on the chart, live; the size buttons follow it
+      form.querySelectorAll<HTMLInputElement>('input[name="size"]').forEach((r) => (r.checked = r.value === rec.size));
+      result.innerHTML = rec.size
+        ? html`<span class="me__label">${t.me.yourSize}</span><span class="me__size">${rec.size}</span><span class="me__letter">${SIZE_LETTER[rec.size]}</span><span class="small me__note">${t.me.chartNote}</span>`.value
+        : html`<span class="small">${t.me.tooBig}</span>`.value;
+    };
+    form.addEventListener('input', (e) => {
+      const el = e.target as HTMLInputElement;
+      if ((MEASURES as readonly string[]).includes(el.name)) show();
+    });
+    // a size picked directly sets the measurements aside
+    form.addEventListener('change', (e) => {
+      const el = e.target as HTMLInputElement;
+      if (el.name !== 'size') return;
+      for (const k of MEASURES) (form.elements.namedItem(k) as HTMLInputElement).value = '';
+      result.textContent = '';
+    });
+    form.querySelector('[data-me-nodate]')!.addEventListener('click', () => ((form.elements.namedItem('date') as HTMLInputElement).value = ''));
+    foot.querySelector('[data-me-save]')!.addEventListener('click', () => {
+      const picked = form.querySelector<HTMLInputElement>('input[name="size"]:checked')?.value;
+      me.setAll({ body: read(), size: isSize(picked) ? picked : null, date: (form.elements.namedItem('date') as HTMLInputElement).value || null });
+      void this.close(this.d.me);
+    });
+    foot.querySelector('[data-me-clear]')!.addEventListener('click', () => {
+      me.setAll({ body: {}, size: null, date: null });
+      this.renderMe();
+    });
+    show();
   }
 
   /* ----------------------------------------------------------- search ----------------------------------------------------------- */

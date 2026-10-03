@@ -3,7 +3,7 @@
  * (name, price, cover, stock) so the drawer renders instantly, and `refresh` brings the snapshot
  * up to date from the shop before anyone pays. The server recomputes every price at checkout anyway.
  */
-import { isSize, type Photo, type Size, type Stock } from '../shared/catalog';
+import { isSize, type Category, type Occasion, type Photo, type Size, type Stock } from '../shared/catalog';
 import type { Lang } from '../shared/copy';
 
 export interface Snap {
@@ -126,7 +126,8 @@ export interface CatalogueItem {
   name: string;
   price: number | null;
   color: string;
-  categories: string[];
+  categories: Category[];
+  occasions: Occasion[];
   stock: Stock;
   cover: Photo | null;
   isNew: boolean;
