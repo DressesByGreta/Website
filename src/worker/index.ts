@@ -3,6 +3,7 @@
  * (the built client, public/) are served by Workers Static Assets before this code runs.
  */
 import { Hono } from 'hono';
+import { purgeHits } from './db';
 import { serveImage, serveVideo } from './images';
 import { syncInstagram } from './instagram';
 import { releaseExpiredCardOrders } from './orders';
@@ -63,6 +64,7 @@ export default {
     ctx.waitUntil(releaseExpiredCardOrders(env));
     // requests delete themselves on the schedule the privacy page states
     ctx.waitUntil(purgeRequests(env.DB).catch((e) => console.error('purge requests', e)));
+    ctx.waitUntil(purgeHits(env.DB).catch((e) => console.error('purge hits', e)));
     ctx.waitUntil(syncInstagram(env));
   },
 } satisfies ExportedHandler<Env>;

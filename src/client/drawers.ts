@@ -4,7 +4,7 @@
  */
 import { markSvg } from '../shared/brand';
 import { CATEGORIES, MEASURES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, formatLek, isSize, photoAt, recommendSize, type Body } from '../shared/catalog';
-import { copy, href, LANGS, type Lang } from '../shared/copy';
+import { copy, href, LANGS, type Copy, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type CatalogueItem, type Line } from './bag';
 import * as me from './me';
@@ -12,7 +12,7 @@ import { linkPictures, showIn } from './peek';
 import { trackUse } from './stats';
 import { gsap, motionStopped, printPlate, reducedMotion } from './motion';
 
-const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right' } as const;
+const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right', stylist: 'right' } as const;
 type Kind = keyof typeof SIDE;
 const INSTAGRAM = 'https://www.instagram.com/dressesbygreta/';
 const MESSAGE = 'https://ig.me/m/dressesbygreta';
@@ -31,6 +31,12 @@ const langUrl = (l: Lang): string => {
   if (l !== 'sq') u.searchParams.set('lang', l);
   return u.href;
 };
+/** What /api/stylist answers: up to three dresses with a reason each, or an error code. */
+interface StylistReply {
+  message?: string;
+  picks?: { slug: string; name: string; price: number | null; cover: string | null; reason: string }[];
+  error?: string;
+}
 const MINUS = raw('<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10" stroke="currentColor" stroke-width="1.2"/></svg>');
 const PLUS = raw('<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10M6 1v10" stroke="currentColor" stroke-width="1.2"/></svg>');
 
@@ -39,7 +45,7 @@ export class Drawers {
   private opener: Element | null = null;
 
   constructor(private lang: Lang) {
-    this.d = { menu: this.make('menu'), bag: this.make('bag'), search: this.make('search'), me: this.make('me') };
+    this.d = { menu: this.make('menu'), bag: this.make('bag'), search: this.make('search'), me: this.make('me'), stylist: this.make('stylist') };
     this.buildMenu();
     this.buildSearch();
     document.addEventListener('click', (e) => {
@@ -60,7 +66,7 @@ export class Drawers {
     const d = document.createElement('dialog');
     d.className = `drawer drawer--${SIDE[kind]}${kind === 'menu' ? ' drawer--dark' : ''}`;
     d.dataset.kind = kind;
-    const title = kind === 'menu' ? this.t.nav.menu : kind === 'bag' ? this.t.bag.title : kind === 'me' ? this.t.me.title : this.t.search.title;
+    const title = { menu: this.t.nav.menu, bag: this.t.bag.title, me: this.t.me.title, search: this.t.search.title, stylist: this.t.stylist.title }[kind];
     d.setAttribute('aria-label', title);
     d.innerHTML = kind === 'menu' ? html`<div class="drawer__bar drawer__bar--x"><button class="drawer__x" type="button" data-close aria-label="${this.t.nav.close}">${ICON.close}</button><p class="drawer__title sr-only">${title}</p><a class="drawer__brand" href="${href('/', this.lang)}" aria-label="${this.t.a11y.wordmark}">${raw(markSvg('drawer__mark'))}</a></div><div class="drawer__body" data-body></div><div class="drawer__foot" data-foot hidden></div>`.value : html`<div class="drawer__bar">
         <p class="drawer__title">${title}</p>
@@ -96,6 +102,7 @@ export class Drawers {
       void bag.refresh(this.lang).finally(() => this.bagEntrance());
     }
     if (kind === 'me') this.renderMe();
+    if (kind === 'stylist') this.renderStylist();
     d.showModal();
     document.documentElement.classList.add('drawer-open');
     const side = SIDE[kind];
@@ -104,7 +111,8 @@ export class Drawers {
     if (kind === 'search') {
       d.querySelector<HTMLInputElement>('input')?.focus();
       void this.runSearch();
-    } else d.querySelector<HTMLElement>('[data-close]')?.focus();
+    } else if (kind === 'stylist' && window.matchMedia('(pointer: fine)').matches) d.querySelector<HTMLElement>('textarea')?.focus();
+    else d.querySelector<HTMLElement>('[data-close]')?.focus();
   }
 
   async close(d: HTMLDialogElement, restoreFocus = true): Promise<void> {
@@ -172,6 +180,7 @@ export class Drawers {
         <a href="${MESSAGE}" target="_blank" rel="noopener">${t.visit.ask}</a>
         <a href="${INSTAGRAM}" target="_blank" rel="noopener">${t.footer.rules}</a>
         <button type="button" data-menu-me>${t.me.open}</button>
+        ${'stylist' in document.body.dataset ? html`<button type="button" data-menu-stylist>${t.stylist.open}</button>` : ''}
         <a href="${href('/te-ruajtura', l)}">${t.saved.title}</a>
         <button type="button" data-menu-search>${t.nav.search}</button>
         <button type="button" data-motion-toggle>${motionStopped() ? t.motion.play : t.motion.stop}</button>
@@ -201,6 +210,11 @@ export class Drawers {
       this.d.menu.close();
       document.documentElement.classList.remove('drawer-open');
       this.open('me');
+    });
+    this.d.menu.querySelector('[data-menu-stylist]')?.addEventListener('click', () => {
+      this.d.menu.close();
+      document.documentElement.classList.remove('drawer-open');
+      this.open('stylist');
     });
   }
 
@@ -327,7 +341,7 @@ export class Drawers {
     const now = me.get();
     const body = this.d.me.querySelector<HTMLElement>('[data-body]')!;
     const foot = this.d.me.querySelector<HTMLElement>('[data-foot]')!;
-    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+    const today = this.today();
     body.innerHTML = html`<form class="me" data-me-form novalidate>
       <fieldset class="me__sec">
         <legend class="me__h">${t.me.measuresTitle}</legend>
@@ -400,6 +414,113 @@ export class Drawers {
     show();
   }
 
+  /* ------------------------------------------------------------ stylist ------------------------------------------------------------ */
+
+  /**
+   * The AI stylist (worker/stylist.ts): she describes her event in her own words and Claude picks up
+   * to three dresses from the shop, a reason under each. Her saved size and date go with the
+   * question and the drawer says so; the answer stays until she asks again.
+   */
+  private renderStylist(): void {
+    const t = this.t;
+    const body = this.d.stylist.querySelector<HTMLElement>('[data-body]')!;
+    if (!body.querySelector('[data-sty-form]')) {
+      body.innerHTML = html`<form class="sty" data-sty-form novalidate>
+          <p class="body">${t.stylist.intro}</p>
+          <div class="field">
+            <label class="field__label" for="sty-q">${t.stylist.label}</label>
+            <textarea class="field__input field__input--area" id="sty-q" name="q" rows="4" maxlength="400" placeholder="${t.stylist.example}"></textarea>
+          </div>
+          <p class="small sty__quiet" data-sty-context hidden></p>
+          <button class="btn btn--wide" type="submit">${t.stylist.ask}</button>
+          <p class="small sty__quiet">${t.stylist.privacy}</p>
+        </form>
+        <div class="sty__answer" data-sty-answer aria-live="polite"></div>`.value;
+      body.querySelector('[data-sty-form]')!.addEventListener('submit', (e) => {
+        e.preventDefault();
+        void this.askStylist();
+      });
+    }
+    const now = me.get();
+    const date = now.date && now.date >= this.today() ? now.date : null;
+    const context = body.querySelector<HTMLElement>('[data-sty-context]')!;
+    context.hidden = !now.size && !date;
+    context.textContent = context.hidden ? '' : t.stylist.context(now.size, date && t.me.day(date));
+  }
+
+  /** Opens the stylist with her words already written (a search that found nothing hands them over). */
+  askWith(words: string): void {
+    this.open('stylist');
+    const q = this.d.stylist.querySelector<HTMLTextAreaElement>('textarea');
+    if (q && words) q.value = words;
+  }
+
+  private async askStylist(): Promise<void> {
+    const t = this.t;
+    const l = this.lang;
+    const form = this.d.stylist.querySelector<HTMLFormElement>('[data-sty-form]')!;
+    const answer = this.d.stylist.querySelector<HTMLElement>('[data-sty-answer]')!;
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const field = form.querySelector<HTMLTextAreaElement>('textarea')!;
+    const say = (text: string) => (answer.innerHTML = html`<p class="sty__msg">${text}</p>`.value);
+    const q = field.value.trim();
+    if (q.length < 5) {
+      say(t.stylist.errors.short);
+      return field.focus();
+    }
+    const now = me.get();
+    button.disabled = true;
+    button.textContent = t.stylist.asking;
+    answer.setAttribute('aria-busy', 'true');
+    let data: StylistReply = {};
+    let ok = false;
+    try {
+      const res = await fetch('/api/stylist', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ q, lang: l, size: now.size, date: now.date && now.date >= this.today() ? now.date : null }),
+      });
+      data = (await res.json().catch(() => ({}))) as StylistReply;
+      ok = res.ok && Array.isArray(data.picks);
+    } catch {
+      /* offline or cut off: said below as a failure */
+    }
+    button.disabled = false;
+    answer.removeAttribute('aria-busy');
+    if (!ok) {
+      button.textContent = t.stylist.ask;
+      const errors = t.stylist.errors;
+      say(errors[data.error && data.error in errors ? (data.error as keyof Copy['stylist']['errors']) : 'failed']);
+      return;
+    }
+    trackUse('stylist');
+    button.textContent = t.stylist.again;
+    answer.innerHTML = html`<p class="sty__msg">${data.message ?? ''}</p>
+      ${data.picks!.length
+        ? html`<ul class="sty__picks">${data.picks!.map(
+            (p) => html`<li class="sty__pick">
+              <a class="sty__link" href="${href(`/fustan/${p.slug}`, l)}">
+                <span class="sty__thumb">${p.cover ? html`<img src="${p.cover}" alt="" width="72" height="96" loading="lazy" decoding="async" />` : ''}</span>
+                <span class="sty__meta">
+                  <span class="sty__name">${p.name}</span>
+                  ${p.price !== null ? html`<span class="sty__price">${formatLek(p.price, l)}</span>` : ''}
+                  <span class="small sty__why">${p.reason}</span>
+                </span>
+              </a>
+            </li>`,
+          )}</ul>`
+        : ''}
+      <p class="small sty__quiet">${t.stylist.note}</p>`.value;
+    answer.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    if (!reducedMotion()) gsap.from(answer.querySelectorAll('.sty__msg, .sty__pick, .sty__quiet'), { opacity: 0, y: 12, duration: 0.42, ease: 'power3.out', stagger: 0.07, clearProps: 'all' });
+  }
+
+  /** Today on her phone's calendar (dates she picks are hers, not the server's). */
+  private today(): string {
+    return new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  }
+
   private lastTotal = 0;
 
   /** The empty bag offers a way back in: the dresses she saved, or else the new ones. */
@@ -446,6 +567,7 @@ export class Drawers {
         <button class="btn btn--line" type="button" data-clear>${t.search.clear}</button>
       </form>
       <p class="search__status small" data-status aria-live="polite"></p>
+      ${'stylist' in document.body.dataset ? html`<p class="search__ask" data-ask hidden><button class="tlink" type="button">${t.stylist.open}</button></p>` : ''}
       <div class="search__results" data-results></div>`.value;
     const input = body.querySelector<HTMLInputElement>('input')!;
     input.addEventListener('input', () => void this.runSearch());
@@ -458,6 +580,7 @@ export class Drawers {
       void this.runSearch();
       input.focus();
     });
+    body.querySelector('[data-ask] button')?.addEventListener('click', () => this.askWith(input.value.trim()));
   }
 
   private async runSearch(): Promise<void> {
@@ -481,6 +604,8 @@ export class Drawers {
       fold(`${p.name} ${p.color} ${colors[p.color] ?? ''} ${p.categories.map((c) => `${c} ${cats[c] ?? ''}`).join(' ')} ${p.isNew ? `new ${cats.new} ${t.product.newTag}` : ''}`);
     const hits = q ? list.filter((p) => words(p).includes(q)) : list.slice(0, 12);
     status.textContent = q ? (hits.length ? t.search.results(hits.length) : t.search.none) : '';
+    const ask = body.querySelector<HTMLElement>('[data-ask]');
+    if (ask) ask.hidden = !q || hits.length > 0;
     results.innerHTML = hits
       .slice(0, 24)
       .map(

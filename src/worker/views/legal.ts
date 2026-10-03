@@ -5,6 +5,7 @@
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, type Raw } from '../../shared/html';
 import { LEGAL, returnsSection, sellerText, updatedLine, whoText, type Business, type Returns } from '../../shared/legal';
+import { stylistOn } from './layout';
 
 const NBSP = String.fromCharCode(160);
 /** French keeps a non-breaking space before : ; ? ! and inside guillemets. */
@@ -18,6 +19,8 @@ export function legalView(kind: 'privacy' | 'terms', lang: Lang, s: { business: 
   const other = kind === 'privacy' ? 'terms' : 'privacy';
   const t = copy[lang].legal;
   const sections = d.sections.flatMap((sec) => {
+    // the stylist's paragraph only while the stylist is on
+    if (sec.id === 'stylist') return stylistOn() ? [sec] : [];
     if (sec.id === 'who') return [{ ...sec, p: [whoText(lang, s.business), ...sec.p.slice(1)] }];
     if (sec.id === 'seller') return [{ ...sec, p: [sellerText(lang, s.business)] }];
     if (sec.id === 'delivery') {

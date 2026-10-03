@@ -10,7 +10,7 @@ import { addDays, dayStart, tiranaDay } from '../shared/time';
 const KINDS = new Set(['home', 'shop', 'product', 'checkout', 'confirmation', 'notfound', 'privacy', 'terms', 'lookbook']);
 /** The shop's own tools a visitor used (one +1 each, no detail): her size saved, her event date set,
  *  a dress saved, the saved list sent, a lookbook mark opened, a dress video seen, WhatsApp pressed. */
-export const USES = ['size', 'date', 'save', 'share', 'mark', 'video', 'whatsapp'] as const;
+export const USES = ['size', 'date', 'save', 'share', 'mark', 'video', 'whatsapp', 'stylist'] as const;
 const USE_SET = new Set<string>(USES);
 const FIELDS = new Set(['name', 'phone', 'email', 'zone', 'city', 'address', 'payment']);
 /** crawlers and test browsers that say what they are */

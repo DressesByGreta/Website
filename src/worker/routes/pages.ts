@@ -12,7 +12,7 @@ import type { AppEnv, ExtraEnv } from '../types';
 import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
 import { HERO_SIZES, heroSrcset, homeView, storeJsonLd, websiteJsonLd } from '../views/home';
-import { assetTags, page, setDemo, setFollowers, setLookbooks, setNewCount, setVerification } from '../views/layout';
+import { assetTags, page, setDemo, setFollowers, setLookbooks, setNewCount, setStylist, setVerification } from '../views/layout';
 import { countLookbooks, getLookbook, listLookbooks, lookbookImage } from '../lookbooks';
 import { lookbookIndexView, lookbookView } from '../views/lookbook';
 import { occasionView } from '../views/occasion';
@@ -30,6 +30,7 @@ pages.use('*', async (c, next) => {
   const q = c.req.query('lang');
   c.set('lang', isLang(q) ? q : 'sq');
   setVerification((c.env as Env & ExtraEnv).GOOGLE_SITE_VERIFICATION);
+  setStylist(Boolean((c.env as Env & ExtraEnv).ANTHROPIC_API_KEY));
   // the demo flag, the follower count and the number of new dresses change rarely: read them once a
   // minute per instance (the admin refreshes the new count of its own instance when it saves a dress)
   if (Date.now() - settingsRead > 60_000) {

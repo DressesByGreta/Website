@@ -306,6 +306,11 @@ export async function hit(db: D1Database, key: string, limit: number, windowSec:
   return (row?.count ?? 1) <= limit;
 }
 
+/** The counters are a day old at most (privacy page): every window is an hour or a day. */
+export async function purgeHits(db: D1Database, now = Date.now()): Promise<void> {
+  await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(Math.floor(now / 1000) - 24 * 60 * 60).run();
+}
+
 export async function clearHits(db: D1Database, key: string): Promise<void> {
   await db.prepare('DELETE FROM rate_limits WHERE key = ?').bind(key).run();
 }

@@ -598,6 +598,15 @@ html.drawer-open .nav {
   padding: 0 var(--s-6) var(--s-3);
 }
 
+/* nothing matched: the words can go to the AI stylist */
+.search__ask {
+  padding: 0 var(--s-6) var(--s-4);
+}
+
+.search__ask .tlink {
+  min-height: 44px;
+}
+
 @media (min-width: 768px) {
   .search__results {
     grid-template-columns: repeat(4, 1fr);

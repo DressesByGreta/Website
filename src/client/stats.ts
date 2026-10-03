@@ -60,7 +60,7 @@ export function trackView(kind: string): void {
 }
 
 /** One use of a shop tool (worker/stats.ts USES): nothing about what she chose, only that she did. */
-export function trackUse(key: 'size' | 'date' | 'save' | 'share' | 'mark' | 'video' | 'whatsapp'): void {
+export function trackUse(key: 'size' | 'date' | 'save' | 'share' | 'mark' | 'video' | 'whatsapp' | 'stylist'): void {
   send({ t: 'use', k: key });
 }
 

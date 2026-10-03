@@ -55,6 +55,13 @@ let newCount = 0;
 export const setNewCount = (n: number): void => {
   newCount = n;
 };
+/** Whether the stylist is on (an Anthropic API key is set): its buttons and its privacy note show. */
+let stylist = false;
+export const setStylist = (on: boolean): void => {
+  stylist = on;
+};
+export const stylistOn = (): boolean => stylist;
+
 /** How many lookbooks are published (lookbooks.ts): the footer and the menu link them only when there are some. */
 let lookbooks = 0;
 export const setLookbooks = (n: number): void => {
@@ -191,7 +198,7 @@ export function page(o: PageOptions): string {
     ${assets('store')}
     ${ld}
   </head>
-  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}>
+  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}${stylist ? raw(' data-stylist') : ''}>
     ${brandSprite()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}

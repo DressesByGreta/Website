@@ -1559,20 +1559,22 @@ function orderMessages(d: OrderDetail): { label: string; text: string }[] {
   const items = d.items.map((it) => `${it.name} (${it.size})${it.qty > 1 ? ` x${it.qty}` : ''}`).join(', ');
   const total = formatLek(o.total, lang);
   const fee = o.delivery_fee === null;
+  // a card order is already paid; the rest pay the courier
+  const paid = o.payment_status === 'paid';
   const t = {
     sq: [
       `Përshëndetje ${first}! Porosia jote nr. ${o.number} te Dresses by Greta u konfirmua: ${items}. Totali: ${total}${fee ? ' plus transporti, që ta konfirmojmë' : ''}. Të shkruajmë kur të niset.`,
-      `Përshëndetje ${first}! Porosia nr. ${o.number} u nis sot. Paguan në dorëzim: ${total}. Faleminderit!`,
+      `Përshëndetje ${first}! Porosia nr. ${o.number} u nis sot. ${paid ? 'Është paguar me kartë.' : `Paguan në dorëzim: ${total}${fee ? ' plus transporti' : ''}.`} Faleminderit!`,
       `Faleminderit ${first} që zgjodhe Dresses by Greta! Shpresojmë të të pëlqejë fustani. Na dërgo një foto kur ta veshësh, do na gëzonte shumë.`,
     ],
     en: [
       `Hello ${first}! Your order no. ${o.number} at Dresses by Greta is confirmed: ${items}. Total: ${total}${fee ? ' plus delivery, which we will confirm' : ''}. We will message you when it leaves.`,
-      `Hello ${first}! Order no. ${o.number} left today. You pay on delivery: ${total}. Thank you!`,
+      `Hello ${first}! Order no. ${o.number} left today. ${paid ? 'It is already paid by card.' : `You pay on delivery: ${total}${fee ? ' plus delivery' : ''}.`} Thank you!`,
       `Thank you ${first} for choosing Dresses by Greta! We hope you love the dress. Send us a photo when you wear it, it would make our day.`,
     ],
     fr: [
       `Bonjour ${first}\u00a0! Votre commande n° ${o.number} chez Dresses by Greta est confirmée\u00a0: ${items}. Total\u00a0: ${total}${fee ? ', plus la livraison, que nous vous confirmerons' : ''}. Nous vous écrivons à son départ.`,
-      `Bonjour ${first}\u00a0! La commande n° ${o.number} est partie aujourd’hui. Vous payez à la livraison\u00a0: ${total}. Merci\u00a0!`,
+      `Bonjour ${first}\u00a0! La commande n° ${o.number} est partie aujourd’hui. ${paid ? 'Elle est déjà réglée par carte.' : `Vous payez à la livraison\u00a0: ${total}${fee ? ', plus la livraison' : ''}.`} Merci\u00a0!`,
       `Merci ${first} d’avoir choisi Dresses by Greta\u00a0! Nous espérons que la robe vous plaira. Envoyez-nous une photo quand vous la porterez, cela nous ferait très plaisir.`,
     ],
   }[lang];
@@ -1757,6 +1759,7 @@ async function statsView(): Promise<void> {
             <div><dt>Hapën një shenjë në lookbook</dt><dd>${s.uses.mark}</dd></div>
             <div><dt>Panë videon e një fustani</dt><dd>${s.uses.video}</dd></div>
             <div><dt>Shtypën WhatsApp te një fustan</dt><dd>${s.uses.whatsapp}</dd></div>
+            <div><dt>Pyetën stilisten AI</dt><dd>${s.uses.stylist}</dd></div>
             <div><dt>Kërkesa për qira</dt><dd>${s.uses.rental}</dd></div>
             <div><dt>Prisnin një masë</dt><dd>${s.uses.restock}</dd></div>
           </dl>

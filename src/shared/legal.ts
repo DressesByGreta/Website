@@ -10,7 +10,7 @@
  */
 import type { Lang } from './copy';
 
-export const UPDATED = '2026-10-03';
+export const UPDATED = '2026-10-04';
 
 export interface LegalDoc {
   title: string;
@@ -47,7 +47,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
   privacy: {
     sq: {
       title: 'Privatësia',
-      updated: 'Përditësuar më 3 tetor 2026',
+      updated: 'Përditësuar më 4 tetor 2026',
       intro: 'Kjo faqe shpjegon cilat të dhëna mbledh dyqani online i Dresses by Greta, pse, dhe çfarë mund të kërkosh për to.',
       sections: [
         { id: 'who', h: 'Kush jemi', p: [`Dresses by Greta, dyqan fustanesh në ${where}, Tiranë. Për çdo pyetje mbi të dhënat e tua, na shkruaj në Instagram, @dressesbygreta.`] },
@@ -66,6 +66,14 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          id: 'stylist',
+          h: 'Kur pyet stilisten AI',
+          p: [
+            'Stilistja AI zgjedh fustane me Claude, një model i inteligjencës artificiale i kompanisë Anthropic. Kur e pyet, Anthropic merr fjalët që shkruan, gjuhën e faqes dhe, nëse i ke ruajtur te «Masa dhe data», masën dhe datën e eventit, bashkë me listën e fustaneve të dyqanit.',
+            'Mos shkruaj aty emrin, telefonin apo të dhëna të tjera personale: nuk duhen për të zgjedhur fustanin. Dyqani nuk e ruan as pyetjen, as përgjigjen; Anthropic i trajton sipas rregullave të veta të privatësisë.',
+          ],
+        },
+        {
           h: 'Kush i sheh',
           p: [
             'Greta dhe kush punon në dyqan. Kush e dërgon porosinë merr emrin, telefonin dhe adresën.',
@@ -78,6 +86,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           p: [
             'Porositë mbeten si shënim i shitjeve të dyqanit. Nëse do që të dhënat e tua të fshihen, na shkruaj: i fshijmë kur ligji nuk na detyron t’i mbajmë.',
             'Kërkesat fshihen vetë: ato për qira gjashtë muaj pas datës së eventit; ato për njoftim një muaj pasi të kemi njoftuar, dhe në çdo rast gjashtë muaj pasi i ke dërguar.',
+            'Për të ndalur abuzimet, faqja numëron për një orë sa porosi, kërkesa ose pyetje dërgohen nga e njëjta adresë interneti (IP). Ky numër fshihet pas një dite.',
           ],
         },
         {
@@ -98,7 +107,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     en: {
       title: 'Privacy',
-      updated: 'Last updated 3 October 2026',
+      updated: 'Last updated 4 October 2026',
       intro: 'This page explains what data the Dresses by Greta online shop collects, why, and what you can ask about it.',
       sections: [
         { id: 'who', h: 'Who we are', p: [`Dresses by Greta, a dress shop at ${where}, Tirana. For any question about your data, message us on Instagram, @dressesbygreta.`] },
@@ -117,6 +126,14 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          id: 'stylist',
+          h: 'When you ask the AI stylist',
+          p: [
+            'The AI stylist chooses dresses with Claude, an artificial intelligence model made by Anthropic. When you ask it, Anthropic receives the words you write, the page’s language and, if you saved them in «Size and date», your size and the date of your event, together with the list of the shop’s dresses.',
+            'Do not write your name, phone number or other personal details there: they are not needed to choose a dress. The shop keeps neither the question nor the answer; Anthropic handles them under its own privacy rules.',
+          ],
+        },
+        {
           h: 'Who sees it',
           p: [
             'Greta and the people who work in the shop. Whoever delivers your order receives your name, phone number and address.',
@@ -129,6 +146,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           p: [
             'Orders stay in the shop’s record of sales. If you want your data deleted, message us: we delete it wherever the law does not require us to keep it.',
             'Requests delete themselves: rental requests six months after the date of the event; requests to hear about a size one month after we have told you, and in any case six months after you sent them.',
+            'To stop abuse, the site counts for one hour how many orders, requests or questions come from the same internet (IP) address. That count is deleted after a day.',
           ],
         },
         {
@@ -149,7 +167,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     fr: {
       title: 'Confidentialité',
-      updated: 'Mis à jour le 3 octobre 2026',
+      updated: 'Mis à jour le 4 octobre 2026',
       intro: 'Cette page explique quelles données la boutique en ligne Dresses by Greta recueille, pourquoi, et ce que vous pouvez demander à leur sujet.',
       sections: [
         { id: 'who', h: 'Qui nous sommes', p: [`Dresses by Greta, boutique de robes, ${where}, Tirana. Pour toute question sur vos données, écrivez-nous sur Instagram, @dressesbygreta.`] },
@@ -168,6 +186,14 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          id: 'stylist',
+          h: 'Quand vous interrogez la styliste IA',
+          p: [
+            'La styliste IA choisit les robes avec Claude, un modèle d’intelligence artificielle de la société Anthropic. Quand vous l’interrogez, Anthropic reçoit les mots que vous écrivez, la langue de la page et, si vous les avez enregistrées dans «\u00a0Taille et date\u00a0», votre taille et la date de votre événement, avec la liste des robes de la boutique.',
+            'N’y écrivez ni votre nom, ni votre téléphone, ni d’autres données personnelles\u00a0: elles ne servent pas à choisir une robe. La boutique ne conserve ni la question ni la réponse\u00a0; Anthropic les traite selon ses propres règles de confidentialité.',
+          ],
+        },
+        {
           h: 'Qui les voit',
           p: [
             'Greta et les personnes qui travaillent à la boutique. La personne qui livre reçoit votre nom, votre téléphone et votre adresse.',
@@ -180,6 +206,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           p: [
             'Les commandes restent dans le registre des ventes de la boutique. Si vous voulez que vos données soient effacées, écrivez-nous : nous les effaçons lorsque la loi ne nous oblige pas à les garder.',
             'Les demandes s’effacent d’elles-mêmes\u00a0: les demandes de location six mois après la date de l’événement\u00a0; les demandes de retour d’une taille un mois après que nous vous avons prévenue, et dans tous les cas six mois après leur envoi.',
+            'Pour éviter les abus, le site compte pendant une heure combien de commandes, de demandes ou de questions arrivent d’une même adresse internet (IP). Ce compte est effacé au bout d’un jour.',
           ],
         },
         {
@@ -202,7 +229,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
   terms: {
     sq: {
       title: 'Kushtet e shitjes',
-      updated: 'Përditësuar më 3 tetor 2026',
+      updated: 'Përditësuar më 4 tetor 2026',
       intro: 'Këto janë kushtet kur blen një fustan në dyqanin online të Dresses by Greta.',
       sections: [
         { id: 'seller', h: 'Shitësi', p: [`Dresses by Greta, ${where}, Tiranë. Instagram: @dressesbygreta.`] },
@@ -226,7 +253,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     en: {
       title: 'Terms of sale',
-      updated: 'Last updated 3 October 2026',
+      updated: 'Last updated 4 October 2026',
       intro: 'These are the terms when you buy a dress in the Dresses by Greta online shop.',
       sections: [
         { id: 'seller', h: 'The seller', p: [`Dresses by Greta, ${where}, Tirana. Instagram: @dressesbygreta.`] },
@@ -250,7 +277,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     fr: {
       title: 'Conditions de vente',
-      updated: 'Mis à jour le 3 octobre 2026',
+      updated: 'Mis à jour le 4 octobre 2026',
       intro: 'Voici les conditions lorsque vous achetez une robe sur la boutique en ligne Dresses by Greta.',
       sections: [
         { id: 'seller', h: 'Le vendeur', p: [`Dresses by Greta, ${where}, Tirana. Instagram : @dressesbygreta.`] },
