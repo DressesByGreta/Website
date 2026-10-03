@@ -86,8 +86,8 @@ function header(lang: Lang, o: PageOptions): Raw {
     <div class="nav__left">
       <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
       <nav class="nav__list" aria-label="${t.nav.shop}">
-        <a class="tlink" href="${href('/dyqani', lang)}">${t.nav.lookbook}</a>
-        ${filters().map((c) => html`<a class="tlink${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
+        <a class="tlink" href="${href('/dyqani', lang)}" data-pic="all">${t.nav.lookbook}</a>
+        ${filters().map((c) => html`<a class="tlink${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`)}
       </nav>
     </div>
     <a class="nav__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(nameSvg('nav__name'))}</a>

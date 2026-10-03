@@ -3,12 +3,13 @@
  * elements; GSAP slides them (one engine). Escape and the backdrop close them; focus returns.
  */
 import { markSvg } from '../shared/brand';
-import { CATEGORIES, MEASURES, SIZES, SIZE_LETTER, formatLek, isSize, photoAt, recommendSize, type Body } from '../shared/catalog';
+import { CATEGORIES, MEASURES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, formatLek, isSize, photoAt, recommendSize, type Body } from '../shared/catalog';
 import { copy, href, LANGS, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
-import { bag, catalogue, type Line } from './bag';
+import { bag, catalogue, type CatalogueItem, type Line } from './bag';
 import * as me from './me';
-import { gsap, motionStopped, reducedMotion } from './motion';
+import { linkPictures, showIn } from './peek';
+import { gsap, motionStopped, printPlate, reducedMotion } from './motion';
 
 const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right' } as const;
 type Kind = keyof typeof SIDE;
@@ -87,7 +88,12 @@ export class Drawers {
     if (d.open) return;
     for (const other of Object.values(this.d)) if (other.open && other !== d) other.close();
     this.opener = opener ?? document.activeElement;
-    if (kind === 'bag') void bag.refresh(this.lang);
+    if (kind === 'bag') {
+      // the lines wait (hidden) for the refresh, which may draw them again, then arrive
+      const items = d.querySelectorAll('.bag__item');
+      if (items.length && !reducedMotion()) gsap.set(items, { opacity: 0 });
+      void bag.refresh(this.lang).finally(() => this.bagEntrance());
+    }
     if (kind === 'me') this.renderMe();
     d.showModal();
     document.documentElement.classList.add('drawer-open');
@@ -140,9 +146,14 @@ export class Drawers {
         'shop',
         t.nav.lookbook,
         // "new" leads the categories while the shop has new dresses (the page says so: body[data-new])
-        html`<a class="mnav__child" href="${href('/dyqani', l)}">${t.nav.all}</a>${[...('new' in document.body.dataset ? (['new'] as const) : []), ...CATEGORIES].map(
-          (c) => html`<a class="mnav__child" href="${href('/dyqani', l, { kategoria: c })}">${t.categories[c]}</a>`,
+        html`<a class="mnav__child" href="${href('/dyqani', l)}" data-pic="all">${t.nav.all}</a>${[...('new' in document.body.dataset ? (['new'] as const) : []), ...CATEGORIES].map(
+          (c) => html`<a class="mnav__child" href="${href('/dyqani', l, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`,
         )}`,
+      )}
+      ${row(
+        'occasions',
+        t.occasions.heading,
+        html`${OCCASIONS.map((o) => html`<a class="mnav__child" href="${href(OCCASION_PATH[o], l)}" data-pic="occ:${o}">${t.occasions[o].label}</a>`)}`,
       )}
       ${row(
         'sizes',
@@ -169,7 +180,9 @@ export class Drawers {
         )}
       </div>
       <div class="mnav__social"><a href="${INSTAGRAM}" target="_blank" rel="noopener" aria-label="${t.nav.instagram}">${ICON.instagram}</a></div>
-    </nav>`.value;
+    </nav>
+    <div class="mnav__preview" aria-hidden="true"><span class="plate mnav__plate"><span class="plate__inner"><img class="plate__img" alt="" decoding="async" /><span class="plate__scan"></span></span></span><span class="mnav__preview-name"></span></div>`.value;
+    this.menuPictures();
     this.d.menu.querySelectorAll<HTMLButtonElement>('[data-acc]').forEach((b) =>
       b.addEventListener('click', () => {
         const open = b.getAttribute('aria-expanded') !== 'true';
@@ -187,6 +200,42 @@ export class Drawers {
       document.documentElement.classList.remove('drawer-open');
       this.open('me');
     });
+  }
+
+  /**
+   * The menu shows the dresses: on a computer, the link under the pointer prints a photograph of its
+   * first dress in the open space beside the menu; on a phone each link carries a small one.
+   */
+  private menuPictures(): void {
+    const menu = this.d.menu;
+    const preview = menu.querySelector<HTMLElement>('.mnav__preview')!;
+    const plate = preview.querySelector<HTMLElement>('.mnav__plate')!;
+    const name = preview.querySelector<HTMLElement>('.mnav__preview-name')!;
+    const wide = () => window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)').matches;
+    // phones: a small photograph before each shop and occasion link, once the menu first opens
+    const thumbs = async () => {
+      const pics = await linkPictures(this.lang);
+      menu.querySelectorAll<HTMLAnchorElement>('[data-pic]').forEach((a) => {
+        const p = pics.get(a.dataset.pic!);
+        if (!p?.cover || a.querySelector('.mnav__thumb')) return;
+        a.insertAdjacentHTML('afterbegin', `<img class="mnav__thumb" src="${esc(photoAt(p.cover, 480))}" alt="" width="32" height="43" loading="lazy" decoding="async" />`);
+      });
+    };
+    new MutationObserver(() => menu.open && void thumbs()).observe(menu, { attributes: true, attributeFilter: ['open'] });
+    // computers (the menu opens there in French below 1120px): the dress prints beside the menu
+    let current = '';
+    const show = async (e: Event) => {
+      const a = (e.target as Element).closest<HTMLAnchorElement>('[data-pic]');
+      if (!a || !wide() || a.dataset.pic === current) return;
+      const p = (await linkPictures(this.lang)).get(a.dataset.pic!);
+      if (!p?.cover) return;
+      current = a.dataset.pic!;
+      name.textContent = p.name;
+      showIn(plate, p, '28vw');
+      preview.classList.add('is-on');
+    };
+    menu.addEventListener('pointerover', (e) => void show(e));
+    menu.addEventListener('focusin', (e) => void show(e));
   }
 
   /** The language links point at the current page; call after every navigation. */
@@ -207,11 +256,15 @@ export class Drawers {
     const foot = this.d.bag.querySelector<HTMLElement>('[data-foot]')!;
     if (!lines.length) {
       body.innerHTML = html`<div class="bag__empty">
+        <span class="bag__seal" aria-hidden="true">${raw(markSvg('bag__mark'))}</span>
         <p class="ui">${t.bag.empty}</p>
         <p class="body muted">${t.bag.emptyBody}</p>
         <a class="btn btn--line" href="${href('/dyqani', l)}">${t.bag.browse}</a>
+        <div class="bag__picks" data-picks hidden></div>
       </div>`.value;
       foot.hidden = true;
+      void this.bagPicks(body.querySelector<HTMLElement>('[data-picks]')!);
+      this.lastTotal = 0;
       return;
     }
     body.innerHTML = html`<ul class="bag">${lines.map((x) => {
@@ -236,9 +289,17 @@ export class Drawers {
     })}</ul>`.value;
     const blocked = lines.some((x) => x.gone);
     foot.hidden = false;
-    foot.innerHTML = html`<div class="bag__sum"><span>${t.bag.subtotal}</span><span>${formatLek(bag.subtotal(), l)}</span></div>
+    foot.innerHTML = html`<div class="bag__sum"><span>${t.bag.subtotal}</span><span data-total>${formatLek(bag.subtotal(), l)}</span></div>
       <p class="small">${t.bag.note}</p>
       <a class="btn btn--wide${blocked ? ' is-blocked' : ''}" href="${href('/porosia', l)}"${blocked ? raw(' aria-disabled="true"') : ''}>${t.bag.checkout}</a>`.value;
+    // the total counts to its new value instead of jumping
+    const total = bag.subtotal();
+    const el = foot.querySelector<HTMLElement>('[data-total]');
+    if (el && this.lastTotal && this.lastTotal !== total && !reducedMotion()) {
+      const v = { n: this.lastTotal };
+      gsap.to(v, { n: total, duration: 0.5, ease: 'power2.out', onUpdate: () => (el.textContent = formatLek(Math.round(v.n), l)) });
+    }
+    this.lastTotal = total;
     body.querySelectorAll<HTMLButtonElement>('[data-qty]').forEach((b) =>
       b.addEventListener('click', () => {
         const line = lines.find((x) => x.id === b.dataset.id && x.size === b.dataset.size);
@@ -330,6 +391,41 @@ export class Drawers {
       this.renderMe();
     });
     show();
+  }
+
+  private lastTotal = 0;
+
+  /** The empty bag offers a way back in: the dresses she saved, or else the new ones. */
+  private async bagPicks(box: HTMLElement): Promise<void> {
+    const t = this.t;
+    const l = this.lang;
+    let list: CatalogueItem[];
+    try {
+      list = await catalogue(l);
+    } catch {
+      return;
+    }
+    const saved = me.get().saved;
+    const mine = saved.map((s) => list.find((p) => p.slug === s)).filter((p): p is CatalogueItem => !!p?.cover);
+    const picks = (mine.length ? mine : list.filter((p) => p.isNew && p.cover)).slice(0, 4);
+    if (!picks.length || !box.isConnected) return;
+    box.innerHTML = html`<p class="ui">${mine.length ? t.saved.title : t.categories.new}</p>
+      <ul class="bag__grid">${picks.map(
+        (p) => html`<li><a class="bag__pick" href="${href(`/fustan/${p.slug}`, l)}"><span class="plate bag__plate"><span class="plate__inner"><img class="plate__img" src="${photoAt(p.cover!, 480)}" alt="" loading="lazy" decoding="async" /><span class="plate__scan"></span></span></span><span class="bag__pick-name">${p.name}</span></a></li>`,
+      )}</ul>`.value;
+    box.hidden = false;
+    if (!reducedMotion()) box.querySelectorAll<HTMLElement>('.bag__plate').forEach((pl, i) => printPlate(pl, 0.1 + i * 0.08, 0.7));
+  }
+
+  /** Opening the bag: the G prints when it is empty, otherwise its lines arrive one after another. */
+  private bagEntrance(): void {
+    if (reducedMotion()) return;
+    const body = this.d.bag.querySelector<HTMLElement>('[data-body]')!;
+    const mark = body.querySelector<HTMLElement>('.bag__seal');
+    // lazy: false, so the hidden start state is drawn at once, never one frame late (motion.ts)
+    if (mark) gsap.fromTo(mark, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.9, ease: 'power3.out', delay: 0.15, lazy: false, clearProps: 'clipPath' });
+    const items = body.querySelectorAll('.bag__item');
+    if (items.length) gsap.fromTo(items, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: 'expo.out', stagger: 0.05, delay: 0.12, lazy: false, clearProps: 'all' });
   }
 
   /* ----------------------------------------------------------- search ----------------------------------------------------------- */
