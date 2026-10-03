@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, MEASURES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, MEASURES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone, videoUrl } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { returnsSection, sellerText, type Business, type Returns } from '../shared/legal';
@@ -13,6 +13,7 @@ import {
   api,
   ApiError,
   uploadPhoto,
+  uploadVideo,
   type AdminProduct,
   type InstagramState,
   type LinkedChat,
@@ -23,7 +24,7 @@ import {
   type ShopRequest,
   type StatsReport,
 } from './api';
-import { prepare, toForm } from './images';
+import { prepare, prepareVideo, toForm } from './images';
 import { byDay, byDress, bySize, counted, salesFile, summarize, tally } from './sales';
 import { XLSX_TYPE } from './xlsx';
 
@@ -581,6 +582,15 @@ async function editor(id: string): Promise<void> {
   }
   let saved = JSON.stringify(toDraft(p));
   const uploads: { key: string; name: string; progress: number; preview: string; error?: string }[] = [];
+  // the dress's video while it is being prepared or sent: progress 0..1, or an error in words
+  let clip: { progress: number; error?: string } | null = null;
+  const CLIP_WHY: Record<string, string> = {
+    not_video: 'nuk është video (MP4 ose WebM).',
+    video_too_big: 'është më e rëndë se 15 MB.',
+    video_too_long: 'është më e gjatë se 30 sekonda.',
+    video_unplayable: 'ky shfletues nuk e luan dot. Ngarko MP4, p.sh. videon e Reel-it nga Instagram.',
+    too_small: 'është shumë e vogël.',
+  };
 
   const photoCard = (ph: AdminProduct['photos'][number], i: number, n: number) => html`<li class="adm-photo" data-photo="${ph.id}">
     <span class="adm-photo__img"><img src="${photoAt(ph, 480)}" alt="" loading="lazy" /></span>
@@ -632,6 +642,24 @@ async function editor(id: string): Promise<void> {
               <span class="btn btn--line">Shto foto</span>
               <span class="adm-note">Ose tërhiqi këtu. Fotoja e parë është kopertina në dyqan.</span>
             </label>
+            <div class="adm-video">
+              <p class="adm-label">Video (jo e detyrueshme)</p>
+              ${p.video
+                ? html`<div class="adm-video__row">
+                    <video class="adm-video__clip" src="${videoUrl(p.id, p.video)}" poster="${photoAt(p.video.poster, 480)}" muted playsinline loop controls preload="metadata"></video>
+                    <button class="adm-link adm-danger" type="button" data-video-remove>Hiq videon</button>
+                  </div>`
+                : ''}
+              <label class="adm-drop adm-drop--video">
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" data-video-file class="sr-only" />
+                <span class="btn btn--line">${p.video ? 'Zëvendëso videon' : 'Shto video'}</span>
+                <span class="adm-note">Disa sekonda, pa zë, p.sh. videoja e Reel-it (MP4) nga Instagram. Deri në 15 MB dhe 30 sekonda. Shfaqet e dyta te fustani.</span>
+              </label>
+              ${clip
+                ? html`<p class="adm-note" role="status">${clip.error ? `Videoja nuk u ngarkua: ${clip.error}` : 'Po ngarkohet videoja'}</p>
+                    ${clip.error ? '' : html`<span class="adm-progress"><span style="transform: scaleX(${clip.progress.toFixed(3)})"></span></span>`}`
+                : ''}
+            </div>
           </section>
 
           <section class="adm-card" aria-labelledby="sec-sell">
@@ -763,6 +791,26 @@ async function editor(id: string): Promise<void> {
     markDirty();
   };
 
+  const sendVideo = async (file: File) => {
+    clip = { progress: 0 };
+    replace(p, true);
+    try {
+      const { form, preview } = await prepareVideo(file);
+      URL.revokeObjectURL(preview);
+      const fresh = await uploadVideo(p.id, form, (f) => {
+        if (clip) clip.progress = f;
+        const bar = root.querySelector<HTMLElement>('.adm-video .adm-progress span');
+        if (bar) bar.style.transform = `scaleX(${f.toFixed(3)})`;
+      });
+      clip = null;
+      replace(fresh, true);
+      toast('Videoja u ruajt. Shfaqet e dyta te fustani.');
+    } catch (x) {
+      clip = { progress: 0, error: x instanceof ApiError ? errText(x) : (CLIP_WHY[(x as Error).message] ?? 'provo përsëri.') };
+      replace(p, true);
+    }
+  };
+
   const upload = async (files: FileList | File[]) => {
     const room = 12 - p.photos.length - uploads.length;
     const list = [...files].slice(0, Math.max(0, room));
@@ -801,6 +849,10 @@ async function editor(id: string): Promise<void> {
       void upload(t.files);
       t.value = '';
     }
+    if (t.matches('[data-video-file]') && t.files?.[0]) {
+      void sendVideo(t.files[0]);
+      t.value = '';
+    }
     markDirty();
   });
   on('dragover', (e) => {
@@ -820,6 +872,17 @@ async function editor(id: string): Promise<void> {
 
   on('click', async (e) => {
     const t = e.target as HTMLElement;
+    if (t.closest('[data-video-remove]')) {
+      if (!(await ask('Ta heqësh videon e këtij fustani?', 'Hiq videon'))) return;
+      try {
+        clip = null;
+        replace(await api.deleteVideo(p.id), true);
+        toast('Videoja u hoq.');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
     const nw = t.closest<HTMLButtonElement>('[data-new-mark]');
     if (nw) {
       const start = nw.dataset.newMark === 'on';

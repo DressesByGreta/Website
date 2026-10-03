@@ -421,9 +421,60 @@ function whatsappLink(main: HTMLElement, lang: Lang): void {
   update();
 }
 
+/**
+ * The dress in motion: the video loads when it comes near, plays (muted) while at least half of it
+ * is on screen and pauses when it leaves. Its button pauses it for good; with reduced motion it
+ * never starts by itself and the button plays it.
+ */
+function dressVideo(main: HTMLElement, lang: Lang): () => void {
+  const v = main.querySelector<HTMLVideoElement>('.product__video');
+  const btn = main.querySelector<HTMLButtonElement>('[data-video-toggle]');
+  if (!v || !btn) return () => undefined;
+  const t = copy[lang].product;
+  let held = reducedMotion(); // paused by her (or by the reduced-motion setting) until she plays it
+  const label = () => {
+    const playing = !v.paused;
+    btn.textContent = playing ? t.videoPause : t.videoPlay;
+    btn.setAttribute('aria-pressed', String(!playing));
+  };
+  const load = () => {
+    if (!v.src && v.dataset.src) v.src = v.dataset.src;
+  };
+  let visible = false;
+  const io = new IntersectionObserver(
+    ([en]) => {
+      visible = !!en?.isIntersecting;
+      if (visible) {
+        load();
+        if (!held) void v.play().catch(() => undefined);
+      } else v.pause();
+    },
+    { threshold: 0.5 },
+  );
+  io.observe(v);
+  v.addEventListener('play', label);
+  v.addEventListener('pause', label);
+  btn.addEventListener('click', () => {
+    if (v.paused) {
+      held = false;
+      load();
+      void v.play().catch(() => undefined);
+    } else {
+      held = true;
+      v.pause();
+    }
+  });
+  label();
+  return () => {
+    io.disconnect();
+    v.pause();
+  };
+}
+
 function productPage(main: HTMLElement, lang: Lang): () => void {
   const t = copy[lang];
   shareButton(main, lang);
+  const offVideo = dressVideo(main, lang);
   requestForms(main, lang);
   whatsappLink(main, lang);
   const observers: IntersectionObserver[] = [];
@@ -471,6 +522,7 @@ function productPage(main: HTMLElement, lang: Lang): () => void {
   return () => {
     observers.forEach((o) => o.disconnect());
     offs.forEach((off) => off());
+    offVideo();
   };
 }
 

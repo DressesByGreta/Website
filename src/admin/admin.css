@@ -1854,3 +1854,25 @@ body {
 .adm-measures th {
   padding: 4px var(--s-2) 4px 0;
 }
+
+/* a dress's video, under its photographs */
+.adm-video {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+}
+
+.adm-video__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3) var(--s-5);
+}
+
+.adm-video__clip {
+  width: 160px;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  background: var(--ground-2);
+}

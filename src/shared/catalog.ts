@@ -152,6 +152,39 @@ export function recommendSize(body: Body, measures?: Measures): { size: Size | n
   return { size: SIZES[need]!, fromDress };
 }
 
+/** A dress in motion: one short silent video (its Reel) and a poster photograph made from its first
+ *  moment, so the page shows something before the video plays (and instead of it, with reduced motion). */
+export interface Video {
+  id: string;
+  ext: 'mp4' | 'webm';
+  w: number;
+  h: number;
+  bytes: number;
+  poster: Photo;
+}
+/** Largest video the shop keeps: a Reel of a few seconds is far below it. */
+export const VIDEO_MAX_BYTES = 15 * 1024 * 1024;
+export const videoUrl = (productId: string, v: Pick<Video, 'id' | 'ext'>): string => `/vid/v/${productId}/${v.id}/clip.${v.ext}`;
+
+/** Reads a stored video ('' or JSON); anything malformed reads as no video. */
+export function parseVideo(raw: string, alt = ''): Video | null {
+  try {
+    const v = JSON.parse(raw || 'null') as Partial<Video> | null;
+    const p = v?.poster as Partial<Photo> | undefined;
+    if (!v || typeof v.id !== 'string' || (v.ext !== 'mp4' && v.ext !== 'webm') || !p || typeof p.key !== 'string' || !Array.isArray(p.widths)) return null;
+    return {
+      id: v.id,
+      ext: v.ext,
+      w: Number(v.w) || 0,
+      h: Number(v.h) || 0,
+      bytes: Number(v.bytes) || 0,
+      poster: { id: v.id, key: p.key, ext: p.ext === 'jpg' ? 'jpg' : 'webp', widths: p.widths.map(Number), w: Number(p.w) || 0, h: Number(p.h) || 0, lqip: typeof p.lqip === 'string' ? p.lqip : '', alt },
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** A product as the storefront sees it, already resolved to one language. */
 export interface Product {
   id: string;
@@ -172,6 +205,7 @@ export interface Product {
   measures: Measures;
   /** "Fits small, take one size up": in the page's language, '' when Greta has not written one. */
   fit: string;
+  video: Video | null;
 }
 
 export const emptyStock = (): Stock => ({ '34': 0, '36': 0, '38': 0, '40': 0, '42': 0 });

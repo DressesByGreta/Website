@@ -1,5 +1,5 @@
 /** Thin client for /api/admin. Every call carries the session cookie; errors become ApiError. */
-import type { Measures, Photo, Tag, Stock, Zone } from '../shared/catalog';
+import type { Measures, Photo, Tag, Stock, Video, Zone } from '../shared/catalog';
 import type { Business, Returns } from '../shared/legal';
 
 export class ApiError extends Error {
@@ -39,6 +39,7 @@ export interface AdminProduct {
   measures: Measures;
   fitSq: string;
   fitEn: string;
+  video: Video | null;
 }
 
 /** A visitor's request from a dress page (worker/requests.ts). */
@@ -187,13 +188,21 @@ export const api = {
   instagramFollowers: (followers: number) => call<InstagramState>('PUT', '/instagram', { followers }),
   instagramSync: () => call<InstagramState>('POST', '/instagram/sync'),
   instagramUnlink: () => call<InstagramState>('DELETE', '/instagram'),
+  deleteVideo: (id: string) => call<AdminProduct>('DELETE', `/products/${id}/video`),
 };
 
 /** Upload with progress (fetch has no upload progress). Resolves to the updated product. */
-export function uploadPhoto(productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> {
+export const uploadPhoto = (productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> =>
+  uploadForm(`/api/admin/products/${productId}/photos`, form, onProgress);
+
+/** A dress's video (the clip and its poster), with progress. Resolves to the updated product. */
+export const uploadVideo = (productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> =>
+  uploadForm(`/api/admin/products/${productId}/video`, form, onProgress);
+
+export function uploadForm<T = AdminProduct>(url: string, form: FormData, onProgress: (f: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/admin/products/${productId}/photos`);
+    xhr.open('POST', url);
     xhr.withCredentials = true;
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
     xhr.onload = () => {
@@ -203,7 +212,7 @@ export function uploadPhoto(productId: string, form: FormData, onProgress: (f: n
       } catch {
         /* keep {} */
       }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as AdminProduct);
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
       else reject(new ApiError(xhr.status, body as never));
     };
     xhr.onerror = () => reject(new ApiError(0, { error: 'network' }));

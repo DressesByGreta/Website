@@ -5,7 +5,7 @@
  * libwebp compiled to WebAssembly (@jsquash/webp), fetched the first time a photo is added and only
  * by those browsers; if it cannot load (no connection), the photo goes up as JPEG, as before.
  */
-import { PHOTO_MAX_BYTES, PHOTO_WIDTHS } from '../shared/catalog';
+import { PHOTO_MAX_BYTES, PHOTO_WIDTHS, VIDEO_MAX_BYTES } from '../shared/catalog';
 
 export interface Prepared {
   meta: { w: number; h: number; lqip: string; ext: 'webp' | 'jpg'; widths: number[] };
@@ -97,4 +97,52 @@ export function toForm(p: Prepared): FormData {
   f.set('meta', JSON.stringify(p.meta));
   for (const { width, blob } of p.blobs) f.set(`w${width}`, blob, `w${width}.${p.meta.ext}`);
   return f;
+}
+
+/**
+ * A dress's video before it leaves the phone: an MP4 (the iPhone's MOV is the same container) or a
+ * WebM, at most 15MB and 30 seconds, that this browser can play (if it cannot, the shop's visitors
+ * may not either). Its poster is the frame half a second in, prepared like a photograph.
+ */
+export async function prepareVideo(file: File): Promise<{ form: FormData; preview: string }> {
+  const type = file.type || (/\.webm$/i.test(file.name) ? 'video/webm' : /\.(mp4|m4v|mov)$/i.test(file.name) ? 'video/mp4' : '');
+  const ext = type === 'video/webm' ? 'webm' : /^video\/(mp4|quicktime|x-m4v)$/.test(type) ? 'mp4' : null;
+  if (!ext) throw new Error('not_video');
+  if (file.size > VIDEO_MAX_BYTES) throw new Error('video_too_big');
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video');
+  v.muted = true;
+  v.playsInline = true;
+  v.preload = 'auto';
+  v.src = url;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error('video_unplayable')), 15_000);
+      v.addEventListener('loadeddata', () => (window.clearTimeout(timer), resolve()), { once: true });
+      v.addEventListener('error', () => (window.clearTimeout(timer), reject(new Error('video_unplayable'))), { once: true });
+    });
+    if (!v.videoWidth || !v.videoHeight) throw new Error('video_unplayable');
+    if (v.duration > 30.5) throw new Error('video_too_long');
+    await new Promise<void>((resolve) => {
+      v.addEventListener('seeked', () => resolve(), { once: true });
+      v.currentTime = Math.min(0.5, (v.duration || 1) / 2);
+    });
+    const scale = Math.min(1, 1600 / v.videoWidth);
+    const c = document.createElement('canvas');
+    c.width = Math.round(v.videoWidth * scale);
+    c.height = Math.round(v.videoHeight * scale);
+    c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height);
+    const png = await new Promise<Blob>((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/png'));
+    const poster = await prepare(new File([png], 'poster.png', { type: 'image/png' }));
+    const form = toForm(poster);
+    form.set('video', file, `clip.${ext}`);
+    form.set('ext', ext);
+    form.set('w', String(v.videoWidth));
+    form.set('h', String(v.videoHeight));
+    return { form, preview: poster.preview };
+  } finally {
+    URL.revokeObjectURL(url);
+    v.removeAttribute('src');
+    v.load();
+  }
 }

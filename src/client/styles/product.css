@@ -531,3 +531,25 @@
 .product__me {
   color: var(--ink-2);
 }
+
+/* the dress in motion: the video sits in the gallery like a photograph, its button in a corner */
+.product__photo--video {
+  position: relative;
+}
+
+.product__video {
+  object-position: 50% 30%;
+  background: var(--ground-2);
+}
+
+.product__vbtn {
+  position: absolute;
+  left: var(--s-3);
+  bottom: var(--s-3);
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: var(--ground);
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}

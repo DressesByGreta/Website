@@ -1,5 +1,5 @@
 /** A dress: every photograph down the left, the caption held beside it, the next dress at the foot. */
-import { MEASURES, SIZES, formatLek, hasMeasures, pad2, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
+import { MEASURES, SIZES, formatLek, hasMeasures, pad2, photoAt, videoUrl, type Product, type Size, type Zone } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { Returns } from '../../shared/legal';
@@ -97,6 +97,17 @@ export function productView(lang: Lang, p: Product, index: number, total: number
   const t = copy[lang];
   const sold = !Object.values(p.stock).some((n) => n > 0);
   const paragraphs = p.description.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+  // the video, when there is one, is the gallery's second item
+  const items = p.photos.length + (p.video ? 1 : 0);
+  const motion = p.video
+    ? html`<li class="product__photo product__photo--video">
+        <span class="plate product__plate"><span class="plate__inner">
+          <video class="plate__img product__video" muted playsinline loop preload="none" poster="${photoAt(p.video.poster, 960)}" width="${p.video.w}" height="${p.video.h}" data-src="${videoUrl(p.id, p.video)}" aria-label="${t.product.video}"></video>
+          <span class="plate__scan" aria-hidden="true"></span>
+        </span></span>
+        <button class="product__vbtn" type="button" data-video-toggle aria-pressed="false">${t.product.videoPause}</button>
+      </li>`
+    : '';
   return html`<article class="product" data-product="${bagData(p)}">
       <div class="product__gallery">
         <ol class="product__photos" aria-label="${t.a11y.gallery}" data-gallery>
@@ -110,12 +121,12 @@ export function productView(lang: Lang, p: Product, index: number, total: number
                 flip: i === 0 ? flipId(p) : undefined,
                 cls: 'product__plate',
                 tag: 'span',
-              })}</button></li>`,
+              })}</button></li>${i === 0 ? motion : ''}`,
           )}
         </ol>
-        ${p.photos.length > 1
-          ? html`<p class="product__count" aria-hidden="true"><span data-gallery-i>01</span> / ${pad2(p.photos.length)}</p>
-              <span class="product__progress" aria-hidden="true"><span data-gallery-bar style="--g:${(1 / p.photos.length).toFixed(4)}"></span></span>`
+        ${items > 1
+          ? html`<p class="product__count" aria-hidden="true"><span data-gallery-i>01</span> / ${pad2(items)}</p>
+              <span class="product__progress" aria-hidden="true"><span data-gallery-bar style="--g:${(1 / items).toFixed(4)}"></span></span>`
           : ''}
       </div>
 

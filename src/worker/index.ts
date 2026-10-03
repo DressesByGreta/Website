@@ -3,7 +3,7 @@
  * (the built client, public/) are served by Workers Static Assets before this code runs.
  */
 import { Hono } from 'hono';
-import { serveImage } from './images';
+import { serveImage, serveVideo } from './images';
 import { syncInstagram } from './instagram';
 import { releaseExpiredCardOrders } from './orders';
 import { adminApi } from './routes/admin-api';
@@ -44,6 +44,7 @@ app.use('*', async (c, next) => {
 });
 
 app.get('/img/*', serveImage);
+app.get('/vid/*', serveVideo);
 app.route('/api/admin', adminApi);
 app.route('/api', publicApi);
 app.route('/', seo);

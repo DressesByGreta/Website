@@ -5,7 +5,7 @@ import type { Business, Returns } from '../../shared/legal';
 import { isDay } from '../../shared/time';
 import { clearHits, adminGet, adminList, countNew, getLegalSettings, getSetting, getZones, hit, setSetting, uniqueSlug } from '../db';
 import { clientIp, devLoginAllowed, endSession, isAdmin, renewSession, requireAdmin, startSession, verifyPassword } from '../auth';
-import { deleteVariants, parseUploadMeta, storeVariants } from '../images';
+import { deleteVariants, parseUploadMeta, storeClip, storeVariants } from '../images';
 import { instagramState, linkInstagram, setFollowersByHand, syncInstagram, unlinkInstagram, type InstagramState } from '../instagram';
 import { allowedNext, getOrder, setOrderStatus, setPaymentStatus, type OrderStatus, type PaymentStatus } from '../orders';
 import { gatewayFor } from '../payments';
@@ -200,6 +200,7 @@ adminApi.delete('/products/:id', async (c) => {
   const p = await adminGet(db, c.req.param('id'));
   if (!p) return c.json({ error: 'not_found' }, 404);
   await Promise.all(p.photos.map((ph) => deleteVariants(c.env, ph.key, ph.ext, ph.widths)));
+  await dropVideo(c.env, p.id, p.video);
   await db.prepare('DELETE FROM products WHERE id = ?').bind(p.id).run();
   return c.json({ ok: true });
 });
@@ -211,6 +212,56 @@ adminApi.post('/products/reorder', async (c) => {
   const db = c.env.DB;
   await db.batch(ids.map((id, i) => db.prepare('UPDATE products SET sort = ? WHERE id = ?').bind(i, id)));
   return c.json({ ok: true });
+});
+
+/* --------------------------------------------------------------- video ----------------------------------------------------------------- */
+
+/** Removes a dress's video files (the clip and its poster's widths). */
+async function dropVideo(env: Env, productId: string, v: { id: string; ext: string; poster: { ext: string; widths: number[] } } | null): Promise<void> {
+  if (!v) return;
+  const key = `v/${productId}/${v.id}`;
+  await Promise.all([env.PHOTOS.delete(`${key}/clip.${v.ext}`), deleteVariants(env, key, v.poster.ext, v.poster.widths)]);
+}
+
+/** One short video per dress: the clip, and its poster prepared in the browser like a photograph. */
+adminApi.post('/products/:id/video', async (c) => {
+  const db = c.env.DB;
+  const cur = await adminGet(db, c.req.param('id'));
+  if (!cur) return c.json({ error: 'not_found' }, 404);
+  const form = await c.req.formData();
+  const ext = form.get('ext') === 'webm' ? 'webm' : 'mp4';
+  let metaRaw: unknown = null;
+  try {
+    metaRaw = JSON.parse(String(form.get('meta') ?? ''));
+  } catch {
+    /* handled below */
+  }
+  const poster = parseUploadMeta(metaRaw);
+  const w = Number(form.get('w'));
+  const h = Number(form.get('h'));
+  if (!poster || !Number.isInteger(w) || !Number.isInteger(h) || w < 100 || h < 100 || w > 8000 || h > 8000) return c.json({ error: 'invalid_meta' }, 400);
+  const id = crypto.randomUUID();
+  const key = `v/${cur.id}/${id}`;
+  const clipProblem = await storeClip(c.env, key, ext, form.get('video'));
+  if (clipProblem) return c.json({ error: 'invalid_file', detail: clipProblem }, 400);
+  const posterProblem = await storeVariants(c.env, key, poster, form);
+  if (posterProblem) {
+    await c.env.PHOTOS.delete(`${key}/clip.${ext}`);
+    return c.json({ error: 'invalid_file', detail: posterProblem }, 400);
+  }
+  const video = { id, ext, w, h, bytes: (form.get('video') as File).size, poster: { key, ext: poster.ext, widths: poster.widths, w: poster.w, h: poster.h, lqip: poster.lqip } };
+  await db.prepare(`UPDATE products SET video = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).bind(JSON.stringify(video), cur.id).run();
+  await dropVideo(c.env, cur.id, cur.video);
+  return c.json(await adminGet(db, cur.id));
+});
+
+adminApi.delete('/products/:id/video', async (c) => {
+  const db = c.env.DB;
+  const cur = await adminGet(db, c.req.param('id'));
+  if (!cur) return c.json({ error: 'not_found' }, 404);
+  await db.prepare(`UPDATE products SET video = '', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).bind(cur.id).run();
+  await dropVideo(c.env, cur.id, cur.video);
+  return c.json(await adminGet(db, cur.id));
 });
 
 /* --------------------------------------------------------------- photos ---------------------------------------------------------------- */
