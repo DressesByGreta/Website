@@ -143,3 +143,17 @@ per dress and size, with price, stock, photographs and brand, refreshed every ho
 
 Use the address once the shop has its own domain. Check in the first import that every product
 is accepted: Google accepts WebP photographs; if Meta turns any down, tell Luca.
+
+## Video, lookbooks, and what visitors keep on their phone
+
+- **A dress's video:** in the dress's page in the admin, under the photographs, **Shto video**: a
+  few seconds without sound, best the Reel's own video saved from Instagram (MP4), up to 15MB and 30
+  seconds. It shows as the dress's second photograph and plays while it is on screen. **Hiq videon**
+  removes it.
+- **Lookbook:** the admin's **Lookbook** tab → a title (e.g. "Matura 2027") → **Krijo**. Add
+  photographs; tap a photograph where a dress is and choose the dress (marks save at once); add a
+  caption if you like; then **Publikuar** and **Ruaj**. It appears at /lookbook, in the footer and
+  the menu. A dress taken off sale disappears from the public lookbook by itself.
+- **Find my size, shop by date, saved dresses:** visitors set these themselves; nothing reaches the
+  shop. Greta's own part is the measurements in each dress's "Masat dhe si bie" card: with them, the
+  size each visitor sees comes from the dress itself instead of the general chart.
