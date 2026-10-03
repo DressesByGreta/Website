@@ -57,7 +57,7 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
   const url = href(`/fustan/${p.slug}`, lang, { masa: s.size });
   const sold = !inStock(p);
   const sizes = SIZES.filter((k) => p.stock[k] > 0).join(' ');
-  return html`<li class="spread${second ? '' : ' spread--solo'}" id="f-${p.slug}" data-sizes="${sizes}">
+  return html`<li class="spread${second ? '' : ' spread--solo'}" id="f-${p.slug}" data-sizes="${sizes}" data-id="${p.id}">
     <article class="spread__page" aria-labelledby="n-${p.id}">
       <a class="spread__main" href="${url}" tabindex="-1" aria-hidden="true" data-fly>
         ${plate(p.photos[0], { alt: p.photos[0]?.alt || p.name, sizes: '(min-width: 1024px) 52vw, 100vw', eager: i === 0, target: 1600, flip: flipId(p), cls: 'spread__plate' })}
@@ -69,6 +69,7 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
         <form class="spread__cap" data-add data-product="${bagData(p)}" novalidate>
           <h2 class="spread__name" id="n-${p.id}"><a href="${url}" data-fly-link>${p.name}</a>${s.category === 'new' ? '' : newTag(p, lang)}</h2>
           ${price(p, lang, 'price spread__price')}
+          <p class="spread__me small" data-me-note hidden></p>
           ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, `size-${p.id}`, s.size)}
           <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
           <p class="spread__folio">${second ? html`<span class="spread__num">${folio(i, total)}</span>` : html`<span></span>`}<a class="tlink" href="${url}" data-fly-link>${t.shop.open}</a></p>
@@ -82,10 +83,11 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
 function tocItem(p: Product, i: number, lang: Lang, s: ShopState): Raw {
   const url = href(`/fustan/${p.slug}`, lang, { masa: s.size });
   const cover = p.photos[0];
-  return html`<li class="toc__item">
+  const second = p.photos[1];
+  return html`<li class="toc__item" data-id="${p.id}">
     <a class="toc__link" href="${url}" data-fly-link data-flip="${flipId(p)}" data-name="${p.name}"${
       cover ? html` data-src="${photoAt(cover, 960)}" data-srcset="${photoSrcset(cover)}" data-lqip="${cover.lqip}"` : ''
-    }>
+    }${second ? html` data-src2="${photoAt(second, 960)}" data-srcset2="${photoSrcset(second)}"` : ''}>
       <span class="toc__num">${pad2(i + 1)}</span>
       ${plate(cover, { alt: '', sizes: '(min-width: 768px) 24vw, 46vw', eager: i === 0, target: 480, flip: flipId(p), cls: 'toc__plate', tag: 'span' })}
       <span class="toc__name">${p.name}${s.category === 'new' ? '' : newTag(p, lang)}</span>
@@ -127,6 +129,7 @@ export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embed
   return html`<div class="lookbook" id="shop" data-lookbook data-view="${s.view}">
     <div class="lb-head">
       ${raw(`<${H} class="lb-title">`)}<span>${title}</span><span class="lb-title__count" data-lb-count>${count}</span>${raw(`</${H}>`)}
+      <button class="tlink lb-me" type="button" data-open="me" aria-haspopup="dialog" data-me-label>${t.me.open}</button>
     </div>
     ${sizeIndex(lang, s, counts, 'size-strip')}
     <div class="lb-body">
@@ -134,4 +137,17 @@ export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embed
       ${sizeIndex(lang, s, counts, 'size-index')}
     </div>
   </div>`;
+}
+
+/** The dresses a visitor saved, from the list in the link (?f=slug,slug), so a shared list opens
+ *  the same on a friend's phone. The page's script fills the link from the visitor's own list. */
+export function savedView(lang: Lang, list: Product[], asked: number): Raw {
+  const t = copy[lang];
+  return html`<section class="saved container" data-saved-page>
+      <h1 class="heading saved__title">${t.saved.title} <span class="lb-title__count">${list.length ? t.saved.count(list.length) : ''}</span></h1>
+      ${list.length
+        ? html`<p class="saved__acts"><button class="btn btn--line" type="button" data-saved-share>${t.saved.share}</button><span class="small" role="status" aria-live="polite" data-saved-status></span></p>`
+        : html`<p class="body-lg saved__empty" data-saved-empty${asked ? '' : raw(' data-saved-fill')}>${t.saved.empty}</p>`}
+    </section>
+    ${list.length ? shopView(lang, list, { view: 'spreads' }, { embedded: true }) : ''}`;
 }

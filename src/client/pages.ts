@@ -1,11 +1,12 @@
 /** What each server-rendered page does once it is on screen (first load and every swap). */
-import { SIZE_LETTER, formatLek, isSize, photoAt, type Zone } from '../shared/catalog';
+import { SIZE_LETTER, formatLek, isSize, pad2, photoAt, type Zone } from '../shared/catalog';
 import { copy, href, type Lang } from '../shared/copy';
 import { esc } from '../shared/html';
 import { bag, type Snap } from './bag';
 import type { Drawers } from './drawers';
 import { dropIntoBag, gsap, pageMotion, printPlate, reducedMotion } from './motion';
 import { navigate, type PageInit } from './router';
+import { personal } from './personal';
 import { trackForm, trackView, visitSource } from './stats';
 
 interface ProductData extends Snap {
@@ -21,8 +22,10 @@ export function initPage(lang: Lang, drawers: Drawers): PageInit {
     if (kind) trackView(kind);
     markNav();
     if (kind === 'home' || kind === 'shop') offs.push(indexPreview(main));
-    if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang));
+    if (kind === 'home' || kind === 'shop' || kind === 'product') offs.push(personal(main, lang));
+    if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang), loupe(main));
     if (kind === 'checkout') offs.push(checkoutPage(main, lang));
+    if (kind === 'lookbook') offs.push(lookbookPage(main, lang));
     if (kind === 'confirmation') confirmationPage(main);
     if (kind === 'pay') payPage(main);
     if (kind === 'notfound') {
@@ -57,9 +60,22 @@ function indexPreview(main: HTMLElement): () => void {
   const name = box?.querySelector<HTMLElement>('[data-preview-name]');
   if (!box || !plate || !img) return () => undefined;
   let current = plate.dataset.flipId ?? '';
+  // Resting on a line for a moment prints its second photograph: the other angle, without a click.
+  let rest = 0;
+  const second = (a: HTMLAnchorElement) => {
+    window.clearTimeout(rest);
+    if (!a.dataset.src2) return;
+    rest = window.setTimeout(() => {
+      if (current !== a.dataset.flip) return;
+      img.srcset = a.dataset.srcset2 ?? '';
+      img.src = a.dataset.src2 ?? '';
+      if (!reducedMotion()) printPlate(plate, 0, 0.55);
+    }, 700);
+  };
   const show = (e: Event) => {
     const a = (e.target as Element).closest<HTMLAnchorElement>('.toc__link');
     if (!a || !a.dataset.flip || a.dataset.flip === current || box.offsetParent === null) return;
+    second(a);
     current = a.dataset.flip;
     plate.dataset.flipId = current;
     img.srcset = a.dataset.srcset ?? '';
@@ -73,6 +89,7 @@ function indexPreview(main: HTMLElement): () => void {
   main.addEventListener('pointerover', show);
   main.addEventListener('focusin', show);
   return () => {
+    window.clearTimeout(rest);
     main.removeEventListener('pointerover', show);
     main.removeEventListener('focusin', show);
   };
@@ -154,6 +171,88 @@ function viewer(main: HTMLElement, lang: Lang): () => void {
   return () => main.removeEventListener('click', onClick);
 }
 
+/**
+ * The loupe: on a computer, the pointer over a dress's photograph carries a square of the fabric at
+ * two and a half times, read from the sharpest width the photograph has (the 2400px original where
+ * the admin has one), so sequins, lace and tulle can be seen before buying. Square like every corner
+ * on the site; it follows with a short ease (at once with reduced motion). Clicking still opens the viewer.
+ */
+const LOUPE = { size: 240, zoom: 2.5 };
+
+function sharpest(img: HTMLImageElement): string {
+  let best = { w: 0, url: img.currentSrc || img.src };
+  for (const part of img.srcset.split(',')) {
+    const [url, w] = part.trim().split(/\s+/);
+    const n = parseInt(w ?? '', 10);
+    if (url && n > best.w) best = { w: n, url };
+  }
+  return best.url;
+}
+
+function loupe(main: HTMLElement): () => void {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)').matches) return () => undefined;
+  const lens = document.createElement('span');
+  lens.className = 'loupe';
+  lens.setAttribute('aria-hidden', 'true');
+  const ease = reducedMotion() ? 0 : 0.28;
+  const xTo = gsap.quickTo(lens, 'x', { duration: ease, ease: 'power3.out' });
+  const yTo = gsap.quickTo(lens, 'y', { duration: ease, ease: 'power3.out' });
+  let host: HTMLElement | null = null;
+  let img: HTMLImageElement | null = null;
+
+  const place = (e: PointerEvent, now = false) => {
+    if (!host || !img || !img.naturalWidth) return;
+    const box = host.getBoundingClientRect();
+    const px = e.clientX - box.left;
+    const py = e.clientY - box.top;
+    // where the photograph really sits inside its frame (object-fit: cover and its object-position)
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const wide = ratio > box.width / box.height;
+    const w = wide ? box.height * ratio : box.width;
+    const h = wide ? box.height : box.width / ratio;
+    const [ox, oy] = getComputedStyle(img).objectPosition.split(' ').map((v) => parseFloat(v) / 100);
+    const left = (box.width - w) * (ox ?? 0.5);
+    const top = (box.height - h) * (oy ?? 0.5);
+    const fx = (px - left) / w;
+    const fy = (py - top) / h;
+    lens.style.backgroundSize = `${w * LOUPE.zoom}px ${h * LOUPE.zoom}px`;
+    lens.style.backgroundPosition = `${-(fx * w * LOUPE.zoom - LOUPE.size / 2)}px ${-(fy * h * LOUPE.zoom - LOUPE.size / 2)}px`;
+    const x = px - LOUPE.size / 2;
+    const y = py - LOUPE.size / 2;
+    if (now) gsap.set(lens, { x, y });
+    else {
+      xTo(x);
+      yTo(y);
+    }
+  };
+  const enter = (e: PointerEvent) => {
+    const b = (e.target as Element).closest<HTMLElement>('.product__zoom');
+    if (!b || b === host) return;
+    host = b;
+    img = b.querySelector<HTMLImageElement>('img');
+    if (!img) return;
+    lens.style.backgroundImage = `url("${sharpest(img)}")`;
+    b.appendChild(lens);
+    place(e, true);
+    gsap.fromTo(lens, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: reducedMotion() ? 0 : 0.3, ease: 'power3.out', overwrite: 'auto' });
+  };
+  const leave = (e: PointerEvent) => {
+    if (!host || (e.relatedTarget instanceof Node && host.contains(e.relatedTarget))) return;
+    host = null;
+    gsap.to(lens, { opacity: 0, scale: 0.9, duration: reducedMotion() ? 0 : 0.2, ease: 'power2.in', onComplete: () => lens.remove() });
+  };
+  const move = (e: PointerEvent) => place(e);
+  main.addEventListener('pointerover', enter);
+  main.addEventListener('pointerout', leave);
+  main.addEventListener('pointermove', move, { passive: true });
+  return () => {
+    main.removeEventListener('pointerover', enter);
+    main.removeEventListener('pointerout', leave);
+    main.removeEventListener('pointermove', move);
+    lens.remove();
+  };
+}
+
 /* --------------------------------------------------------------- add to bag --------------------------------------------------------------- */
 
 function addForm(form: HTMLFormElement, lang: Lang): void {
@@ -183,6 +282,12 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     say(r.dataset.left === '1' ? t.product.lastOne : '');
   });
 
+  // A sold-out size answers a tap with a small shake, so it reads as "not this one", not as broken.
+  form.addEventListener('click', (e) => {
+    const out = (e.target as Element).closest<HTMLElement>('.pick__size.is-out');
+    if (out && !reducedMotion()) gsap.fromTo(out, { x: -3 }, { x: 0, duration: 0.45, ease: 'elastic.out(1, 0.3)', overwrite: true });
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const picked = form.querySelector<HTMLInputElement>('input[type="radio"]:checked');
@@ -201,6 +306,8 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     const card = form.closest('.spread, .product');
     const plate = card?.querySelector<HTMLElement>('.spread__plate, .product__plate') ?? null;
     dropIntoBag(plate);
+    // a short tick on phones that can (Android); iPhones ignore it
+    if (window.matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(12);
     label(t.product.added);
     say('');
   });
@@ -247,26 +354,156 @@ function shareButton(main: HTMLElement, lang: Lang): void {
   });
 }
 
+/**
+ * The dress page's requests (rent this dress, tell me when a size is back): posted to /api/requests;
+ * a field the server turns down is marked beside it, a sent request leaves its thank-you in place.
+ */
+function requestForms(main: HTMLElement, lang: Lang): void {
+  const t = copy[lang].product;
+  main.querySelectorAll<HTMLFormElement>('form[data-request]').forEach((form) => {
+    const status = form.querySelector<HTMLElement>('.rq__status');
+    const mark = (names: string[]) => {
+      form.querySelectorAll<HTMLElement>('.field__error').forEach((p) => (p.hidden = true));
+      form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+      for (const n of names) {
+        const input = form.querySelector<HTMLElement>(`[name="${n}"]`);
+        const err = input && form.querySelector<HTMLElement>(`#${input.id}-error`);
+        if (!input || !err) continue;
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', err.id);
+        err.textContent = t.formCheck;
+        err.hidden = false;
+      }
+      form.querySelector<HTMLElement>('[aria-invalid]')?.focus();
+    };
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      const missing = [...form.querySelectorAll<HTMLInputElement>('[required]')].filter((el) => !el.value.trim()).map((el) => el.name);
+      if (missing.length) return mark(missing);
+      const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...data, kind: form.dataset.request, productId: form.dataset.productId, lang }),
+        });
+        if (res.status === 201) {
+          mark([]);
+          form.reset();
+          if (status) status.textContent = form.dataset.request === 'rental' ? t.rentDone : t.restockDone;
+          return;
+        }
+        const body = (await res.json().catch(() => ({}))) as { fields?: string[] };
+        if (res.status === 400 && body.fields?.length) mark(body.fields);
+        else if (status) status.textContent = t.formFailed;
+      } catch {
+        if (status) status.textContent = t.formFailed;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  });
+}
+
+/** The WhatsApp link carries the dress and, once one is picked, the size. */
+function whatsappLink(main: HTMLElement, lang: Lang): void {
+  const a = main.querySelector<HTMLAnchorElement>('[data-wa]');
+  const form = main.querySelector<HTMLFormElement>('.product__form');
+  if (!a || !form) return;
+  const update = () => {
+    const size = form.querySelector<HTMLInputElement>('input[type="radio"]:checked')?.value ?? null;
+    const url = new URL(location.pathname, location.origin);
+    if (lang !== 'sq') url.searchParams.set('lang', lang);
+    a.href = `https://wa.me/${a.dataset.wa}?text=${encodeURIComponent(copy[lang].product.waText(a.dataset.waName ?? '', size, url.href))}`;
+  };
+  form.addEventListener('change', update);
+  update();
+}
+
+/**
+ * The dress in motion: the video loads when it comes near, plays (muted) while at least half of it
+ * is on screen and pauses when it leaves. Its button pauses it for good; with reduced motion it
+ * never starts by itself and the button plays it.
+ */
+function dressVideo(main: HTMLElement, lang: Lang): () => void {
+  const v = main.querySelector<HTMLVideoElement>('.product__video');
+  const btn = main.querySelector<HTMLButtonElement>('[data-video-toggle]');
+  if (!v || !btn) return () => undefined;
+  const t = copy[lang].product;
+  let held = reducedMotion(); // paused by her (or by the reduced-motion setting) until she plays it
+  const label = () => {
+    const playing = !v.paused;
+    btn.textContent = playing ? t.videoPause : t.videoPlay;
+    btn.setAttribute('aria-pressed', String(!playing));
+  };
+  const load = () => {
+    if (!v.src && v.dataset.src) v.src = v.dataset.src;
+  };
+  let visible = false;
+  const io = new IntersectionObserver(
+    ([en]) => {
+      visible = !!en?.isIntersecting;
+      if (visible) {
+        load();
+        if (!held) void v.play().catch(() => undefined);
+      } else v.pause();
+    },
+    { threshold: 0.5 },
+  );
+  io.observe(v);
+  v.addEventListener('play', label);
+  v.addEventListener('pause', label);
+  btn.addEventListener('click', () => {
+    if (v.paused) {
+      held = false;
+      load();
+      void v.play().catch(() => undefined);
+    } else {
+      held = true;
+      v.pause();
+    }
+  });
+  label();
+  return () => {
+    io.disconnect();
+    v.pause();
+  };
+}
+
 function productPage(main: HTMLElement, lang: Lang): () => void {
   const t = copy[lang];
   shareButton(main, lang);
+  const offVideo = dressVideo(main, lang);
+  requestForms(main, lang);
+  whatsappLink(main, lang);
   const observers: IntersectionObserver[] = [];
   const counter = main.querySelector<HTMLElement>('[data-gallery-i]');
   const gallery = main.querySelector<HTMLElement>('[data-gallery]');
+  const bar = main.querySelector<HTMLElement>('[data-gallery-bar]');
+  const offs: (() => void)[] = [];
   if (counter && gallery) {
     const io = new IntersectionObserver(
       (entries) => {
-        for (const en of entries) if (en.isIntersecting) counter.textContent = String([...gallery.children].indexOf(en.target) + 1);
+        for (const en of entries) if (en.isIntersecting) counter.textContent = pad2([...gallery.children].indexOf(en.target) + 1);
       },
       { root: gallery, threshold: 0.6 },
     );
     [...gallery.children].forEach((li) => io.observe(li));
     observers.push(io);
   }
+  // The hairline under the photographs fills as they are swiped: how far through the dress you are.
+  if (gallery && bar) {
+    const fill = () => bar.style.setProperty('--g', ((gallery.scrollLeft + gallery.clientWidth) / Math.max(1, gallery.scrollWidth)).toFixed(4));
+    gallery.addEventListener('scroll', fill, { passive: true });
+    offs.push(() => gallery.removeEventListener('scroll', fill));
+  }
 
   const form = main.querySelector<HTMLFormElement>('.product__form');
-  const bar = main.querySelector<HTMLElement>('[data-buybar]');
-  if (form && bar) {
+  const buybar = main.querySelector<HTMLElement>('[data-buybar]');
+  if (form && buybar) {
+    const bar = buybar;
     const io = new IntersectionObserver(([en]) => {
       const show = !!en && !en.isIntersecting && en.boundingClientRect.top < 0;
       if (show === !bar.hidden) return;
@@ -283,7 +520,88 @@ function productPage(main: HTMLElement, lang: Lang): () => void {
       window.setTimeout(() => form.querySelector<HTMLInputElement>('input[type="radio"]:not(:disabled)')?.focus({ preventScroll: true }), 400);
     });
   }
-  return () => observers.forEach((o) => o.disconnect());
+  return () => {
+    observers.forEach((o) => o.disconnect());
+    offs.forEach((off) => off());
+    offVideo();
+  };
+}
+
+/* ----------------------------------------------------------------- lookbook --------------------------------------------------------------- */
+
+/**
+ * A lookbook's marks: a tap opens a small card on the photograph with the dress (its own photograph,
+ * name, price, a link), turned away from the photograph's edges; Escape, a tap outside or the same
+ * mark close it. Resting on a dress in the list under the photograph lights its mark.
+ */
+function lookbookPage(main: HTMLElement, lang: Lang): () => void {
+  const t = copy[lang].lookbook;
+  let open: { spot: HTMLButtonElement; card: HTMLElement } | null = null;
+  const close = (focusSpot = false) => {
+    if (!open) return;
+    open.card.hidden = true;
+    open.spot.setAttribute('aria-expanded', 'false');
+    open.spot.classList.remove('is-on');
+    if (focusSpot) open.spot.focus();
+    open = null;
+  };
+  const show = (spot: HTMLButtonElement) => {
+    const frame = spot.closest<HTMLElement>('[data-frame]')!;
+    const card = frame.querySelector<HTMLElement>('[data-card]');
+    const link = frame.querySelector<HTMLAnchorElement>(`[data-spot-link="${spot.dataset.spot}"]`);
+    if (!card || !link) return;
+    close();
+    const n = spot.textContent?.trim() ?? '';
+    card.innerHTML = `<a class="lbk-card__link" href="${esc(link.href)}">${link.dataset.cover ? `<img class="lbk-card__img" src="${esc(link.dataset.cover)}" alt="" width="72" height="96" />` : ''}<span class="lbk-card__text"><span class="lbk-card__n">${esc(n)}</span><span class="lbk-card__name">${esc(link.dataset.name ?? '')}</span><span class="lbk-card__price">${esc(link.dataset.price ?? '')}</span><span class="lbk-card__go">${esc(t.view)}</span></span></a>`;
+    const x = parseFloat(spot.style.left) / 100;
+    const y = parseFloat(spot.style.top) / 100;
+    // beside the mark on a wide screen; a phone docks the card along the photograph's foot (CSS)
+    card.style.setProperty('--x', spot.style.left);
+    card.style.setProperty('--y', spot.style.top);
+    card.classList.toggle('is-left', x > 0.55);
+    card.classList.toggle('is-up', y > 0.6);
+    card.hidden = false;
+    spot.setAttribute('aria-expanded', 'true');
+    spot.classList.add('is-on');
+    open = { spot, card };
+    if (!reducedMotion()) gsap.fromTo(card, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out', clearProps: 'transform,opacity' });
+    card.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+  };
+  const onClick = (e: Event) => {
+    const spot = (e.target as Element).closest<HTMLButtonElement>('.lbk-spot');
+    if (spot) {
+      e.preventDefault();
+      if (open?.spot === spot) close(true);
+      else show(spot);
+      return;
+    }
+    if (open && !(e.target as Element).closest('[data-card]')) close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && open) close(true);
+  };
+  const light = (e: Event, on: boolean) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('[data-spot-link]');
+    if (!link) return;
+    const frame = link.closest<HTMLElement>('[data-frame]');
+    frame?.querySelector(`.lbk-spot[data-spot="${link.dataset.spotLink}"]`)?.classList.toggle('is-lit', on);
+  };
+  const over = (e: Event) => light(e, true);
+  const out = (e: Event) => light(e, false);
+  main.addEventListener('click', onClick);
+  main.addEventListener('pointerover', over);
+  main.addEventListener('pointerout', out);
+  main.addEventListener('focusin', over);
+  main.addEventListener('focusout', out);
+  document.addEventListener('keydown', onKey);
+  return () => {
+    main.removeEventListener('click', onClick);
+    main.removeEventListener('pointerover', over);
+    main.removeEventListener('pointerout', out);
+    main.removeEventListener('focusin', over);
+    main.removeEventListener('focusout', out);
+    document.removeEventListener('keydown', onKey);
+  };
 }
 
 /* ----------------------------------------------------------------- checkout --------------------------------------------------------------- */

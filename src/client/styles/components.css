@@ -705,3 +705,104 @@ html.drawer-open .nav {
     padding: var(--s-7) var(--s-7) var(--s-7);
   }
 }
+
+/* ---------- the bag as a moment (drawers.ts) ---------- */
+
+/* empty: the whole logo in gold, printed in when the bag opens */
+.bag__seal {
+  display: block;
+  width: 152px;
+  margin-bottom: var(--s-3);
+  color: var(--gold);
+}
+
+.bag__mark {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.bag__picks {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+}
+
+.bag__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-3);
+  padding: 0;
+  list-style: none;
+}
+
+.bag__pick {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.bag__plate {
+  display: block;
+  aspect-ratio: 3 / 4;
+}
+
+.bag__plate .plate__img {
+  object-position: 50% 22%;
+}
+
+.bag__pick-name {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}
+
+/* the header's peek (peek.ts): the dress behind the link the pointer rests on, printed just below */
+.peek {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+  .peek {
+    position: fixed;
+    top: calc(var(--header-h) + 10px);
+    left: 0;
+    z-index: 30;
+    display: grid;
+    gap: var(--s-2);
+    width: 220px;
+    padding: 8px 8px 10px;
+    background: var(--ground);
+    border: 1px solid var(--hairline);
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition:
+      opacity 0.22s var(--ease-out),
+      transform 0.22s var(--ease-out);
+  }
+  .peek.is-on {
+    opacity: 1;
+    transform: none;
+  }
+  .peek__plate {
+    display: block;
+    aspect-ratio: 3 / 4;
+  }
+  .peek__plate .plate__img {
+    object-position: 50% 22%;
+  }
+  .peek__name {
+    font-size: var(--fs-ui);
+    letter-spacing: var(--track-ui);
+    text-transform: uppercase;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peek {
+    transition: none;
+  }
+}

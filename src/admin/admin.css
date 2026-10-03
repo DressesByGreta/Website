@@ -1668,3 +1668,288 @@ body {
     transform: none;
   }
 }
+
+/* ---------- phones and touch: every control a finger can hit, and the screen for the work ---------- */
+.adm-top {
+  transition: transform 0.3s var(--ease-out);
+}
+
+@media (max-width: 767.98px) {
+  .adm-top-away .adm-top {
+    transform: translateY(-100%);
+  }
+  .adm-main {
+    padding-top: var(--s-5);
+  }
+  .adm-card {
+    padding: var(--s-4);
+  }
+  /* figures two by two, not one long column */
+  .adm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-5) var(--s-3);
+  }
+  /* the save bar on one row: the status left, Ruaj right; the unsaved note above them when there is one */
+  .adm-savebar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'note note' 'status save';
+    gap: var(--s-1) var(--s-3);
+  }
+  .adm-savebar .adm-status {
+    grid-area: status;
+  }
+  .adm-savebar .adm-note {
+    grid-area: note;
+  }
+  .adm-savebar .adm-note:empty {
+    display: none;
+  }
+  .adm-savebar .btn {
+    grid-area: save;
+    margin: 0;
+    min-width: 112px;
+  }
+  .adm-savebar .adm-radio {
+    margin-right: var(--s-4);
+  }
+  /* a dress row opens from anywhere on it; the grip and the arrows sit above the stretched link */
+  .adm-row {
+    position: relative;
+  }
+  .adm-row__name::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .adm-row__grip,
+  .adm-row__order {
+    position: relative;
+    z-index: 1;
+  }
+  /* the size cells only show stock: a tap on them goes through to the row */
+  .adm-row__stock {
+    pointer-events: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .adm-link,
+  .adm-filter,
+  .adm-seg__item,
+  .adm-check,
+  .adm-radio,
+  .adm-photo__alt summary {
+    min-height: 44px;
+  }
+  .adm-link {
+    padding: 0 var(--s-1);
+    margin: 0 calc(var(--s-1) * -1);
+  }
+  .adm-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .adm-check input {
+    width: 22px;
+    height: 22px;
+  }
+  .adm-radio input {
+    width: 20px;
+    height: 20px;
+    box-shadow: inset 0 0 0 4px var(--ground);
+  }
+  .adm-brand {
+    min-height: 44px;
+  }
+  .adm-table td a,
+  .adm-req__dress,
+  .adm-req__who a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-top {
+    transition: none;
+  }
+}
+
+/* ---------- Kërkesat: rentals and sizes people wait for ---------- */
+.adm-reqs {
+  display: grid;
+  border-top: 1px solid var(--ink);
+  background: var(--ground);
+  margin-top: var(--s-4);
+}
+
+.adm-req {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* an unanswered request carries an ink rule down its left edge */
+.adm-req.is-new {
+  border-left: 2px solid var(--ink);
+  padding-left: calc(var(--s-4) - 2px);
+}
+
+.adm-req__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adm-req__dress {
+  font-size: 16px;
+  justify-self: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgba(0, 0, 0, 0.25);
+}
+
+.adm-req__meta,
+.adm-req__who {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  color: var(--ink-2);
+}
+
+.adm-req__meta b {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.adm-req__note {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.adm-req__acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+@media (min-width: 768px) {
+  .adm-req {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+/* measurements: a narrow centimetre field per size and measure */
+.adm-cm {
+  width: 72px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-measures td,
+.adm-measures th {
+  padding: 4px var(--s-2) 4px 0;
+}
+
+/* a dress's video, under its photographs */
+.adm-video {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+}
+
+.adm-video__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3) var(--s-5);
+}
+
+.adm-video__clip {
+  width: 160px;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  background: var(--ground-2);
+}
+
+/* ---------- Lookbook: photographs with the dresses marked ---------- */
+.adm-lbfs {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.adm-lbf {
+  display: grid;
+  gap: var(--s-4);
+  padding-bottom: var(--s-6);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.adm-lbf__photo {
+  position: relative;
+  width: min(100%, calc(70svh * var(--ar)));
+  aspect-ratio: var(--ar);
+  background: var(--ground-2);
+  cursor: crosshair;
+}
+
+.adm-lbf__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adm-lbf__spot {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  background: var(--ground);
+  border: 1px solid var(--ink);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.adm-lbf__spot.is-pending {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.adm-lbf__side {
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+}
+
+.adm-lbf__spots {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.adm-lbf__spots li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.adm-lbf__n {
+  font-size: var(--fs-ui);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  .adm-lbf {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}

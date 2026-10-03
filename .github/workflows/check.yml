@@ -1,0 +1,24 @@
+# Every pull request and every push to main is type-checked and built, the same steps as
+# `npm run build` before a deploy, so a mistake shows on GitHub before it can reach the shop.
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run build

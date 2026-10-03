@@ -4,6 +4,7 @@ import { bag } from './bag';
 import { Drawers } from './drawers';
 import { loadMotionChoice, motionStopped, setMotionStopped } from './motion';
 import { initPage } from './pages';
+import { headerPeek } from './peek';
 import { startRouter } from './router';
 
 const lang = isLang(document.body.dataset.lang) ? document.body.dataset.lang : 'sq';
@@ -11,6 +12,7 @@ loadMotionChoice();
 const drawers = new Drawers(lang);
 startRouter(initPage(lang, drawers));
 drawers.schedulePopup(9000);
+headerPeek(lang);
 void bag.refresh(lang);
 
 /** Stop animations (footer and menu): the label says what a press will do. */

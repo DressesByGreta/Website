@@ -273,3 +273,60 @@ html[data-motion='off'] .macc__plus::after {
   text-transform: uppercase;
   text-wrap: balance;
 }
+
+/* ---------- the menu shows the dresses (drawers.ts menuPictures) ---------- */
+
+/* phones: a small photograph before each shop and occasion link */
+.mnav__child[data-pic] {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mnav__thumb {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 43px;
+  object-fit: cover;
+  object-position: 50% 22%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* computers: the link under the pointer prints its first dress in the open space beside the menu */
+.mnav__preview {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+  .mnav__thumb {
+    display: none;
+  }
+  .mnav__preview {
+    position: fixed;
+    top: 50%;
+    left: calc(min(430px, 86vw) + clamp(32px, 6vw, 96px));
+    display: grid;
+    gap: var(--s-3);
+    width: min(28vw, 400px);
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease-out);
+  }
+  .mnav__preview.is-on {
+    opacity: 1;
+  }
+  .mnav__plate {
+    display: block;
+    aspect-ratio: 3 / 4;
+  }
+  .mnav__plate .plate__img {
+    object-position: 50% 22%;
+  }
+  .mnav__preview-name {
+    font-size: var(--fs-ui);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+}

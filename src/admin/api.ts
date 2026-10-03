@@ -1,5 +1,5 @@
 /** Thin client for /api/admin. Every call carries the session cookie; errors become ApiError. */
-import type { Photo, Tag, Stock, Zone } from '../shared/catalog';
+import type { Measures, Photo, Tag, Stock, Video, Zone } from '../shared/catalog';
 import type { Business, Returns } from '../shared/legal';
 
 export class ApiError extends Error {
@@ -36,6 +36,53 @@ export interface AdminProduct {
   updatedAt: string;
   /** Shown as new until then; null until the first publication. */
   newUntil: string | null;
+  measures: Measures;
+  fitSq: string;
+  fitEn: string;
+  video: Video | null;
+}
+
+/** Lookbooks (worker/lookbooks.ts): a mark is a dress on a photograph, x and y as fractions. */
+export interface Spot {
+  x: number;
+  y: number;
+  product: string;
+}
+export interface AdminFrame {
+  id: string;
+  photo: Photo;
+  captionSq: string;
+  captionEn: string;
+  spots: Spot[];
+}
+export interface AdminLookbook {
+  id: string;
+  slug: string;
+  titleSq: string;
+  titleEn: string;
+  introSq: string;
+  introEn: string;
+  status: 'draft' | 'published';
+  updatedAt: string;
+  frames: AdminFrame[];
+}
+export type LookbookSummary = Omit<AdminLookbook, 'frames'> & { frames: number; cover: Photo | null };
+
+/** A visitor's request from a dress page (worker/requests.ts). */
+export interface ShopRequest {
+  id: string;
+  kind: 'rental' | 'restock';
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  size: string;
+  event_date: string | null;
+  name: string;
+  phone: string;
+  note: string;
+  lang: 'sq' | 'en' | 'fr';
+  status: 'new' | 'confirmed' | 'declined' | 'done';
+  created_at: string;
 }
 
 export interface SaleOrder {
@@ -134,7 +181,7 @@ export const api = {
   login: (password: string) => call<{ ok: true }>('POST', '/login', { password }),
   devLogin: () => call<{ ok: true }>('POST', '/dev-login'),
   logout: () => call<{ ok: true }>('POST', '/logout'),
-  summary: () => call<{ published: number; drafts: number; newOrders: number; awaitingPayment: number; confirmed: number; soldOut: number; demo: boolean }>('GET', '/summary'),
+  summary: () => call<{ published: number; drafts: number; newOrders: number; awaitingPayment: number; confirmed: number; soldOut: number; newRequests: number; demo: boolean }>('GET', '/summary'),
   products: () => call<AdminProduct[]>('GET', '/products'),
   product: (id: string) => call<AdminProduct>('GET', `/products/${id}`),
   create: (nameSq: string) => call<AdminProduct>('POST', '/products', { nameSq }),
@@ -150,6 +197,8 @@ export const api = {
   orders: (status?: string) => call<OrderSummary[]>('GET', `/orders${status ? `?status=${status}` : ''}`),
   order: (id: string) => call<OrderDetail>('GET', `/orders/${id}`),
   updateOrder: (id: string, patch: { status?: OrderStatus; paymentStatus?: string }) => call<OrderDetail>('PATCH', `/orders/${id}`, patch),
+  requests: (kind: 'rental' | 'restock') => call<ShopRequest[]>('GET', `/requests?kind=${kind}`),
+  setRequest: (id: string, status: ShopRequest['status']) => call<{ ok: true }>('PATCH', `/requests/${id}`, { status }),
   settings: () => call<{ zones: Zone[]; shopPhone: string; card: boolean }>('GET', '/settings'),
   saveSettings: (zones: Zone[]) => call<{ zones: Zone[] }>('PUT', '/settings', { zones }),
   stats: (days: number) => call<StatsReport>('GET', `/stats?days=${days}`),
@@ -165,13 +214,29 @@ export const api = {
   instagramFollowers: (followers: number) => call<InstagramState>('PUT', '/instagram', { followers }),
   instagramSync: () => call<InstagramState>('POST', '/instagram/sync'),
   instagramUnlink: () => call<InstagramState>('DELETE', '/instagram'),
+  deleteVideo: (id: string) => call<AdminProduct>('DELETE', `/products/${id}/video`),
+  lookbooks: () => call<LookbookSummary[]>('GET', '/lookbooks'),
+  createLookbook: (titleSq: string) => call<AdminLookbook>('POST', '/lookbooks', { titleSq }),
+  lookbook: (id: string) => call<AdminLookbook>('GET', `/lookbooks/${id}`),
+  saveLookbook: (id: string, patch: Partial<Pick<AdminLookbook, 'titleSq' | 'titleEn' | 'introSq' | 'introEn' | 'slug' | 'status'>>) => call<AdminLookbook>('PUT', `/lookbooks/${id}`, patch),
+  deleteLookbook: (id: string) => call<{ ok: true }>('DELETE', `/lookbooks/${id}`),
+  saveFrame: (id: string, frameId: string, patch: Partial<Pick<AdminFrame, 'captionSq' | 'captionEn' | 'spots'>>) => call<AdminLookbook>('PATCH', `/lookbooks/${id}/frames/${frameId}`, patch),
+  frameOrder: (id: string, ids: string[]) => call<AdminLookbook>('PUT', `/lookbooks/${id}/frames/order`, { ids }),
+  deleteFrame: (id: string, frameId: string) => call<AdminLookbook>('DELETE', `/lookbooks/${id}/frames/${frameId}`),
 };
 
 /** Upload with progress (fetch has no upload progress). Resolves to the updated product. */
-export function uploadPhoto(productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> {
+export const uploadPhoto = (productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> =>
+  uploadForm(`/api/admin/products/${productId}/photos`, form, onProgress);
+
+/** A dress's video (the clip and its poster), with progress. Resolves to the updated product. */
+export const uploadVideo = (productId: string, form: FormData, onProgress: (f: number) => void): Promise<AdminProduct> =>
+  uploadForm(`/api/admin/products/${productId}/video`, form, onProgress);
+
+export function uploadForm<T = AdminProduct>(url: string, form: FormData, onProgress: (f: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/admin/products/${productId}/photos`);
+    xhr.open('POST', url);
     xhr.withCredentials = true;
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
     xhr.onload = () => {
@@ -181,7 +246,7 @@ export function uploadPhoto(productId: string, form: FormData, onProgress: (f: n
       } catch {
         /* keep {} */
       }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as AdminProduct);
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
       else reject(new ApiError(xhr.status, body as never));
     };
     xhr.onerror = () => reject(new ApiError(0, { error: 'network' }));

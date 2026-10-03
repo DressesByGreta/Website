@@ -32,7 +32,7 @@ export type Tag = Category | Occasion;
 export const isTag = (v: unknown): v is Tag => isCategory(v) || isOccasion(v);
 
 /** The dresses an occasion page shows: those Greta ticked, or its fallback while she has ticked none. */
-export function forOccasion(all: Product[], o: Occasion): Product[] {
+export function forOccasion<T extends Pick<Product, 'occasions' | 'categories'>>(all: T[], o: Occasion): T[] {
   const ticked = all.filter((p) => p.occasions.includes(o));
   if (ticked.length) return ticked;
   const cats = OCCASION_FALLBACK[o];
@@ -76,6 +76,115 @@ export interface Photo {
 
 export type Stock = Record<Size, number>;
 
+/** How a dress fits, in centimetres, as Greta measured it: the length, and bust, waist and hips per size.
+ *  Any of them may be missing; the dress page shows only what is there. */
+export const MEASURES = ['bust', 'waist', 'hips'] as const;
+export type Measure = (typeof MEASURES)[number];
+export interface Measures {
+  length?: number;
+  sizes: Partial<Record<Size, Partial<Record<Measure, number>>>>;
+}
+const cm = (v: unknown): number | undefined => {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 10 && n <= 250 ? Math.round(n) : undefined;
+};
+/** Reads (and cleans) stored or posted measurements: unknown sizes, keys and odd numbers are dropped. */
+export function parseMeasures(raw: unknown): Measures {
+  let v = raw;
+  if (typeof v === 'string') {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      v = null;
+    }
+  }
+  const o = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  const sizes: Measures['sizes'] = {};
+  const src = o.sizes && typeof o.sizes === 'object' ? (o.sizes as Record<string, unknown>) : {};
+  for (const s of SIZES) {
+    const row = src[s] && typeof src[s] === 'object' ? (src[s] as Record<string, unknown>) : {};
+    const clean: Partial<Record<Measure, number>> = {};
+    for (const m of MEASURES) {
+      const n = cm(row[m]);
+      if (n !== undefined) clean[m] = n;
+    }
+    if (Object.keys(clean).length) sizes[s] = clean;
+  }
+  const length = cm(o.length);
+  return length !== undefined ? { length, sizes } : { sizes };
+}
+export const hasMeasures = (m: Measures): boolean => m.length !== undefined || Object.keys(m.sizes).length > 0;
+
+/** Body measurements in centimetres, as a visitor gives them to "find my size" (any may be missing). */
+export type Body = Partial<Record<Measure, number>>;
+
+/** The standard European chart behind the shop's sizes (body measurements, cm), used where a dress
+ *  has no measurements of its own. */
+export const CHART: Record<Size, Record<Measure, number>> = {
+  '34': { bust: 80, waist: 64, hips: 88 },
+  '36': { bust: 84, waist: 68, hips: 92 },
+  '38': { bust: 88, waist: 72, hips: 96 },
+  '40': { bust: 92, waist: 76, hips: 100 },
+  '42': { bust: 96, waist: 80, hips: 104 },
+};
+
+/**
+ * The size for a body. For each measure she gave, the smallest size that reaches it (a centimetre
+ * over is still that size); the largest of those wins, since a dress must fit its widest part. A
+ * measure reads from the dress's own measurements where Greta took it for at least two sizes, else
+ * from the chart. Returns null when no measure was given, size null when every size is too small.
+ */
+export function recommendSize(body: Body, measures?: Measures): { size: Size | null; fromDress: boolean } | null {
+  const given = MEASURES.filter((m) => typeof body[m] === 'number' && body[m]! > 0);
+  if (!given.length) return null;
+  let need = 0;
+  let fromDress = false;
+  for (const m of given) {
+    const own = measures ? SIZES.filter((s) => measures.sizes[s]?.[m] !== undefined) : [];
+    const useDress = own.length >= 2;
+    fromDress ||= useDress;
+    const sizes = useDress ? own : [...SIZES];
+    const ref = (s: Size) => (useDress ? measures!.sizes[s]![m]! : CHART[s][m]);
+    const fit = sizes.find((s) => ref(s) >= body[m]! - 1);
+    if (fit === undefined) return { size: null, fromDress };
+    need = Math.max(need, SIZES.indexOf(fit));
+  }
+  return { size: SIZES[need]!, fromDress };
+}
+
+/** A dress in motion: one short silent video (its Reel) and a poster photograph made from its first
+ *  moment, so the page shows something before the video plays (and instead of it, with reduced motion). */
+export interface Video {
+  id: string;
+  ext: 'mp4' | 'webm';
+  w: number;
+  h: number;
+  bytes: number;
+  poster: Photo;
+}
+/** Largest video the shop keeps: a Reel of a few seconds is far below it. */
+export const VIDEO_MAX_BYTES = 15 * 1024 * 1024;
+export const videoUrl = (productId: string, v: Pick<Video, 'id' | 'ext'>): string => `/vid/v/${productId}/${v.id}/clip.${v.ext}`;
+
+/** Reads a stored video ('' or JSON); anything malformed reads as no video. */
+export function parseVideo(raw: string, alt = ''): Video | null {
+  try {
+    const v = JSON.parse(raw || 'null') as Partial<Video> | null;
+    const p = v?.poster as Partial<Photo> | undefined;
+    if (!v || typeof v.id !== 'string' || (v.ext !== 'mp4' && v.ext !== 'webm') || !p || typeof p.key !== 'string' || !Array.isArray(p.widths)) return null;
+    return {
+      id: v.id,
+      ext: v.ext,
+      w: Number(v.w) || 0,
+      h: Number(v.h) || 0,
+      bytes: Number(v.bytes) || 0,
+      poster: { id: v.id, key: p.key, ext: p.ext === 'jpg' ? 'jpg' : 'webp', widths: p.widths.map(Number), w: Number(p.w) || 0, h: Number(p.h) || 0, lqip: typeof p.lqip === 'string' ? p.lqip : '', alt },
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** A product as the storefront sees it, already resolved to one language. */
 export interface Product {
   id: string;
@@ -93,6 +202,10 @@ export interface Product {
   photos: Photo[];
   /** Inside its two weeks as new (NEW_DAYS). */
   isNew: boolean;
+  measures: Measures;
+  /** "Fits small, take one size up": in the page's language, '' when Greta has not written one. */
+  fit: string;
+  video: Video | null;
 }
 
 export const emptyStock = (): Stock => ({ '34': 0, '36': 0, '38': 0, '40': 0, '42': 0 });

@@ -112,3 +112,48 @@ After the deploy, in **Google Search Console**:
 3. **Sitemaps** → submit `sitemap.xml`.
 
 With a custom domain later, add that domain as a new property.
+
+## Rentals and "tell me when my size is back"
+
+Each dress page has **Merre me qera** (event date, size, name, phone) and, when a size is sold out,
+**Njoftomë kur kthehet masa** (size and phone). Both arrive in the admin's **Kërkesat** tab and as a
+Telegram alert.
+
+- **Qira:** press **WhatsApp** to open a reply already written in the visitor's language, agree the
+  price, then **Konfirmo**: the date shows on the dress page as booked (no name, only the date and
+  size). **Refuzo** if it cannot be done; **U kthye, mbylle** once the dress is back.
+- **Masa u kthye:** when a size people asked for goes from 0 back into stock in the dress's page,
+  Telegram says so. Open the tab, press **WhatsApp** beside each person (the message with the link
+  is ready), then **E njoftova, mbylle**.
+
+The WhatsApp button on dress pages uses the shop phone from **Cilësimet** (business details); without
+one, the dress page links to Instagram messages instead.
+
+## Google Shopping and the Instagram and Facebook shop (free listings)
+
+The shop publishes its catalogue at `/feed.xml` (Albanian) and `/feed.xml?lang=en` (English): one line
+per dress and size, with price, stock, photographs and brand, refreshed every hour.
+
+1. **Google:** merchants.google.com, create the account with the shop's details, add the website and
+   verify it (the same way as Search Console). **Products → Add products → Add products from a file
+   → Enter a link to your file**: `https://<the shop's address>/feed.xml`, daily. Choose free listings.
+2. **Instagram and Facebook:** business.facebook.com → **Commerce Manager → Catalogue → Data sources →
+   Data feed → Scheduled feed**, the same address, daily. Then connect the catalogue to the Instagram
+   account to tag dresses in posts.
+
+Use the address once the shop has its own domain. Check in the first import that every product
+is accepted: Google accepts WebP photographs; if Meta turns any down, tell Luca.
+
+## Video, lookbooks, and what visitors keep on their phone
+
+- **A dress's video:** in the dress's page in the admin, under the photographs, **Shto video**: a
+  few seconds without sound, best the Reel's own video saved from Instagram (MP4), up to 15MB and 30
+  seconds. It shows as the dress's second photograph and plays while it is on screen. **Hiq videon**
+  removes it.
+- **Lookbook:** the admin's **Lookbook** tab → a title (e.g. "Matura 2027") → **Krijo**. Add
+  photographs; tap a photograph where a dress is and choose the dress (marks save at once); add a
+  caption if you like; then **Publikuar** and **Ruaj**. It appears at /lookbook, in the footer and
+  the menu. A dress taken off sale disappears from the public lookbook by itself.
+- **Find my size, shop by date, saved dresses:** visitors set these themselves; nothing reaches the
+  shop. Greta's own part is the measurements in each dress's "Masat dhe si bie" card: with them, the
+  size each visitor sees comes from the dress itself instead of the general chart.

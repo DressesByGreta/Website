@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, MEASURES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone, videoUrl } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { returnsSection, sellerText, type Business, type Returns } from '../shared/legal';
@@ -12,17 +12,22 @@ import { addDays, isDay, monthStart, tiranaDay, weekStart } from '../shared/time
 import {
   api,
   ApiError,
+  uploadForm,
   uploadPhoto,
+  uploadVideo,
   type AdminProduct,
   type InstagramState,
+  type AdminLookbook,
   type LinkedChat,
+  type LookbookSummary,
   type OrderDetail,
   type OrderStatus,
   type OrderSummary,
   type SalesReport,
+  type ShopRequest,
   type StatsReport,
 } from './api';
-import { prepare, toForm } from './images';
+import { prepare, prepareVideo, toForm } from './images';
 import { byDay, byDress, bySize, counted, salesFile, summarize, tally } from './sales';
 import { XLSX_TYPE } from './xlsx';
 
@@ -150,7 +155,7 @@ const sourceLabel = (s: string): string => {
   return `${SOURCE[src ?? ''] ?? src}${campaign ? ` · ${campaign}` : ''}`;
 };
 
-function frame(active: 'products' | 'orders' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
+function frame(active: 'products' | 'orders' | 'requests' | 'lookbook' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
   // On desktop the tabs stand as a numbered index down the left rail, like the shop's contents.
   let n = 0;
   const tab = (key: typeof active, href: string, label: string, extra: Raw | string = '') =>
@@ -160,6 +165,8 @@ function frame(active: 'products' | 'orders' | 'sales' | 'stats' | 'settings', b
       <nav class="adm-tabs" aria-label="Admin">
         ${tab('products', '/admin', 'Fustanet')}
         ${tab('orders', '/admin/porosi', 'Porositë', badge ? html`<span class="adm-badge">${badge}</span>` : '')}
+        ${tab('requests', '/admin/kerkesat', 'Kërkesat', newRequests ? html`<span class="adm-badge">${newRequests}</span>` : '')}
+        ${tab('lookbook', '/admin/lookbook', 'Lookbook')}
         ${tab('sales', '/admin/shitjet', 'Shitjet')}
         ${tab('stats', '/admin/statistikat', 'Statistikat')}
         ${tab('settings', '/admin/cilesimet', 'Cilësimet')}
@@ -212,12 +219,30 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('popstate', () => void route());
 
+// Phones: the top bar steps aside while scrolling down and comes back on the way up, so a form gets
+// the screen (two rows of bar and the save bar took a third of it). It stays while anything in it has focus.
+let lastY = 0;
+window.addEventListener(
+  'scroll',
+  () => {
+    const y = window.scrollY;
+    if (Math.abs(y - lastY) < 6) return;
+    const phone = window.matchMedia('(max-width: 767.98px)').matches;
+    const away = phone && y > 120 && y > lastY && !document.querySelector('.adm-top')?.contains(document.activeElement);
+    document.documentElement.classList.toggle('adm-top-away', away);
+    lastY = y;
+  },
+  { passive: true },
+);
+
 let newOrders = 0;
+let newRequests = 0;
 let demo = false;
 async function refreshBadge(): Promise<void> {
   try {
     const s = await api.summary();
     newOrders = s.newOrders;
+    newRequests = s.newRequests;
     demo = s.demo;
   } catch {
     /* keep */
@@ -241,6 +266,9 @@ async function route(): Promise<void> {
   if ((m = p.match(/^\/admin\/produkt\/([\w-]+)$/))) return editor(m[1]!);
   if ((m = p.match(/^\/admin\/porosi\/([\w-]+)$/))) return orderView(m[1]!);
   if (p === '/admin/porosi') return ordersView();
+  if (p === '/admin/kerkesat') return requestsView();
+  if ((m = p.match(/^\/admin\/lookbook\/([\w-]+)$/))) return lookbookEditor(m[1]!);
+  if (p === '/admin/lookbook') return lookbooksView();
   if (p === '/admin/shitjet') return salesView();
   if (p === '/admin/statistikat') return statsView();
   if (p === '/admin/cilesimet') return settingsView();
@@ -493,7 +521,14 @@ interface Draft {
   slug: string;
   status: 'draft' | 'published';
   stock: Record<string, string>;
+  /** 'length' and '<size>-<bust|waist|hips>', in centimetres as typed */
+  measures: Record<string, string>;
+  fitSq: string;
+  fitEn: string;
 }
+
+const MEASURE_KEYS = ['length', ...SIZES.flatMap((s) => MEASURES.map((m) => `${s}-${m}`))];
+const MEASURE_LABEL: Record<(typeof MEASURES)[number], string> = { bust: 'Gjoksi', waist: 'Beli', hips: 'Ijet' };
 
 const toDraft = (p: AdminProduct): Draft => ({
   nameSq: p.nameSq,
@@ -509,6 +544,15 @@ const toDraft = (p: AdminProduct): Draft => ({
   slug: p.slug,
   status: p.status,
   stock: Object.fromEntries(SIZES.map((s) => [s, String(p.stock[s])])),
+  measures: Object.fromEntries(
+    MEASURE_KEYS.map((k) => {
+      const [s, m] = k.split('-') as [(typeof SIZES)[number], (typeof MEASURES)[number]];
+      const v = k === 'length' ? p.measures.length : p.measures.sizes[s]?.[m];
+      return [k, v === undefined ? '' : String(v)];
+    }),
+  ),
+  fitSq: p.fitSq,
+  fitEn: p.fitEn,
 });
 
 const COLORS = ['black', 'white', 'red', 'blue', 'green', 'pink', 'purple', 'lilac', 'gold', 'silver', 'grey', 'brown', 'yellow', 'teal'];
@@ -544,6 +588,15 @@ async function editor(id: string): Promise<void> {
   }
   let saved = JSON.stringify(toDraft(p));
   const uploads: { key: string; name: string; progress: number; preview: string; error?: string }[] = [];
+  // the dress's video while it is being prepared or sent: progress 0..1, or an error in words
+  let clip: { progress: number; error?: string } | null = null;
+  const CLIP_WHY: Record<string, string> = {
+    not_video: 'nuk është video (MP4 ose WebM).',
+    video_too_big: 'është më e rëndë se 15 MB.',
+    video_too_long: 'është më e gjatë se 30 sekonda.',
+    video_unplayable: 'ky shfletues nuk e luan dot. Ngarko MP4, p.sh. videon e Reel-it nga Instagram.',
+    too_small: 'është shumë e vogël.',
+  };
 
   const photoCard = (ph: AdminProduct['photos'][number], i: number, n: number) => html`<li class="adm-photo" data-photo="${ph.id}">
     <span class="adm-photo__img"><img src="${photoAt(ph, 480)}" alt="" loading="lazy" /></span>
@@ -595,6 +648,24 @@ async function editor(id: string): Promise<void> {
               <span class="btn btn--line">Shto foto</span>
               <span class="adm-note">Ose tërhiqi këtu. Fotoja e parë është kopertina në dyqan.</span>
             </label>
+            <div class="adm-video">
+              <p class="adm-label">Video (jo e detyrueshme)</p>
+              ${p.video
+                ? html`<div class="adm-video__row">
+                    <video class="adm-video__clip" src="${videoUrl(p.id, p.video)}" poster="${photoAt(p.video.poster, 480)}" muted playsinline loop controls preload="metadata"></video>
+                    <button class="adm-link adm-danger" type="button" data-video-remove>Hiq videon</button>
+                  </div>`
+                : ''}
+              <label class="adm-drop adm-drop--video">
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" data-video-file class="sr-only" />
+                <span class="btn btn--line">${p.video ? 'Zëvendëso videon' : 'Shto video'}</span>
+                <span class="adm-note">Disa sekonda, pa zë, p.sh. videoja e Reel-it (MP4) nga Instagram. Deri në 15 MB dhe 30 sekonda. Shfaqet e dyta te fustani.</span>
+              </label>
+              ${clip
+                ? html`<p class="adm-note" role="status">${clip.error ? `Videoja nuk u ngarkua: ${clip.error}` : 'Po ngarkohet videoja'}</p>
+                    ${clip.error ? '' : html`<span class="adm-progress"><span style="transform: scaleX(${clip.progress.toFixed(3)})"></span></span>`}`
+                : ''}
+            </div>
           </section>
 
           <section class="adm-card" aria-labelledby="sec-sell">
@@ -616,6 +687,24 @@ async function editor(id: string): Promise<void> {
                 </label>`,
               )}
             </fieldset>
+          </section>
+
+          <section class="adm-card" aria-labelledby="sec-fit">
+            <h2 class="adm-h2" id="sec-fit">Masat dhe si bie</h2>
+            <p class="adm-note">Në centimetra, të matura në fustan. Dyqani shfaq vetëm ato që plotëson.</p>
+            <label class="adm-field adm-field--inline"><span>Gjatësia</span><input class="adm-input adm-cm" name="m-length" inputmode="numeric" value="${d.measures['length']}" /></label>
+            <div class="adm-table-wrap"><table class="adm-table adm-measures">
+              <thead><tr><th>Masa</th>${MEASURES.map((m) => html`<th>${MEASURE_LABEL[m]}</th>`)}</tr></thead>
+              <tbody>${SIZES.map(
+                (s) => html`<tr><th scope="row">${s}</th>${MEASURES.map(
+                  (m) => html`<td><input class="adm-input adm-cm" name="m-${s}-${m}" inputmode="numeric" value="${d.measures[`${s}-${m}`]}" aria-label="${MEASURE_LABEL[m]}, masa ${s}" /></td>`,
+                )}</tr>`,
+              )}</tbody>
+            </table></div>
+            <div class="adm-grid2">
+              <label class="adm-field"><span>Si bie, në shqip</span><input class="adm-input" name="fitSq" value="${d.fitSq}" maxlength="200" placeholder="p.sh. Bie pak e ngushtë, merr një masë më të madhe." /></label>
+              <label class="adm-field"><span>Si bie, në anglisht</span><input class="adm-input" name="fitEn" value="${d.fitEn}" maxlength="200" placeholder="e.g. Fits small, take one size up." /></label>
+            </div>
           </section>
 
           <section class="adm-card" aria-labelledby="sec-info">
@@ -675,6 +764,9 @@ async function editor(id: string): Promise<void> {
       slug: v('slug').trim(),
       status: (f.querySelector<HTMLInputElement>('input[name="status"]:checked')?.value as Draft['status']) ?? 'draft',
       stock: Object.fromEntries(SIZES.map((s) => [s, v(`stock-${s}`).trim() || '0'])),
+      measures: Object.fromEntries(MEASURE_KEYS.map((k) => [k, v(`m-${k}`).replace(/\D/g, '')])),
+      fitSq: v('fitSq').trim(),
+      fitEn: v('fitEn').trim(),
     };
   };
 
@@ -692,6 +784,7 @@ async function editor(id: string): Promise<void> {
       const f = root.querySelector<HTMLFormElement>('[data-form]')!;
       for (const [k, v] of Object.entries(pending)) {
         if (k === 'stock') for (const s of SIZES) (f.elements.namedItem(`stock-${s}`) as HTMLInputElement).value = (v as Record<string, string>)[s] ?? '0';
+        else if (k === 'measures') for (const mk of MEASURE_KEYS) (f.elements.namedItem(`m-${mk}`) as HTMLInputElement).value = (v as Record<string, string>)[mk] ?? '';
         else if (k === 'categories') f.querySelectorAll<HTMLInputElement>('input[name="cat"]').forEach((x) => (x.checked = (v as string[]).includes(x.value)));
         else if (k === 'featured') (f.elements.namedItem('featured') as HTMLInputElement).checked = v as boolean;
         else if (k === 'status') f.querySelectorAll<HTMLInputElement>('input[name="status"]').forEach((x) => (x.checked = x.value === v));
@@ -702,6 +795,26 @@ async function editor(id: string): Promise<void> {
       }
     }
     markDirty();
+  };
+
+  const sendVideo = async (file: File) => {
+    clip = { progress: 0 };
+    replace(p, true);
+    try {
+      const { form, preview } = await prepareVideo(file);
+      URL.revokeObjectURL(preview);
+      const fresh = await uploadVideo(p.id, form, (f) => {
+        if (clip) clip.progress = f;
+        const bar = root.querySelector<HTMLElement>('.adm-video .adm-progress span');
+        if (bar) bar.style.transform = `scaleX(${f.toFixed(3)})`;
+      });
+      clip = null;
+      replace(fresh, true);
+      toast('Videoja u ruajt. Shfaqet e dyta te fustani.');
+    } catch (x) {
+      clip = { progress: 0, error: x instanceof ApiError ? errText(x) : (CLIP_WHY[(x as Error).message] ?? 'provo përsëri.') };
+      replace(p, true);
+    }
   };
 
   const upload = async (files: FileList | File[]) => {
@@ -742,6 +855,10 @@ async function editor(id: string): Promise<void> {
       void upload(t.files);
       t.value = '';
     }
+    if (t.matches('[data-video-file]') && t.files?.[0]) {
+      void sendVideo(t.files[0]);
+      t.value = '';
+    }
     markDirty();
   });
   on('dragover', (e) => {
@@ -761,6 +878,17 @@ async function editor(id: string): Promise<void> {
 
   on('click', async (e) => {
     const t = e.target as HTMLElement;
+    if (t.closest('[data-video-remove]')) {
+      if (!(await ask('Ta heqësh videon e këtij fustani?', 'Hiq videon'))) return;
+      try {
+        clip = null;
+        replace(await api.deleteVideo(p.id), true);
+        toast('Videoja u hoq.');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
     const nw = t.closest<HTMLButtonElement>('[data-new-mark]');
     if (nw) {
       const start = nw.dataset.newMark === 'on';
@@ -857,6 +985,13 @@ async function editor(id: string): Promise<void> {
         slug: d.slug,
         status: d.status,
         stock: Object.fromEntries(SIZES.map((s) => [s, Math.max(0, parseInt(d.stock[s] ?? '0', 10) || 0)])) as AdminProduct['stock'],
+        // the server keeps only sensible centimetres (10 to 250) and drops the rest
+        measures: {
+          length: Number(d.measures['length']) || undefined,
+          sizes: Object.fromEntries(SIZES.map((s) => [s, Object.fromEntries(MEASURES.map((m) => [m, Number(d.measures[`${s}-${m}`]) || undefined]))])),
+        },
+        fitSq: d.fitSq,
+        fitEn: d.fitEn,
       });
       saved = JSON.stringify(toDraft(fresh));
       replace(fresh, false);
@@ -870,6 +1005,416 @@ async function editor(id: string): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ orders ----------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------- requests ---------------------------------------------------------------- */
+
+const REQ_STATUS: Record<ShopRequest['status'], string> = { new: 'E re', confirmed: 'Konfirmuar', declined: 'Refuzuar', done: 'Mbyllur' };
+const MONTHS_SQ = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+const dayText = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS_SQ[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+
+/** WhatsApp with the answer already written, in the visitor's language; Greta reads it and sends. */
+function waReply(r: ShopRequest): string {
+  const digits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '').replace(/^0/, '355');
+  const link = `${location.origin}/fustan/${r.product_slug}${r.lang === 'sq' ? '' : `?lang=${r.lang}`}`;
+  const text =
+    r.kind === 'rental'
+      ? { sq: `Përshëndetje${r.name ? ` ${r.name}` : ''}! Faleminderit për kërkesën për ${r.product_name}, masa ${r.size}, më ${dayText(r.event_date ?? '')}.`, en: `Hello${r.name ? ` ${r.name}` : ''}! Thank you for your request to rent ${r.product_name}, size ${r.size}, on ${r.event_date}.`, fr: `Bonjour${r.name ? ` ${r.name}` : ''} ! Merci pour votre demande de location de ${r.product_name}, taille ${r.size}, le ${r.event_date}.` }[r.lang]
+      : { sq: `Përshëndetje! ${r.product_name} është sërish në masën ${r.size}: ${link}`, en: `Hello! ${r.product_name} is back in size ${r.size}: ${link}`, fr: `Bonjour ! ${r.product_name} est de nouveau disponible en taille ${r.size} : ${link}` }[r.lang];
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+async function requestsView(): Promise<void> {
+  const kind = new URLSearchParams(location.search).get('lloji') === 'kthim' ? 'restock' : 'rental';
+  mount(frame('requests', html`<p class="adm-empty">Po ngarkohen kërkesat</p>`, newOrders));
+  let list: ShopRequest[];
+  try {
+    list = await api.requests(kind);
+  } catch (e) {
+    toast(errText(e), 'err');
+    return;
+  }
+  const actions = (r: ShopRequest) =>
+    r.kind === 'rental'
+      ? r.status === 'new'
+        ? html`<button class="btn" type="button" data-req="${r.id}" data-to="confirmed">Konfirmo</button><button class="adm-link" type="button" data-req="${r.id}" data-to="declined">Refuzo</button>`
+        : r.status === 'confirmed'
+          ? html`<button class="adm-link" type="button" data-req="${r.id}" data-to="done">U kthye, mbylle</button>`
+          : ''
+      : r.status === 'new'
+        ? html`<button class="adm-link" type="button" data-req="${r.id}" data-to="done">E njoftova, mbylle</button>`
+        : '';
+  const draw = () =>
+    mount(
+      frame(
+        'requests',
+        html`<div class="adm-head"><h1 class="adm-h1">Kërkesat <span class="adm-count">${list.filter((r) => r.status === 'new').length}</span></h1></div>
+        <div class="adm-filters adm-filters--wrap" role="group" aria-label="Lloji">
+          <a class="adm-filter${kind === 'rental' ? ' is-on' : ''}" href="/admin/kerkesat" data-link${kind === 'rental' ? raw(' aria-current="page"') : ''}>Qira</a>
+          <a class="adm-filter${kind === 'restock' ? ' is-on' : ''}" href="/admin/kerkesat?lloji=kthim" data-link${kind === 'restock' ? raw(' aria-current="page"') : ''}>Masa u kthye</a>
+        </div>
+        <p class="adm-note">${kind === 'rental'
+          ? 'Kërkesat për qira nga faqet e fustaneve. Shkruaj klientes në WhatsApp, pastaj konfirmo: data shfaqet si e zënë te fustani.'
+          : 'Kush pret që një masë e shitur të kthehet. Kur e rikthen në gjendje, merr një njoftim në Telegram; shkruaju këtu me një prekje.'}</p>
+        ${list.length
+          ? html`<ol class="adm-reqs">${list.map(
+              (r) => html`<li class="adm-req${r.status === 'new' ? ' is-new' : ''}">
+                <div class="adm-req__main">
+                  <a class="adm-req__dress" href="/admin/produkt/${r.product_id}" data-link>${r.product_name}</a>
+                  <p class="adm-req__meta">Masa ${r.size}${r.event_date ? html` · <b>${dayText(r.event_date)}</b>` : ''} · <span class="adm-state${r.status === 'confirmed' ? ' is-live' : ''}">${REQ_STATUS[r.status]}</span></p>
+                  <p class="adm-req__who">${r.name ? html`${r.name} · ` : ''}<a href="tel:${r.phone.replace(/[^\d+]/g, '')}">${r.phone}</a></p>
+                  ${r.note ? html`<p class="adm-req__note">${r.note}</p>` : ''}
+                </div>
+                <div class="adm-req__acts">
+                  <a class="btn btn--line" href="${waReply(r)}" target="_blank" rel="noopener">WhatsApp</a>
+                  ${actions(r)}
+                </div>
+              </li>`,
+            )}</ol>`
+          : html`<p class="adm-empty">${kind === 'rental' ? 'Ende asnjë kërkesë për qira.' : 'Askush nuk pret ende për një masë.'}</p>`}`,
+        newOrders,
+      ),
+    );
+  draw();
+  on('click', async (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-req]');
+    if (!b) return;
+    const to = b.dataset.to as ShopRequest['status'];
+    if (to === 'declined' && !(await ask('Ta refuzosh këtë kërkesë për qira?', 'Refuzo'))) return;
+    b.disabled = true;
+    try {
+      await api.setRequest(b.dataset.req!, to);
+      const r = list.find((x) => x.id === b.dataset.req);
+      if (r) r.status = to;
+      await refreshBadge();
+      draw();
+      toast(to === 'confirmed' ? 'U konfirmua: data shfaqet si e zënë te fustani.' : 'U ruajt.');
+    } catch (x) {
+      b.disabled = false;
+      toast(errText(x), 'err');
+    }
+  });
+}
+
+/* ---------------------------------------------------------------- lookbook ---------------------------------------------------------------- */
+
+async function lookbooksView(): Promise<void> {
+  mount(frame('lookbook', html`<p class="adm-empty">Po ngarkohen lookbook-et</p>`, newOrders));
+  let list: LookbookSummary[];
+  try {
+    list = await api.lookbooks();
+  } catch (e) {
+    toast(errText(e), 'err');
+    return;
+  }
+  mount(
+    frame(
+      'lookbook',
+      html`<div class="adm-head">
+        <h1 class="adm-h1">Lookbook <span class="adm-count">${list.length}</span></h1>
+        <form class="adm-new" data-new-lookbook>
+          <label class="sr-only" for="adm-new-lb">Titulli i lookbook-ut të ri</label>
+          <input class="adm-input" id="adm-new-lb" name="title" placeholder="p.sh. Matura 2027" maxlength="80" required />
+          <button class="btn" type="submit">Krijo</button>
+        </form>
+      </div>
+      <p class="adm-note">Faqe me fotografi ku shënon fustanet: vizitorja prek numrin dhe shkon te fustani. Shfaqet në dyqan kur e publikon dhe ka të paktën një foto.</p>
+      ${list.length
+        ? html`<ol class="adm-list no-order">${list.map(
+            (l) => html`<li class="adm-row adm-row--lb">
+              <a class="adm-row__thumb" href="/admin/lookbook/${l.id}" data-link tabindex="-1" aria-hidden="true">${l.cover ? html`<img src="${photoAt(l.cover, 480)}" alt="" loading="lazy" width="60" height="80" />` : ''}</a>
+              <span class="adm-row__main">
+                <a class="adm-row__name" href="/admin/lookbook/${l.id}" data-link>${l.titleSq}</a>
+                <span class="adm-row__meta"><span class="adm-state${l.status === 'published' ? ' is-live' : ''}">${l.status === 'published' ? 'Publikuar' : 'Draft'}</span><span class="adm-row__note">${l.frames} foto</span></span>
+              </span>
+            </li>`,
+          )}</ol>`
+        : html`<p class="adm-empty">Ende asnjë lookbook. Krijo të parin më lart.</p>`}`,
+      newOrders,
+    ),
+  );
+  on('submit', async (e) => {
+    const f = (e.target as HTMLElement).closest<HTMLFormElement>('[data-new-lookbook]');
+    if (!f) return;
+    e.preventDefault();
+    const title = (f.elements.namedItem('title') as HTMLInputElement).value.trim();
+    if (!title) return;
+    try {
+      const l = await api.createLookbook(title);
+      await go(`/admin/lookbook/${l.id}`);
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  });
+}
+
+/**
+ * One lookbook: its words, then its photographs. A tap on a photograph sets a mark there and asks
+ * which dress it is; the marks and captions save as they change, the words with Ruaj.
+ */
+async function lookbookEditor(id: string): Promise<void> {
+  mount(frame('lookbook', html`<p class="adm-empty">Po hapet lookbook-u</p>`, newOrders));
+  let l: AdminLookbook;
+  let dresses: AdminProduct[];
+  try {
+    [l, dresses] = await Promise.all([api.lookbook(id), api.products()]);
+  } catch (e) {
+    mount(frame('lookbook', html`<p class="adm-empty">${e instanceof ApiError && e.status === 404 ? 'Ky lookbook nuk ekziston më.' : errText(e)}</p><a class="adm-link" href="/admin/lookbook" data-link>Kthehu te lookbook-et</a>`, newOrders));
+    return;
+  }
+  const live = dresses.filter((d) => d.status === 'published');
+  const nameOf = (pid: string) => dresses.find((d) => d.id === pid)?.nameSq ?? 'Fustan i hequr';
+  // a mark set on a photograph but not yet given a dress (kept here until it has one)
+  let pending: { frame: string; x: number; y: number } | null = null;
+  const uploads: { key: string; progress: number; error?: string }[] = [];
+  const fields = () => {
+    const f = root.querySelector<HTMLFormElement>('[data-lb-form]');
+    const v = (n: string) => ((f?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '').trim();
+    return {
+      titleSq: v('titleSq'),
+      titleEn: v('titleEn'),
+      introSq: v('introSq'),
+      introEn: v('introEn'),
+      slug: v('slug'),
+      status: (f?.querySelector<HTMLInputElement>('input[name="status"]:checked')?.value as AdminLookbook['status']) ?? l.status,
+    };
+  };
+  let saved = '';
+
+  const spotsOf = (fr: AdminLookbook['frames'][number]) =>
+    [...fr.spots.map((s) => ({ ...s, pending: false })), ...(pending?.frame === fr.id ? [{ x: pending.x, y: pending.y, product: '', pending: true }] : [])];
+
+  const frameCard = (fr: AdminLookbook['frames'][number], i: number, n: number) => {
+    const spots = spotsOf(fr);
+    return html`<li class="adm-lbf" data-frame-id="${fr.id}">
+      <div class="adm-lbf__photo" style="--ar: ${(fr.photo.w / Math.max(1, fr.photo.h)).toFixed(4)}" data-spot-area role="button" tabindex="0" aria-label="Prek foton aty ku është fustani për të vendosur një shenjë">
+        <img src="${photoAt(fr.photo, 960)}" alt="" loading="lazy" />
+        ${spots.map((s, k) => html`<span class="adm-lbf__spot${s.pending ? ' is-pending' : ''}" style="left: ${(s.x * 100).toFixed(1)}%; top: ${(s.y * 100).toFixed(1)}%">${pad2(k + 1)}</span>`)}
+      </div>
+      <div class="adm-lbf__side">
+        <p class="adm-label">Fustanet në këtë foto</p>
+        ${spots.length
+          ? html`<ol class="adm-lbf__spots">${spots.map(
+              (s, k) => html`<li>
+                <span class="adm-lbf__n">${pad2(k + 1)}</span>
+                <select class="adm-input" data-spot-dress="${k}" aria-label="Fustani nr. ${pad2(k + 1)}">
+                  ${s.pending ? html`<option value="" selected>Zgjidh fustanin</option>` : ''}
+                  ${!s.pending && !live.some((d) => d.id === s.product) ? html`<option value="${s.product}" selected>${nameOf(s.product)}</option>` : ''}
+                  ${live.map((d) => html`<option value="${d.id}"${d.id === s.product ? raw(' selected') : ''}>${d.nameSq}</option>`)}
+                </select>
+                <button class="adm-link adm-danger" type="button" data-spot-del="${k}">Hiq</button>
+              </li>`,
+            )}</ol>`
+          : html`<p class="adm-note">Prek foton aty ku është një fustan.</p>`}
+        <label class="adm-field"><span>Përshkrimi, shqip (jo i detyrueshëm)</span><input class="adm-input" data-caption="sq" value="${fr.captionSq}" maxlength="200" /></label>
+        <label class="adm-field"><span>Përshkrimi, anglisht</span><input class="adm-input" data-caption="en" value="${fr.captionEn}" maxlength="200" /></label>
+        <span class="adm-photo__acts">
+          <button class="adm-icon" type="button" data-frame-move="-1" aria-label="Lëvize lart"${i === 0 ? raw(' disabled') : ''}>${icon.up}</button>
+          <button class="adm-icon" type="button" data-frame-move="1" aria-label="Lëvize poshtë"${i === n - 1 ? raw(' disabled') : ''}>${icon.down}</button>
+          <button class="adm-link adm-danger" type="button" data-frame-del>Fshi foton</button>
+        </span>
+      </div>
+    </li>`;
+  };
+
+  const draw = (keepFields = false) => {
+    const kept = keepFields ? fields() : null;
+    const d = kept ?? { titleSq: l.titleSq, titleEn: l.titleEn, introSq: l.introSq, introEn: l.introEn, slug: l.slug, status: l.status };
+    mount(
+      frame(
+        'lookbook',
+        html`<div class="adm-head">
+          <a class="adm-link adm-back" href="/admin/lookbook" data-link>${icon.left} Lookbook</a>
+          <div class="adm-head__end">
+            <a class="adm-link" href="/lookbook/${l.slug}" target="_blank" rel="noopener"${l.status === 'published' ? '' : raw(' hidden')}>Shiko në dyqan</a>
+            <button class="adm-link adm-danger" type="button" data-lb-delete>Fshi lookbook-un</button>
+          </div>
+        </div>
+        <h1 class="adm-h1">${l.titleSq}</h1>
+        <form class="adm-editor" data-lb-form novalidate>
+          <section class="adm-card" aria-labelledby="lb-words">
+            <h2 class="adm-h2" id="lb-words">Titulli dhe hyrja</h2>
+            <div class="adm-grid2">
+              <label class="adm-field"><span>Titulli në shqip</span><input class="adm-input" name="titleSq" value="${d.titleSq}" maxlength="80" required /></label>
+              <label class="adm-field"><span>Titulli në anglisht</span><input class="adm-input" name="titleEn" value="${d.titleEn}" maxlength="80" /></label>
+              <label class="adm-field"><span>Hyrja në shqip</span><textarea class="adm-input adm-area" name="introSq" rows="3" maxlength="600">${d.introSq}</textarea></label>
+              <label class="adm-field"><span>Hyrja në anglisht</span><textarea class="adm-input adm-area" name="introEn" rows="3" maxlength="600">${d.introEn}</textarea></label>
+            </div>
+            <label class="adm-field"><span>Adresa</span><span class="adm-prefix"><span>/lookbook/</span><input class="adm-input" name="slug" value="${d.slug}" maxlength="60" /></span></label>
+          </section>
+          <section class="adm-card" aria-labelledby="lb-photos">
+            <h2 class="adm-h2" id="lb-photos">Fotot <span class="adm-count">${l.frames.length} / 30</span></h2>
+            ${l.frames.length ? html`<ol class="adm-lbfs">${l.frames.map((fr, i) => frameCard(fr, i, l.frames.length))}</ol>` : ''}
+            ${uploads.map((u) => html`<p class="adm-note" role="status">${u.error ? `Fotoja nuk u ngarkua: ${u.error}` : 'Po ngarkohet një foto'}</p>`)}
+            <label class="adm-drop">
+              <input type="file" accept="image/*" multiple data-lb-files class="sr-only" />
+              <span class="btn btn--line">Shto foto</span>
+              <span class="adm-note">Fotot shfaqen me radhë, të plota, pa u prerë.</span>
+            </label>
+          </section>
+          <div class="adm-savebar">
+            <div class="adm-status" role="group" aria-label="Statusi">
+              <label class="adm-radio"><input type="radio" name="status" value="draft"${d.status === 'draft' ? raw(' checked') : ''} /> Draft</label>
+              <label class="adm-radio"><input type="radio" name="status" value="published"${d.status === 'published' ? raw(' checked') : ''} /> Publikuar</label>
+            </div>
+            <span class="adm-note" data-dirty aria-live="polite"></span>
+            <button class="btn" type="submit">Ruaj</button>
+          </div>
+        </form>`,
+        newOrders,
+      ),
+    );
+    if (!keepFields) saved = JSON.stringify(fields());
+    markDirty();
+  };
+  const markDirty = () => {
+    dirty = JSON.stringify(fields()) !== saved;
+    const el = root.querySelector('[data-dirty]');
+    if (el) el.textContent = dirty ? 'Ndryshime të paruajtura' : '';
+  };
+  const frameOf = (el: Element) => l.frames.find((x) => x.id === el.closest<HTMLElement>('[data-frame-id]')?.dataset.frameId);
+  const saveSpots = async (fr: AdminLookbook['frames'][number], spots: AdminLookbook['frames'][number]['spots']) => {
+    try {
+      l = await api.saveFrame(l.id, fr.id, { spots });
+      draw(true);
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  };
+
+  draw();
+  on('input', markDirty);
+  on('submit', async (e) => {
+    if (!(e.target as HTMLElement).closest('[data-lb-form]')) return;
+    e.preventDefault();
+    try {
+      l = await api.saveLookbook(l.id, fields());
+      draw();
+      toast(l.status === 'published' ? 'U ruajt dhe është në dyqan.' : 'U ruajt si draft.');
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  });
+  on('click', async (e) => {
+    const t = e.target as HTMLElement;
+    const area = t.closest<HTMLElement>('[data-spot-area]');
+    if (area) {
+      const fr = frameOf(area);
+      if (!fr) return;
+      if (fr.spots.length >= 12) return toast('Maksimumi është 12 shenja për foto.', 'err');
+      const r = area.getBoundingClientRect();
+      pending = { frame: fr.id, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
+      draw(true);
+      root.querySelector<HTMLSelectElement>(`[data-frame-id="${fr.id}"] [data-spot-dress="${fr.spots.length}"]`)?.focus();
+      return;
+    }
+    const del = t.closest<HTMLButtonElement>('[data-spot-del]');
+    if (del) {
+      const fr = frameOf(del);
+      const k = Number(del.dataset.spotDel);
+      if (!fr) return;
+      if (pending?.frame === fr.id && k === fr.spots.length) {
+        pending = null;
+        return draw(true);
+      }
+      return saveSpots(fr, fr.spots.filter((_, j) => j !== k));
+    }
+    const mv = t.closest<HTMLButtonElement>('[data-frame-move]');
+    if (mv) {
+      const fr = frameOf(mv);
+      if (!fr) return;
+      const ids = l.frames.map((x) => x.id);
+      const i = ids.indexOf(fr.id);
+      const j = i + Number(mv.dataset.frameMove);
+      if (j < 0 || j >= ids.length) return;
+      [ids[i], ids[j]] = [ids[j]!, ids[i]!];
+      try {
+        l = await api.frameOrder(l.id, ids);
+        draw(true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    if (t.closest('[data-frame-del]')) {
+      const fr = frameOf(t);
+      if (!fr || !(await ask('Ta fshish këtë foto nga lookbook-u?', 'Fshi foton'))) return;
+      try {
+        l = await api.deleteFrame(l.id, fr.id);
+        draw(true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    if (t.closest('[data-lb-delete]')) {
+      if (!(await ask('Ta fshish krejt këtë lookbook? Fotot e tij fshihen bashkë me të.', 'Fshi'))) return;
+      try {
+        await api.deleteLookbook(l.id);
+        dirty = false;
+        await go('/admin/lookbook');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+    }
+  });
+  on('keydown', (e) => {
+    // the photograph takes a mark from the keyboard too: Enter sets one in its middle
+    const area = (e.target as HTMLElement).closest<HTMLElement>('[data-spot-area]');
+    if (!area || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    const fr = frameOf(area);
+    if (!fr) return;
+    pending = { frame: fr.id, x: 0.5, y: 0.5 };
+    draw(true);
+  });
+  on('change', async (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.matches('[data-lb-files]') && t.files?.length) {
+      const files = [...t.files];
+      t.value = '';
+      for (const file of files) {
+        const u: (typeof uploads)[number] = { key: crypto.randomUUID(), progress: 0 };
+        uploads.push(u);
+        draw(true);
+        try {
+          const prepared = await prepare(file);
+          URL.revokeObjectURL(prepared.preview);
+          l = await uploadForm<AdminLookbook>(`/api/admin/lookbooks/${l.id}/frames`, toForm(prepared), (f) => (u.progress = f));
+          uploads.splice(uploads.indexOf(u), 1);
+        } catch (x) {
+          u.error = x instanceof ApiError ? errText(x) : 'provo përsëri.';
+        }
+        draw(true);
+      }
+      return;
+    }
+    const sel = t.closest<HTMLSelectElement>('[data-spot-dress]');
+    if (sel) {
+      const fr = frameOf(sel);
+      const k = Number(sel.dataset.spotDress);
+      if (!fr || !sel.value) return;
+      const spots = [...fr.spots];
+      if (pending?.frame === fr.id && k === fr.spots.length) {
+        spots.push({ x: pending.x, y: pending.y, product: sel.value });
+        pending = null;
+      } else if (spots[k]) spots[k] = { ...spots[k]!, product: sel.value };
+      return saveSpots(fr, spots);
+    }
+    const cap = t.closest<HTMLInputElement>('[data-caption]');
+    if (cap) {
+      const fr = frameOf(cap);
+      if (!fr) return;
+      try {
+        l = await api.saveFrame(l.id, fr.id, cap.dataset.caption === 'sq' ? { captionSq: cap.value } : { captionEn: cap.value });
+        toast('Përshkrimi u ruajt.');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    markDirty();
+  });
+}
 
 async function ordersView(): Promise<void> {
   const status = new URLSearchParams(location.search).get('s') ?? 'new';

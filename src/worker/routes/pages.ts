@@ -12,11 +12,15 @@ import type { AppEnv, ExtraEnv } from '../types';
 import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
 import { HERO_SIZES, heroSrcset, homeView, storeJsonLd, websiteJsonLd } from '../views/home';
-import { assetTags, page, setDemo, setFollowers, setNewCount, setVerification } from '../views/layout';
+import { assetTags, page, setDemo, setFollowers, setLookbooks, setNewCount, setVerification } from '../views/layout';
+import { countLookbooks, getLookbook, listLookbooks, lookbookImage } from '../lookbooks';
+import { lookbookIndexView, lookbookView } from '../views/lookbook';
 import { occasionView } from '../views/occasion';
 import { legalIntro, legalTitle, legalView } from '../views/legal';
-import { breadcrumbJsonLd, productJsonLd, productView } from '../views/product';
-import { shopView, type ShopState } from '../views/shop';
+import { breadcrumbJsonLd, productJsonLd, productView, waNumber, type ProductExtras } from '../views/product';
+import { bookedDates } from '../requests';
+import { addDays, tiranaDay } from '../../shared/time';
+import { savedView, shopView, type ShopState } from '../views/shop';
 
 export const pages = new Hono<AppEnv>();
 
@@ -29,10 +33,11 @@ pages.use('*', async (c, next) => {
   // minute per instance (the admin refreshes the new count of its own instance when it saves a dress)
   if (Date.now() - settingsRead > 60_000) {
     settingsRead = Date.now();
-    const [demo, count, fresh] = await Promise.all([getSetting(c.env.DB, 'demo_data'), followerCount(c.env.DB), countNew(c.env.DB)]);
+    const [demo, count, fresh, books] = await Promise.all([getSetting(c.env.DB, 'demo_data'), followerCount(c.env.DB), countNew(c.env.DB), countLookbooks(c.env.DB)]);
     setDemo(demo === '1');
     setFollowers(count);
     setNewCount(fresh);
+    setLookbooks(books);
   }
   await next();
 });
@@ -115,7 +120,9 @@ pages.get('/fustan/:slug', async (c) => {
   const lang = c.get('lang');
   const p = await getVisibleBySlug(c.env.DB, c.req.param('slug'), lang);
   if (!p) return notFound(c);
-  const [all, { returns }, zones] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB)]);
+  const [all, { returns, business }, zones, booked] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB), bookedDates(c.env.DB, p.id)]);
+  const today = tiranaDay();
+  const extras: ProductExtras = { whatsapp: waNumber(business.phone), booked, today, maxDay: addDays(today, 365) };
   const index = Math.max(0, all.findIndex((x) => x.id === p.id));
   const next = all.length > 1 ? (all[(index + 1) % all.length] ?? null) : null;
   const masa = c.req.query('masa');
@@ -129,8 +136,77 @@ pages.get('/fustan/:slug', async (c) => {
       description: p.description.slice(0, 155) || copy[lang].meta.shopDescription,
       kind: 'product',
       image: p.photos[0] ? photoAt(p.photos[0], 1600) : undefined,
-      body: productView(lang, p, index, all.length, next, zones, isSize(masa) ? (masa as Size) : undefined),
+      body: productView(lang, p, index, all.length, next, zones, extras, isSize(masa) ? (masa as Size) : undefined),
       jsonLd: [productJsonLd(origin(c), lang, p, returns), breadcrumbJsonLd(origin(c), lang, p)],
+    }),
+  );
+});
+
+/** Lookbooks: the index, and each one (lookbooks.ts, views/lookbook.ts). */
+pages.get('/lookbook', async (c) => {
+  const lang = c.get('lang');
+  const t = copy[lang].lookbook;
+  const list = await listLookbooks(c.env.DB, lang);
+  if (!list.length) return notFound(c);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: '/lookbook',
+      title: t.metaTitle,
+      description: t.metaDescription,
+      kind: 'lookbook',
+      image: photoAt(list[0]!.cover, 1600),
+      body: lookbookIndexView(lang, list),
+    }),
+  );
+});
+
+pages.get('/lookbook/:slug', async (c) => {
+  const lang = c.get('lang');
+  const l = await getLookbook(c.env.DB, c.req.param('slug'), lang);
+  if (!l) return notFound(c);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: `/lookbook/${l.slug}`,
+      title: `${l.title}, ${copy[lang].lookbook.metaTitle}`,
+      description: l.intro.slice(0, 155) || copy[lang].lookbook.metaDescription,
+      kind: 'lookbook',
+      image: lookbookImage(l),
+      body: lookbookView(lang, l),
+    }),
+  );
+});
+
+/** Saved dresses: the list travels in the link, so it can be sent to someone (never indexed). */
+pages.get('/te-ruajtura', async (c) => {
+  const lang = c.get('lang');
+  const t = copy[lang];
+  const asked = (c.req.query('f') ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => /^[a-z0-9-]{1,80}$/.test(x))
+    .slice(0, 40);
+  const all = asked.length ? await listVisible(c.env.DB, lang) : [];
+  const bySlug = new Map(all.map((p) => [p.slug, p]));
+  const list = asked.map((x) => bySlug.get(x)).filter((p): p is NonNullable<typeof p> => !!p);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: '/te-ruajtura',
+      params: { f: asked.join(',') || undefined },
+      title: t.saved.metaTitle,
+      description: t.saved.metaDescription,
+      kind: 'shop',
+      noindex: true,
+      image: list[0]?.photos[0] ? photoAt(list[0].photos[0], 1600) : undefined,
+      body: savedView(lang, list, asked.length),
     }),
   );
 });

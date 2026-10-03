@@ -18,6 +18,9 @@ export default defineConfig({
   server: { port: 3640, strictPort: true, host: '127.0.0.1', watch: { ignored: ['**/raw/**', '**/tools/**', '**/.impeccable/**'] } },
   preview: { port: 3641, strictPort: true },
   define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
+  // the admin's WebP encoder (libwebp in WebAssembly) finds its .wasm next to its own module;
+  // pre-bundling would move the module and leave the .wasm behind (404 in development)
+  optimizeDeps: { exclude: ['@jsquash/webp'] },
   environments: {
     client: {
       build: {
