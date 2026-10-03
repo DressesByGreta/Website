@@ -1014,7 +1014,7 @@ const dayText = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS_SQ[Number(d.s
 
 /** WhatsApp with the answer already written, in the visitor's language; Greta reads it and sends. */
 function waReply(r: ShopRequest): string {
-  const digits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '').replace(/^0/, '355');
+  const digits = waDigits(r.phone);
   const link = `${location.origin}/fustan/${r.product_slug}${r.lang === 'sq' ? '' : `?lang=${r.lang}`}`;
   const text =
     r.kind === 'rental'
@@ -1463,6 +1463,47 @@ async function ordersView(): Promise<void> {
   );
 }
 
+/** A phone number as WhatsApp wants it: international digits; an Albanian 06x number gains 355. */
+function waDigits(phone: string): string {
+  let d = phone.replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) d = d.slice(1);
+  else if (d.startsWith('00')) d = d.slice(2);
+  else if (d.startsWith('0')) d = `355${d.slice(1)}`;
+  return d;
+}
+
+/** The order's messages, written in the customer's language: confirmed, on its way, thank you. */
+function orderMessages(d: OrderDetail): { label: string; text: string }[] {
+  const o = d.order;
+  const lang = o.lang === 'en' || o.lang === 'fr' ? o.lang : 'sq';
+  const first = o.customer_name.split(/\s+/)[0] ?? '';
+  const items = d.items.map((it) => `${it.name} (${it.size})${it.qty > 1 ? ` x${it.qty}` : ''}`).join(', ');
+  const total = formatLek(o.total, lang);
+  const fee = o.delivery_fee === null;
+  const t = {
+    sq: [
+      `Përshëndetje ${first}! Porosia jote nr. ${o.number} te Dresses by Greta u konfirmua: ${items}. Totali: ${total}${fee ? ' plus transporti, që ta konfirmojmë' : ''}. Të shkruajmë kur të niset.`,
+      `Përshëndetje ${first}! Porosia nr. ${o.number} u nis sot. Paguan në dorëzim: ${total}. Faleminderit!`,
+      `Faleminderit ${first} që zgjodhe Dresses by Greta! Shpresojmë të të pëlqejë fustani. Na dërgo një foto kur ta veshësh, do na gëzonte shumë.`,
+    ],
+    en: [
+      `Hello ${first}! Your order no. ${o.number} at Dresses by Greta is confirmed: ${items}. Total: ${total}${fee ? ' plus delivery, which we will confirm' : ''}. We will message you when it leaves.`,
+      `Hello ${first}! Order no. ${o.number} left today. You pay on delivery: ${total}. Thank you!`,
+      `Thank you ${first} for choosing Dresses by Greta! We hope you love the dress. Send us a photo when you wear it, it would make our day.`,
+    ],
+    fr: [
+      `Bonjour ${first}\u00a0! Votre commande n° ${o.number} chez Dresses by Greta est confirmée\u00a0: ${items}. Total\u00a0: ${total}${fee ? ', plus la livraison, que nous vous confirmerons' : ''}. Nous vous écrivons à son départ.`,
+      `Bonjour ${first}\u00a0! La commande n° ${o.number} est partie aujourd’hui. Vous payez à la livraison\u00a0: ${total}. Merci\u00a0!`,
+      `Merci ${first} d’avoir choisi Dresses by Greta\u00a0! Nous espérons que la robe vous plaira. Envoyez-nous une photo quand vous la porterez, cela nous ferait très plaisir.`,
+    ],
+  }[lang];
+  return [
+    { label: 'Konfirmimi', text: t[0]! },
+    { label: 'U nis', text: t[1]! },
+    { label: 'Faleminderit', text: t[2]! },
+  ];
+}
+
 async function orderView(id: string): Promise<void> {
   mount(frame('orders', html`<p class="adm-empty">Po hapet porosia</p>`, newOrders));
   let d: OrderDetail;
@@ -1474,8 +1515,7 @@ async function orderView(id: string): Promise<void> {
   }
   const draw = () => {
     const o = d.order;
-    const digits = o.phone.replace(/[^\d]/g, '');
-    const wa = digits.startsWith('0') ? `355${digits.slice(1)}` : digits;
+    const wa = waDigits(o.phone);
     mount(
       frame(
         'orders',
@@ -1509,6 +1549,10 @@ async function orderView(id: string): Promise<void> {
             <div class="adm-actions">
               <a class="btn btn--line" href="tel:${o.phone.replace(/[^\d+]/g, '')}">Telefono ${o.phone}</a>
               <a class="btn btn--line" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
+            </div>
+            <p class="adm-label adm-no-print">Mesazh i gatshëm në WhatsApp${o.lang && o.lang !== 'sq' ? html` (${o.lang === 'en' ? 'anglisht' : 'frëngjisht'}, si klientja)` : ''}</p>
+            <div class="adm-actions adm-no-print">
+              ${orderMessages(d).map((m) => html`<a class="adm-link" href="https://wa.me/${wa}?text=${encodeURIComponent(m.text)}" target="_blank" rel="noopener">${m.label}</a>`)}
             </div>
             <h2 class="adm-h2">Pagesa</h2>
             <p>${METHOD[o.payment_method]}, ${PAYMENT[o.payment_status]}</p>
