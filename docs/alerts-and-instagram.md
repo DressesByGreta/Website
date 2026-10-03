@@ -157,3 +157,15 @@ is accepted: Google accepts WebP photographs; if Meta turns any down, tell Luca.
 - **Find my size, shop by date, saved dresses:** visitors set these themselves; nothing reaches the
   shop. Greta's own part is the measurements in each dress's "Masat dhe si bie" card: with them, the
   size each visitor sees comes from the dress itself instead of the general chart.
+
+## Backups
+
+`npm run backup` copies the shop to this computer: the database (orders, dresses, settings,
+requests) as a dated SQL file, and every photograph and video (only the new ones after the first
+run). It goes to ~/Documents/Dresses by Greta backups, or to a folder you name:
+`npm run backup -- "/path/to/folder"` (a folder in iCloud Drive keeps it off this computer too).
+It only reads; README.txt in the folder says how to restore. Run it every week or two.
+
+The JPEG copies left from the WebP move can be removed with `node tools/delete-old-jpegs.mjs`
+after a backup: it deletes only JPEGs no photograph uses, that have their WebP, and that are in
+the backup, and asks you to type DELETE first.
