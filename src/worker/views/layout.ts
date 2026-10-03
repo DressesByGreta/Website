@@ -20,7 +20,7 @@ export interface PageOptions {
   description: string;
   /** Absolute or root-relative image for link previews. */
   image?: string;
-  kind: 'home' | 'shop' | 'product' | 'checkout' | 'confirmation' | 'pay' | 'notfound' | 'privacy' | 'terms';
+  kind: 'home' | 'shop' | 'product' | 'checkout' | 'confirmation' | 'pay' | 'notfound' | 'privacy' | 'terms' | 'lookbook';
   body: Raw;
   /** Transparent header over a photograph (home). */
   overPhoto?: boolean;
@@ -55,6 +55,12 @@ let newCount = 0;
 export const setNewCount = (n: number): void => {
   newCount = n;
 };
+/** How many lookbooks are published (lookbooks.ts): the footer and the menu link them only when there are some. */
+let lookbooks = 0;
+export const setLookbooks = (n: number): void => {
+  lookbooks = n;
+};
+
 /** Google Search Console's ownership code (env GOOGLE_SITE_VERIFICATION), when set. */
 let verification = '';
 export const setVerification = (code: string | undefined): void => {
@@ -121,6 +127,7 @@ function footer(lang: Lang, o: PageOptions): Raw {
         <div class="foot__col">
           <h2>${t.footer.dresses}</h2>
           <a href="${href('/dyqani', lang)}">${t.nav.lookbook}</a>
+          ${lookbooks > 0 ? html`<a href="${href('/lookbook', lang)}">${t.lookbook.title}</a>` : ''}
           ${filters().map((c) => html`<a href="${href('/dyqani', lang, { kategoria: c })}">${t.categories[c]}</a>`)}
           <span class="foot__sizes">${SIZES.map((s) => html`<a href="${href('/dyqani', lang, { masa: s })}" aria-label="${t.sizes.label(s, SIZE_LETTER[s])}">${s}</a>`)}</span>
         </div>
@@ -184,7 +191,7 @@ export function page(o: PageOptions): string {
     ${assets('store')}
     ${ld}
   </head>
-  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}>
+  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}>
     ${brandSprite()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}

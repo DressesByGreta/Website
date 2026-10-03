@@ -10,6 +10,7 @@ import { Hono } from 'hono';
 import { CATEGORIES, OCCASIONS, OCCASION_PATH, photoAt, SIZES } from '../../shared/catalog';
 import { copy, href, isLang, LANGS, type Lang } from '../../shared/copy';
 import { getLegalSettings, listVisible } from '../db';
+import { listLookbooks } from '../lookbooks';
 import { SITE } from '../site';
 import type { AppEnv } from '../types';
 
@@ -27,10 +28,11 @@ seo.get('/robots.txt', (c) => {
 seo.get('/sitemap.xml', async (c) => {
   const origin = new URL(c.req.url).origin;
   const db = c.env.DB;
-  const [products, dates, legal] = await Promise.all([
+  const [products, dates, legal, books] = await Promise.all([
     listVisible(db, 'sq'),
     db.prepare(`SELECT slug, updated_at FROM products WHERE status = 'published'`).all<{ slug: string; updated_at: string }>(),
     getLegalSettings(db),
+    listLookbooks(db, 'sq'),
   ]);
   const updated = new Map((dates.results ?? []).map((r) => [r.slug, r.updated_at.slice(0, 10)]));
   const pages: { path: string; params?: Record<string, string>; lastmod?: string; images?: string[] }[] = [
@@ -40,6 +42,8 @@ seo.get('/sitemap.xml', async (c) => {
     // only categories that hold a dress: an empty one would be a thin page
     ...CATEGORIES.filter((cat) => products.some((p) => p.categories.includes(cat))).map((cat) => ({ path: '/dyqani', params: { kategoria: cat } })),
     ...products.map((p) => ({ path: `/fustan/${p.slug}`, lastmod: updated.get(p.slug), images: p.photos.slice(0, 6).map((ph) => origin + photoAt(ph, 1600)) })),
+    ...(books.length ? [{ path: '/lookbook' }] : []),
+    ...books.map((b) => ({ path: `/lookbook/${b.slug}`, lastmod: b.updated, images: b.photos.slice(0, 20).map((ph) => origin + photoAt(ph, 1600)) })),
     { path: '/kushtet', lastmod: legal.updated },
     { path: '/privatesia', lastmod: legal.updated },
   ];
@@ -62,7 +66,7 @@ seo.get('/sitemap.xml', async (c) => {
 seo.get('/llms.txt', async (c) => {
   const origin = new URL(c.req.url).origin;
   const t = copy.en;
-  const [products, { business, returns }] = await Promise.all([listVisible(c.env.DB, 'en'), getLegalSettings(c.env.DB)]);
+  const [products, { business, returns }, books] = await Promise.all([listVisible(c.env.DB, 'en'), getLegalSettings(c.env.DB), listLookbooks(c.env.DB, 'en')]);
   const all = (l: Lang) => origin + href('/dyqani', l);
   const lines = [
     `# ${SITE.name}`,
@@ -76,6 +80,7 @@ seo.get('/llms.txt', async (c) => {
     `- [All dresses](${all('en')}): every dress with its price and the sizes in stock (also in [Albanian](${all('sq')}) and [French](${all('fr')}))`,
     ...CATEGORIES.filter((cat) => products.some((p) => p.categories.includes(cat))).map((cat) => `- [${t.categories[cat]}](${origin + href('/dyqani', 'en', { kategoria: cat })})`),
     ...OCCASIONS.map((o) => `- [${t.occasions[o].label}](${origin + href(OCCASION_PATH[o], 'en')}): ${t.occasions[o].description}`),
+    ...books.map((b) => `- [Lookbook: ${b.title}](${origin + href(`/lookbook/${b.slug}`, 'en')})${b.intro ? `: ${b.intro.replace(/\s+/g, ' ').slice(0, 160)}` : ''}`),
     `- [Terms and returns](${origin + href('/kushtet', 'en')})`,
     `- [Privacy](${origin + href('/privatesia', 'en')})`,
     '',

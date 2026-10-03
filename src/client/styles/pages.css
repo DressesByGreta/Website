@@ -183,3 +183,259 @@ html[data-motion='off'] .route-bar.is-on {
   animation: none;
   transform: scaleX(0.5);
 }
+
+/* ---------- lookbooks (views/lookbook.ts) ---------- */
+.lbk-head {
+  display: grid;
+  gap: var(--s-4);
+  justify-items: start;
+  padding-block: var(--section) var(--s-6);
+}
+
+.lbk-head__intro {
+  max-width: 58ch;
+}
+
+/* the index: each lookbook's first photograph, two across from 768px */
+.lbk-index {
+  display: grid;
+  gap: var(--s-7) var(--s-5);
+  padding: 0 0 var(--section);
+  list-style: none;
+}
+
+.lbk-index__link {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.lbk-index__plate {
+  display: block;
+  aspect-ratio: 4 / 5;
+}
+
+.lbk-index__plate .plate__img {
+  object-position: 50% 30%;
+}
+
+.lbk-index__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+  font-size: var(--fs-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lbk-index__count {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.lbk-index__intro {
+  color: var(--ink-2);
+  max-width: 52ch;
+}
+
+@media (min-width: 768px) {
+  .lbk-index {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* one lookbook: a column of photographs, each at its own proportions, never cropped */
+.lbk-frames {
+  display: grid;
+  gap: var(--section);
+  padding-bottom: var(--section);
+}
+
+.lbk-frame {
+  display: grid;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.lbk-photo {
+  position: relative;
+  width: min(100%, calc(88svh * var(--ar)));
+  aspect-ratio: var(--ar);
+  margin-inline: auto;
+}
+
+.lbk-plate {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* a mark: a 44px target holding a 26px numbered square on the dress */
+.lbk-spot {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.lbk-spot span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--ground);
+  border: 1px solid var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--d-hover) var(--ease-color),
+    color var(--d-hover) var(--ease-color);
+}
+
+.lbk-spot.is-on span,
+.lbk-spot.is-lit span {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lbk-spot:hover span {
+    background: var(--ink);
+    color: var(--ground);
+  }
+}
+
+/* the card a mark opens: beside the mark, turned away from the photograph's edges */
+.lbk-card {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  z-index: 3;
+  width: min(260px, 70vw);
+  padding: var(--s-2);
+  background: var(--ground);
+  border: 1px solid var(--ink);
+  transform: translate(26px, -50%);
+}
+
+.lbk-card.is-left {
+  transform: translate(calc(-100% - 26px), -50%);
+}
+
+.lbk-card.is-up {
+  transform: translate(26px, calc(-100% + 12px));
+}
+
+.lbk-card.is-left.is-up {
+  transform: translate(calc(-100% - 26px), calc(-100% + 12px));
+}
+
+/* phones: no room beside a mark, so the card sits along the photograph's foot, full width */
+@media (max-width: 639.98px) {
+  .lbk-card,
+  .lbk-card.is-left,
+  .lbk-card.is-up,
+  .lbk-card.is-left.is-up {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    transform: none;
+  }
+}
+
+.lbk-card__link {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.lbk-card__img {
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  object-position: 50% 22%;
+  background: var(--ground-2);
+}
+
+.lbk-card__text {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}
+
+.lbk-card__n {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.lbk-card__price {
+  font-variant-numeric: tabular-nums;
+}
+
+.lbk-card__go {
+  margin-top: var(--s-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* under each photograph: its caption and the dresses by number */
+.lbk-cap {
+  display: grid;
+  gap: var(--s-3);
+  width: min(100%, 720px);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.lbk-cap__text {
+  color: var(--ink-2);
+}
+
+.lbk-cap__h {
+  font-size: var(--fs-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lbk-list {
+  display: grid;
+  border-top: 1px solid var(--hairline);
+  padding: 0;
+  list-style: none;
+}
+
+.lbk-list__link {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: var(--s-3);
+  align-items: center;
+  min-height: 48px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+}
+
+.lbk-list__n,
+.lbk-list__price {
+  font-variant-numeric: tabular-nums;
+}
+
+.lbk-list__n {
+  color: var(--ink-3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lbk-list__link:hover .lbk-list__name {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}

@@ -25,6 +25,7 @@ export function initPage(lang: Lang, drawers: Drawers): PageInit {
     if (kind === 'home' || kind === 'shop' || kind === 'product') offs.push(personal(main, lang));
     if (kind === 'product') offs.push(productPage(main, lang), viewer(main, lang), loupe(main));
     if (kind === 'checkout') offs.push(checkoutPage(main, lang));
+    if (kind === 'lookbook') offs.push(lookbookPage(main, lang));
     if (kind === 'confirmation') confirmationPage(main);
     if (kind === 'pay') payPage(main);
     if (kind === 'notfound') {
@@ -523,6 +524,83 @@ function productPage(main: HTMLElement, lang: Lang): () => void {
     observers.forEach((o) => o.disconnect());
     offs.forEach((off) => off());
     offVideo();
+  };
+}
+
+/* ----------------------------------------------------------------- lookbook --------------------------------------------------------------- */
+
+/**
+ * A lookbook's marks: a tap opens a small card on the photograph with the dress (its own photograph,
+ * name, price, a link), turned away from the photograph's edges; Escape, a tap outside or the same
+ * mark close it. Resting on a dress in the list under the photograph lights its mark.
+ */
+function lookbookPage(main: HTMLElement, lang: Lang): () => void {
+  const t = copy[lang].lookbook;
+  let open: { spot: HTMLButtonElement; card: HTMLElement } | null = null;
+  const close = (focusSpot = false) => {
+    if (!open) return;
+    open.card.hidden = true;
+    open.spot.setAttribute('aria-expanded', 'false');
+    open.spot.classList.remove('is-on');
+    if (focusSpot) open.spot.focus();
+    open = null;
+  };
+  const show = (spot: HTMLButtonElement) => {
+    const frame = spot.closest<HTMLElement>('[data-frame]')!;
+    const card = frame.querySelector<HTMLElement>('[data-card]');
+    const link = frame.querySelector<HTMLAnchorElement>(`[data-spot-link="${spot.dataset.spot}"]`);
+    if (!card || !link) return;
+    close();
+    const n = spot.textContent?.trim() ?? '';
+    card.innerHTML = `<a class="lbk-card__link" href="${esc(link.href)}">${link.dataset.cover ? `<img class="lbk-card__img" src="${esc(link.dataset.cover)}" alt="" width="72" height="96" />` : ''}<span class="lbk-card__text"><span class="lbk-card__n">${esc(n)}</span><span class="lbk-card__name">${esc(link.dataset.name ?? '')}</span><span class="lbk-card__price">${esc(link.dataset.price ?? '')}</span><span class="lbk-card__go">${esc(t.view)}</span></span></a>`;
+    const x = parseFloat(spot.style.left) / 100;
+    const y = parseFloat(spot.style.top) / 100;
+    // beside the mark on a wide screen; a phone docks the card along the photograph's foot (CSS)
+    card.style.setProperty('--x', spot.style.left);
+    card.style.setProperty('--y', spot.style.top);
+    card.classList.toggle('is-left', x > 0.55);
+    card.classList.toggle('is-up', y > 0.6);
+    card.hidden = false;
+    spot.setAttribute('aria-expanded', 'true');
+    spot.classList.add('is-on');
+    open = { spot, card };
+    if (!reducedMotion()) gsap.fromTo(card, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out', clearProps: 'transform,opacity' });
+    card.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+  };
+  const onClick = (e: Event) => {
+    const spot = (e.target as Element).closest<HTMLButtonElement>('.lbk-spot');
+    if (spot) {
+      e.preventDefault();
+      if (open?.spot === spot) close(true);
+      else show(spot);
+      return;
+    }
+    if (open && !(e.target as Element).closest('[data-card]')) close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && open) close(true);
+  };
+  const light = (e: Event, on: boolean) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('[data-spot-link]');
+    if (!link) return;
+    const frame = link.closest<HTMLElement>('[data-frame]');
+    frame?.querySelector(`.lbk-spot[data-spot="${link.dataset.spotLink}"]`)?.classList.toggle('is-lit', on);
+  };
+  const over = (e: Event) => light(e, true);
+  const out = (e: Event) => light(e, false);
+  main.addEventListener('click', onClick);
+  main.addEventListener('pointerover', over);
+  main.addEventListener('pointerout', out);
+  main.addEventListener('focusin', over);
+  main.addEventListener('focusout', out);
+  document.addEventListener('keydown', onKey);
+  return () => {
+    main.removeEventListener('click', onClick);
+    main.removeEventListener('pointerover', over);
+    main.removeEventListener('pointerout', out);
+    main.removeEventListener('focusin', over);
+    main.removeEventListener('focusout', out);
+    document.removeEventListener('keydown', onKey);
   };
 }
 

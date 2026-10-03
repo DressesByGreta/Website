@@ -1876,3 +1876,80 @@ body {
   object-fit: cover;
   background: var(--ground-2);
 }
+
+/* ---------- Lookbook: photographs with the dresses marked ---------- */
+.adm-lbfs {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.adm-lbf {
+  display: grid;
+  gap: var(--s-4);
+  padding-bottom: var(--s-6);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.adm-lbf__photo {
+  position: relative;
+  width: min(100%, calc(70svh * var(--ar)));
+  aspect-ratio: var(--ar);
+  background: var(--ground-2);
+  cursor: crosshair;
+}
+
+.adm-lbf__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adm-lbf__spot {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  background: var(--ground);
+  border: 1px solid var(--ink);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.adm-lbf__spot.is-pending {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.adm-lbf__side {
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+}
+
+.adm-lbf__spots {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.adm-lbf__spots li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.adm-lbf__n {
+  font-size: var(--fs-ui);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  .adm-lbf {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}

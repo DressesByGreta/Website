@@ -68,6 +68,7 @@ export function pageMotion(main: HTMLElement, opts: { arrivedByFlight: boolean }
     if (kind === 'home' || kind === 'shop') undo.push(shop(main, opts.arrivedByFlight));
     if (kind === 'product') product(main, opts.arrivedByFlight);
     if (kind === 'confirmation') confirmation(main);
+    if (kind === 'lookbook') lookbook(main);
     printLines(main);
     sealRises();
     return () => undo.forEach((f) => f());
@@ -344,6 +345,22 @@ function printLines(main: HTMLElement): void {
         return tl;
       },
     });
+  });
+}
+
+/** A lookbook: each photograph prints as it arrives, then its marks appear one after another. */
+function lookbook(main: HTMLElement): void {
+  gsap.utils.toArray<HTMLElement>('.lbk-plate, .lbk-index__plate', main).forEach((pl, i) => {
+    const frame = pl.closest('[data-frame]');
+    const spots = frame ? gsap.utils.toArray<HTMLElement>('.lbk-spot', frame) : [];
+    if (spots.length) gsap.set(spots, { opacity: 0, scale: 0.6 });
+    const go = () => {
+      printPlate(pl, 0.05, 1);
+      if (spots.length) gsap.to(spots, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(2)', stagger: 0.08, delay: 0.7, lazy: false });
+    };
+    if (i === 0) return go();
+    gsap.set(pl, { '--p': 0 });
+    ScrollTrigger.create({ trigger: pl, start: 'top 85%', once: true, onEnter: go });
   });
 }
 

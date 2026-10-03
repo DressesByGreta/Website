@@ -163,6 +163,7 @@ export class Drawers {
         )}</div>`,
       )}
       ${row('visit', t.nav.visit, html`<p class="mnav__text">${t.visit.address}</p><a class="mnav__child" href="${MAPS}" target="_blank" rel="noopener">${t.visit.maps}</a>`)}
+      ${'lookbook' in document.body.dataset ? html`<div class="macc"><a class="macc__head" href="${href('/lookbook', l)}"><span>${t.lookbook.title}</span></a></div>` : ''}
       <div class="macc">
         <a class="macc__head" href="${INSTAGRAM}" target="_blank" rel="noopener"><span>${t.nav.instagram}</span>${ICON.out}</a>
       </div>

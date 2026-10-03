@@ -12,11 +12,14 @@ import { addDays, isDay, monthStart, tiranaDay, weekStart } from '../shared/time
 import {
   api,
   ApiError,
+  uploadForm,
   uploadPhoto,
   uploadVideo,
   type AdminProduct,
   type InstagramState,
+  type AdminLookbook,
   type LinkedChat,
+  type LookbookSummary,
   type OrderDetail,
   type OrderStatus,
   type OrderSummary,
@@ -152,7 +155,7 @@ const sourceLabel = (s: string): string => {
   return `${SOURCE[src ?? ''] ?? src}${campaign ? ` · ${campaign}` : ''}`;
 };
 
-function frame(active: 'products' | 'orders' | 'requests' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
+function frame(active: 'products' | 'orders' | 'requests' | 'lookbook' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
   // On desktop the tabs stand as a numbered index down the left rail, like the shop's contents.
   let n = 0;
   const tab = (key: typeof active, href: string, label: string, extra: Raw | string = '') =>
@@ -163,6 +166,7 @@ function frame(active: 'products' | 'orders' | 'requests' | 'sales' | 'stats' | 
         ${tab('products', '/admin', 'Fustanet')}
         ${tab('orders', '/admin/porosi', 'Porositë', badge ? html`<span class="adm-badge">${badge}</span>` : '')}
         ${tab('requests', '/admin/kerkesat', 'Kërkesat', newRequests ? html`<span class="adm-badge">${newRequests}</span>` : '')}
+        ${tab('lookbook', '/admin/lookbook', 'Lookbook')}
         ${tab('sales', '/admin/shitjet', 'Shitjet')}
         ${tab('stats', '/admin/statistikat', 'Statistikat')}
         ${tab('settings', '/admin/cilesimet', 'Cilësimet')}
@@ -263,6 +267,8 @@ async function route(): Promise<void> {
   if ((m = p.match(/^\/admin\/porosi\/([\w-]+)$/))) return orderView(m[1]!);
   if (p === '/admin/porosi') return ordersView();
   if (p === '/admin/kerkesat') return requestsView();
+  if ((m = p.match(/^\/admin\/lookbook\/([\w-]+)$/))) return lookbookEditor(m[1]!);
+  if (p === '/admin/lookbook') return lookbooksView();
   if (p === '/admin/shitjet') return salesView();
   if (p === '/admin/statistikat') return statsView();
   if (p === '/admin/cilesimet') return settingsView();
@@ -1086,6 +1092,327 @@ async function requestsView(): Promise<void> {
       b.disabled = false;
       toast(errText(x), 'err');
     }
+  });
+}
+
+/* ---------------------------------------------------------------- lookbook ---------------------------------------------------------------- */
+
+async function lookbooksView(): Promise<void> {
+  mount(frame('lookbook', html`<p class="adm-empty">Po ngarkohen lookbook-et</p>`, newOrders));
+  let list: LookbookSummary[];
+  try {
+    list = await api.lookbooks();
+  } catch (e) {
+    toast(errText(e), 'err');
+    return;
+  }
+  mount(
+    frame(
+      'lookbook',
+      html`<div class="adm-head">
+        <h1 class="adm-h1">Lookbook <span class="adm-count">${list.length}</span></h1>
+        <form class="adm-new" data-new-lookbook>
+          <label class="sr-only" for="adm-new-lb">Titulli i lookbook-ut të ri</label>
+          <input class="adm-input" id="adm-new-lb" name="title" placeholder="p.sh. Matura 2027" maxlength="80" required />
+          <button class="btn" type="submit">Krijo</button>
+        </form>
+      </div>
+      <p class="adm-note">Faqe me fotografi ku shënon fustanet: vizitorja prek numrin dhe shkon te fustani. Shfaqet në dyqan kur e publikon dhe ka të paktën një foto.</p>
+      ${list.length
+        ? html`<ol class="adm-list no-order">${list.map(
+            (l) => html`<li class="adm-row adm-row--lb">
+              <a class="adm-row__thumb" href="/admin/lookbook/${l.id}" data-link tabindex="-1" aria-hidden="true">${l.cover ? html`<img src="${photoAt(l.cover, 480)}" alt="" loading="lazy" width="60" height="80" />` : ''}</a>
+              <span class="adm-row__main">
+                <a class="adm-row__name" href="/admin/lookbook/${l.id}" data-link>${l.titleSq}</a>
+                <span class="adm-row__meta"><span class="adm-state${l.status === 'published' ? ' is-live' : ''}">${l.status === 'published' ? 'Publikuar' : 'Draft'}</span><span class="adm-row__note">${l.frames} foto</span></span>
+              </span>
+            </li>`,
+          )}</ol>`
+        : html`<p class="adm-empty">Ende asnjë lookbook. Krijo të parin më lart.</p>`}`,
+      newOrders,
+    ),
+  );
+  on('submit', async (e) => {
+    const f = (e.target as HTMLElement).closest<HTMLFormElement>('[data-new-lookbook]');
+    if (!f) return;
+    e.preventDefault();
+    const title = (f.elements.namedItem('title') as HTMLInputElement).value.trim();
+    if (!title) return;
+    try {
+      const l = await api.createLookbook(title);
+      await go(`/admin/lookbook/${l.id}`);
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  });
+}
+
+/**
+ * One lookbook: its words, then its photographs. A tap on a photograph sets a mark there and asks
+ * which dress it is; the marks and captions save as they change, the words with Ruaj.
+ */
+async function lookbookEditor(id: string): Promise<void> {
+  mount(frame('lookbook', html`<p class="adm-empty">Po hapet lookbook-u</p>`, newOrders));
+  let l: AdminLookbook;
+  let dresses: AdminProduct[];
+  try {
+    [l, dresses] = await Promise.all([api.lookbook(id), api.products()]);
+  } catch (e) {
+    mount(frame('lookbook', html`<p class="adm-empty">${e instanceof ApiError && e.status === 404 ? 'Ky lookbook nuk ekziston më.' : errText(e)}</p><a class="adm-link" href="/admin/lookbook" data-link>Kthehu te lookbook-et</a>`, newOrders));
+    return;
+  }
+  const live = dresses.filter((d) => d.status === 'published');
+  const nameOf = (pid: string) => dresses.find((d) => d.id === pid)?.nameSq ?? 'Fustan i hequr';
+  // a mark set on a photograph but not yet given a dress (kept here until it has one)
+  let pending: { frame: string; x: number; y: number } | null = null;
+  const uploads: { key: string; progress: number; error?: string }[] = [];
+  const fields = () => {
+    const f = root.querySelector<HTMLFormElement>('[data-lb-form]');
+    const v = (n: string) => ((f?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? '').trim();
+    return {
+      titleSq: v('titleSq'),
+      titleEn: v('titleEn'),
+      introSq: v('introSq'),
+      introEn: v('introEn'),
+      slug: v('slug'),
+      status: (f?.querySelector<HTMLInputElement>('input[name="status"]:checked')?.value as AdminLookbook['status']) ?? l.status,
+    };
+  };
+  let saved = '';
+
+  const spotsOf = (fr: AdminLookbook['frames'][number]) =>
+    [...fr.spots.map((s) => ({ ...s, pending: false })), ...(pending?.frame === fr.id ? [{ x: pending.x, y: pending.y, product: '', pending: true }] : [])];
+
+  const frameCard = (fr: AdminLookbook['frames'][number], i: number, n: number) => {
+    const spots = spotsOf(fr);
+    return html`<li class="adm-lbf" data-frame-id="${fr.id}">
+      <div class="adm-lbf__photo" style="--ar: ${(fr.photo.w / Math.max(1, fr.photo.h)).toFixed(4)}" data-spot-area role="button" tabindex="0" aria-label="Prek foton aty ku është fustani për të vendosur një shenjë">
+        <img src="${photoAt(fr.photo, 960)}" alt="" loading="lazy" />
+        ${spots.map((s, k) => html`<span class="adm-lbf__spot${s.pending ? ' is-pending' : ''}" style="left: ${(s.x * 100).toFixed(1)}%; top: ${(s.y * 100).toFixed(1)}%">${pad2(k + 1)}</span>`)}
+      </div>
+      <div class="adm-lbf__side">
+        <p class="adm-label">Fustanet në këtë foto</p>
+        ${spots.length
+          ? html`<ol class="adm-lbf__spots">${spots.map(
+              (s, k) => html`<li>
+                <span class="adm-lbf__n">${pad2(k + 1)}</span>
+                <select class="adm-input" data-spot-dress="${k}" aria-label="Fustani nr. ${pad2(k + 1)}">
+                  ${s.pending ? html`<option value="" selected>Zgjidh fustanin</option>` : ''}
+                  ${!s.pending && !live.some((d) => d.id === s.product) ? html`<option value="${s.product}" selected>${nameOf(s.product)}</option>` : ''}
+                  ${live.map((d) => html`<option value="${d.id}"${d.id === s.product ? raw(' selected') : ''}>${d.nameSq}</option>`)}
+                </select>
+                <button class="adm-link adm-danger" type="button" data-spot-del="${k}">Hiq</button>
+              </li>`,
+            )}</ol>`
+          : html`<p class="adm-note">Prek foton aty ku është një fustan.</p>`}
+        <label class="adm-field"><span>Përshkrimi, shqip (jo i detyrueshëm)</span><input class="adm-input" data-caption="sq" value="${fr.captionSq}" maxlength="200" /></label>
+        <label class="adm-field"><span>Përshkrimi, anglisht</span><input class="adm-input" data-caption="en" value="${fr.captionEn}" maxlength="200" /></label>
+        <span class="adm-photo__acts">
+          <button class="adm-icon" type="button" data-frame-move="-1" aria-label="Lëvize lart"${i === 0 ? raw(' disabled') : ''}>${icon.up}</button>
+          <button class="adm-icon" type="button" data-frame-move="1" aria-label="Lëvize poshtë"${i === n - 1 ? raw(' disabled') : ''}>${icon.down}</button>
+          <button class="adm-link adm-danger" type="button" data-frame-del>Fshi foton</button>
+        </span>
+      </div>
+    </li>`;
+  };
+
+  const draw = (keepFields = false) => {
+    const kept = keepFields ? fields() : null;
+    const d = kept ?? { titleSq: l.titleSq, titleEn: l.titleEn, introSq: l.introSq, introEn: l.introEn, slug: l.slug, status: l.status };
+    mount(
+      frame(
+        'lookbook',
+        html`<div class="adm-head">
+          <a class="adm-link adm-back" href="/admin/lookbook" data-link>${icon.left} Lookbook</a>
+          <div class="adm-head__end">
+            <a class="adm-link" href="/lookbook/${l.slug}" target="_blank" rel="noopener"${l.status === 'published' ? '' : raw(' hidden')}>Shiko në dyqan</a>
+            <button class="adm-link adm-danger" type="button" data-lb-delete>Fshi lookbook-un</button>
+          </div>
+        </div>
+        <h1 class="adm-h1">${l.titleSq}</h1>
+        <form class="adm-editor" data-lb-form novalidate>
+          <section class="adm-card" aria-labelledby="lb-words">
+            <h2 class="adm-h2" id="lb-words">Titulli dhe hyrja</h2>
+            <div class="adm-grid2">
+              <label class="adm-field"><span>Titulli në shqip</span><input class="adm-input" name="titleSq" value="${d.titleSq}" maxlength="80" required /></label>
+              <label class="adm-field"><span>Titulli në anglisht</span><input class="adm-input" name="titleEn" value="${d.titleEn}" maxlength="80" /></label>
+              <label class="adm-field"><span>Hyrja në shqip</span><textarea class="adm-input adm-area" name="introSq" rows="3" maxlength="600">${d.introSq}</textarea></label>
+              <label class="adm-field"><span>Hyrja në anglisht</span><textarea class="adm-input adm-area" name="introEn" rows="3" maxlength="600">${d.introEn}</textarea></label>
+            </div>
+            <label class="adm-field"><span>Adresa</span><span class="adm-prefix"><span>/lookbook/</span><input class="adm-input" name="slug" value="${d.slug}" maxlength="60" /></span></label>
+          </section>
+          <section class="adm-card" aria-labelledby="lb-photos">
+            <h2 class="adm-h2" id="lb-photos">Fotot <span class="adm-count">${l.frames.length} / 30</span></h2>
+            ${l.frames.length ? html`<ol class="adm-lbfs">${l.frames.map((fr, i) => frameCard(fr, i, l.frames.length))}</ol>` : ''}
+            ${uploads.map((u) => html`<p class="adm-note" role="status">${u.error ? `Fotoja nuk u ngarkua: ${u.error}` : 'Po ngarkohet një foto'}</p>`)}
+            <label class="adm-drop">
+              <input type="file" accept="image/*" multiple data-lb-files class="sr-only" />
+              <span class="btn btn--line">Shto foto</span>
+              <span class="adm-note">Fotot shfaqen me radhë, të plota, pa u prerë.</span>
+            </label>
+          </section>
+          <div class="adm-savebar">
+            <div class="adm-status" role="group" aria-label="Statusi">
+              <label class="adm-radio"><input type="radio" name="status" value="draft"${d.status === 'draft' ? raw(' checked') : ''} /> Draft</label>
+              <label class="adm-radio"><input type="radio" name="status" value="published"${d.status === 'published' ? raw(' checked') : ''} /> Publikuar</label>
+            </div>
+            <span class="adm-note" data-dirty aria-live="polite"></span>
+            <button class="btn" type="submit">Ruaj</button>
+          </div>
+        </form>`,
+        newOrders,
+      ),
+    );
+    if (!keepFields) saved = JSON.stringify(fields());
+    markDirty();
+  };
+  const markDirty = () => {
+    dirty = JSON.stringify(fields()) !== saved;
+    const el = root.querySelector('[data-dirty]');
+    if (el) el.textContent = dirty ? 'Ndryshime të paruajtura' : '';
+  };
+  const frameOf = (el: Element) => l.frames.find((x) => x.id === el.closest<HTMLElement>('[data-frame-id]')?.dataset.frameId);
+  const saveSpots = async (fr: AdminLookbook['frames'][number], spots: AdminLookbook['frames'][number]['spots']) => {
+    try {
+      l = await api.saveFrame(l.id, fr.id, { spots });
+      draw(true);
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  };
+
+  draw();
+  on('input', markDirty);
+  on('submit', async (e) => {
+    if (!(e.target as HTMLElement).closest('[data-lb-form]')) return;
+    e.preventDefault();
+    try {
+      l = await api.saveLookbook(l.id, fields());
+      draw();
+      toast(l.status === 'published' ? 'U ruajt dhe është në dyqan.' : 'U ruajt si draft.');
+    } catch (x) {
+      toast(errText(x), 'err');
+    }
+  });
+  on('click', async (e) => {
+    const t = e.target as HTMLElement;
+    const area = t.closest<HTMLElement>('[data-spot-area]');
+    if (area) {
+      const fr = frameOf(area);
+      if (!fr) return;
+      if (fr.spots.length >= 12) return toast('Maksimumi është 12 shenja për foto.', 'err');
+      const r = area.getBoundingClientRect();
+      pending = { frame: fr.id, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
+      draw(true);
+      root.querySelector<HTMLSelectElement>(`[data-frame-id="${fr.id}"] [data-spot-dress="${fr.spots.length}"]`)?.focus();
+      return;
+    }
+    const del = t.closest<HTMLButtonElement>('[data-spot-del]');
+    if (del) {
+      const fr = frameOf(del);
+      const k = Number(del.dataset.spotDel);
+      if (!fr) return;
+      if (pending?.frame === fr.id && k === fr.spots.length) {
+        pending = null;
+        return draw(true);
+      }
+      return saveSpots(fr, fr.spots.filter((_, j) => j !== k));
+    }
+    const mv = t.closest<HTMLButtonElement>('[data-frame-move]');
+    if (mv) {
+      const fr = frameOf(mv);
+      if (!fr) return;
+      const ids = l.frames.map((x) => x.id);
+      const i = ids.indexOf(fr.id);
+      const j = i + Number(mv.dataset.frameMove);
+      if (j < 0 || j >= ids.length) return;
+      [ids[i], ids[j]] = [ids[j]!, ids[i]!];
+      try {
+        l = await api.frameOrder(l.id, ids);
+        draw(true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    if (t.closest('[data-frame-del]')) {
+      const fr = frameOf(t);
+      if (!fr || !(await ask('Ta fshish këtë foto nga lookbook-u?', 'Fshi foton'))) return;
+      try {
+        l = await api.deleteFrame(l.id, fr.id);
+        draw(true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    if (t.closest('[data-lb-delete]')) {
+      if (!(await ask('Ta fshish krejt këtë lookbook? Fotot e tij fshihen bashkë me të.', 'Fshi'))) return;
+      try {
+        await api.deleteLookbook(l.id);
+        dirty = false;
+        await go('/admin/lookbook');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+    }
+  });
+  on('keydown', (e) => {
+    // the photograph takes a mark from the keyboard too: Enter sets one in its middle
+    const area = (e.target as HTMLElement).closest<HTMLElement>('[data-spot-area]');
+    if (!area || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    const fr = frameOf(area);
+    if (!fr) return;
+    pending = { frame: fr.id, x: 0.5, y: 0.5 };
+    draw(true);
+  });
+  on('change', async (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.matches('[data-lb-files]') && t.files?.length) {
+      const files = [...t.files];
+      t.value = '';
+      for (const file of files) {
+        const u: (typeof uploads)[number] = { key: crypto.randomUUID(), progress: 0 };
+        uploads.push(u);
+        draw(true);
+        try {
+          const prepared = await prepare(file);
+          URL.revokeObjectURL(prepared.preview);
+          l = await uploadForm<AdminLookbook>(`/api/admin/lookbooks/${l.id}/frames`, toForm(prepared), (f) => (u.progress = f));
+          uploads.splice(uploads.indexOf(u), 1);
+        } catch (x) {
+          u.error = x instanceof ApiError ? errText(x) : 'provo përsëri.';
+        }
+        draw(true);
+      }
+      return;
+    }
+    const sel = t.closest<HTMLSelectElement>('[data-spot-dress]');
+    if (sel) {
+      const fr = frameOf(sel);
+      const k = Number(sel.dataset.spotDress);
+      if (!fr || !sel.value) return;
+      const spots = [...fr.spots];
+      if (pending?.frame === fr.id && k === fr.spots.length) {
+        spots.push({ x: pending.x, y: pending.y, product: sel.value });
+        pending = null;
+      } else if (spots[k]) spots[k] = { ...spots[k]!, product: sel.value };
+      return saveSpots(fr, spots);
+    }
+    const cap = t.closest<HTMLInputElement>('[data-caption]');
+    if (cap) {
+      const fr = frameOf(cap);
+      if (!fr) return;
+      try {
+        l = await api.saveFrame(l.id, fr.id, cap.dataset.caption === 'sq' ? { captionSq: cap.value } : { captionEn: cap.value });
+        toast('Përshkrimi u ruajt.');
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
+    markDirty();
   });
 }
 

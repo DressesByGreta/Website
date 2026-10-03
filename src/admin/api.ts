@@ -42,6 +42,32 @@ export interface AdminProduct {
   video: Video | null;
 }
 
+/** Lookbooks (worker/lookbooks.ts): a mark is a dress on a photograph, x and y as fractions. */
+export interface Spot {
+  x: number;
+  y: number;
+  product: string;
+}
+export interface AdminFrame {
+  id: string;
+  photo: Photo;
+  captionSq: string;
+  captionEn: string;
+  spots: Spot[];
+}
+export interface AdminLookbook {
+  id: string;
+  slug: string;
+  titleSq: string;
+  titleEn: string;
+  introSq: string;
+  introEn: string;
+  status: 'draft' | 'published';
+  updatedAt: string;
+  frames: AdminFrame[];
+}
+export type LookbookSummary = Omit<AdminLookbook, 'frames'> & { frames: number; cover: Photo | null };
+
 /** A visitor's request from a dress page (worker/requests.ts). */
 export interface ShopRequest {
   id: string;
@@ -189,6 +215,14 @@ export const api = {
   instagramSync: () => call<InstagramState>('POST', '/instagram/sync'),
   instagramUnlink: () => call<InstagramState>('DELETE', '/instagram'),
   deleteVideo: (id: string) => call<AdminProduct>('DELETE', `/products/${id}/video`),
+  lookbooks: () => call<LookbookSummary[]>('GET', '/lookbooks'),
+  createLookbook: (titleSq: string) => call<AdminLookbook>('POST', '/lookbooks', { titleSq }),
+  lookbook: (id: string) => call<AdminLookbook>('GET', `/lookbooks/${id}`),
+  saveLookbook: (id: string, patch: Partial<Pick<AdminLookbook, 'titleSq' | 'titleEn' | 'introSq' | 'introEn' | 'slug' | 'status'>>) => call<AdminLookbook>('PUT', `/lookbooks/${id}`, patch),
+  deleteLookbook: (id: string) => call<{ ok: true }>('DELETE', `/lookbooks/${id}`),
+  saveFrame: (id: string, frameId: string, patch: Partial<Pick<AdminFrame, 'captionSq' | 'captionEn' | 'spots'>>) => call<AdminLookbook>('PATCH', `/lookbooks/${id}/frames/${frameId}`, patch),
+  frameOrder: (id: string, ids: string[]) => call<AdminLookbook>('PUT', `/lookbooks/${id}/frames/order`, { ids }),
+  deleteFrame: (id: string, frameId: string) => call<AdminLookbook>('DELETE', `/lookbooks/${id}/frames/${frameId}`),
 };
 
 /** Upload with progress (fetch has no upload progress). Resolves to the updated product. */

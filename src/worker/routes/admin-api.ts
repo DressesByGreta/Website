@@ -11,6 +11,7 @@ import { allowedNext, getOrder, setOrderStatus, setPaymentStatus, type OrderStat
 import { gatewayFor } from '../payments';
 import { salesReport } from '../sales';
 import { report } from '../stats';
+import { adminLookbook, adminLookbooks, frameKeys, frameRow, lookbookSlugFree, MAX_FRAMES, parseSpots } from '../lookbooks';
 import { countNewRequests, listRequests, REQUEST_STATUSES, setRequestStatus, waitingFor, type RequestStatus } from '../requests';
 import { botName, checkLink, linkedChats, removeChat, restockAlert, sendTest, startLink, telegramReady } from '../telegram';
 import type { AppEnv } from '../types';
@@ -373,6 +374,128 @@ adminApi.patch('/orders/:id', async (c) => {
   }
   const o = await getOrder(db, id);
   return o ? c.json({ ...o, next: allowedNext(o.order.status) }) : c.json({ error: 'not_found' }, 404);
+});
+
+/* -------------------------------------------------------------- lookbooks -------------------------------------------------------------- */
+
+adminApi.get('/lookbooks', async (c) => c.json(await adminLookbooks(c.env.DB)));
+
+adminApi.post('/lookbooks', async (c) => {
+  const db = c.env.DB;
+  const b = (await c.req.json().catch(() => ({}))) as { titleSq?: unknown };
+  const titleSq = text(b.titleSq, 80);
+  if (!titleSq) return c.json({ error: 'invalid', fields: ['titleSq'] }, 400);
+  let slug = slugify(titleSq) || 'lookbook';
+  for (let i = 2; !(await lookbookSlugFree(db, slug)); i++) slug = `${slugify(titleSq) || 'lookbook'}-${i}`;
+  const id = crypto.randomUUID();
+  const top = await db.prepare('SELECT MIN(sort) AS s FROM lookbooks').first<{ s: number | null }>();
+  await db.prepare('INSERT INTO lookbooks (id, slug, title_sq, sort) VALUES (?, ?, ?, ?)').bind(id, slug, titleSq, (top?.s ?? 0) - 1).run();
+  return c.json(await adminLookbook(db, id), 201);
+});
+
+adminApi.get('/lookbooks/:id', async (c) => {
+  const l = await adminLookbook(c.env.DB, c.req.param('id'));
+  return l ? c.json(l) : c.json({ error: 'not_found' }, 404);
+});
+
+adminApi.put('/lookbooks/:id', async (c) => {
+  const db = c.env.DB;
+  const cur = await adminLookbook(db, c.req.param('id'));
+  if (!cur) return c.json({ error: 'not_found' }, 404);
+  const b = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const errors: string[] = [];
+  const titleSq = text(b.titleSq, 80) ?? cur.titleSq;
+  if (!titleSq) errors.push('titleSq');
+  const titleEn = text(b.titleEn, 80) ?? cur.titleEn;
+  const introSq = text(b.introSq, 600) ?? cur.introSq;
+  const introEn = text(b.introEn, 600) ?? cur.introEn;
+  let slug = cur.slug;
+  if (typeof b.slug === 'string' && b.slug.trim() !== cur.slug) {
+    slug = slugify(b.slug);
+    if (!slug || !(await lookbookSlugFree(db, slug, cur.id))) errors.push('slug');
+  }
+  const status = b.status === 'published' || b.status === 'draft' ? b.status : cur.status;
+  if (errors.length) return c.json({ error: 'invalid', fields: errors }, 400);
+  if (status === 'published' && !cur.frames.length) return c.json({ error: 'cannot_publish', reasons: ['photo'] }, 400);
+  await db
+    .prepare(`UPDATE lookbooks SET slug = ?, title_sq = ?, title_en = ?, intro_sq = ?, intro_en = ?, status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`)
+    .bind(slug, titleSq, titleEn, introSq, introEn, status, cur.id)
+    .run();
+  return c.json(await adminLookbook(db, cur.id));
+});
+
+adminApi.delete('/lookbooks/:id', async (c) => {
+  const db = c.env.DB;
+  const id = c.req.param('id');
+  const frames = await frameKeys(db, id);
+  await Promise.all(frames.map((f) => deleteVariants(c.env, f.key, f.ext, JSON.parse(f.widths) as number[])));
+  await db.prepare('DELETE FROM lookbooks WHERE id = ?').bind(id).run();
+  return c.json({ ok: true });
+});
+
+adminApi.post('/lookbooks/:id/frames', async (c) => {
+  const db = c.env.DB;
+  const id = c.req.param('id');
+  const cur = await adminLookbook(db, id);
+  if (!cur) return c.json({ error: 'not_found' }, 404);
+  if (cur.frames.length >= MAX_FRAMES) return c.json({ error: 'too_many_photos' }, 400);
+  const form = await c.req.formData();
+  let metaRaw: unknown = null;
+  try {
+    metaRaw = JSON.parse(String(form.get('meta') ?? ''));
+  } catch {
+    /* handled below */
+  }
+  const meta = parseUploadMeta(metaRaw);
+  if (!meta) return c.json({ error: 'invalid_meta' }, 400);
+  const frameId = crypto.randomUUID();
+  const key = `l/${id}/${frameId}`;
+  const problem = await storeVariants(c.env, key, meta, form);
+  if (problem) return c.json({ error: 'invalid_file', detail: problem }, 400);
+  await db
+    .prepare('INSERT INTO lookbook_frames (id, lookbook_id, sort, key, ext, widths, w, h, lqip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(frameId, id, cur.frames.length, key, meta.ext, JSON.stringify(meta.widths), meta.w, meta.h, meta.lqip)
+    .run();
+  await db.prepare(`UPDATE lookbooks SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).bind(id).run();
+  return c.json(await adminLookbook(db, id), 201);
+});
+
+adminApi.patch('/lookbooks/:id/frames/:frameId', async (c) => {
+  const db = c.env.DB;
+  const f = await frameRow(db, c.req.param('frameId'));
+  if (!f || f.lookbook_id !== c.req.param('id')) return c.json({ error: 'not_found' }, 404);
+  const b = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const captionSq = text(b.captionSq, 200) ?? f.caption_sq;
+  const captionEn = text(b.captionEn, 200) ?? f.caption_en;
+  const spots = 'spots' in b ? parseSpots(b.spots) : parseSpots(f.spots);
+  await db.batch([
+    db.prepare('UPDATE lookbook_frames SET caption_sq = ?, caption_en = ?, spots = ? WHERE id = ?').bind(captionSq, captionEn, JSON.stringify(spots), f.id),
+    db.prepare(`UPDATE lookbooks SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).bind(f.lookbook_id),
+  ]);
+  return c.json(await adminLookbook(db, f.lookbook_id));
+});
+
+adminApi.put('/lookbooks/:id/frames/order', async (c) => {
+  const db = c.env.DB;
+  const id = c.req.param('id');
+  const b = (await c.req.json().catch(() => ({}))) as { ids?: unknown };
+  const ids = Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === 'string').slice(0, MAX_FRAMES) : [];
+  if (!ids.length) return c.json({ error: 'invalid' }, 400);
+  await db.batch(ids.map((fid, i) => db.prepare('UPDATE lookbook_frames SET sort = ? WHERE id = ? AND lookbook_id = ?').bind(i, fid, id)));
+  return c.json(await adminLookbook(db, id));
+});
+
+adminApi.delete('/lookbooks/:id/frames/:frameId', async (c) => {
+  const db = c.env.DB;
+  const id = c.req.param('id');
+  const f = await frameRow(db, c.req.param('frameId'));
+  if (!f || f.lookbook_id !== id) return c.json({ error: 'not_found' }, 404);
+  const cur = await adminLookbook(db, id);
+  // a published lookbook keeps at least one photograph
+  if (cur?.status === 'published' && cur.frames.length <= 1) return c.json({ error: 'last_photo_of_published' }, 400);
+  await deleteVariants(c.env, f.key, f.ext, JSON.parse(f.widths) as number[]);
+  await db.prepare('DELETE FROM lookbook_frames WHERE id = ?').bind(f.id).run();
+  return c.json(await adminLookbook(db, id));
 });
 
 /* -------------------------------------------------------------- requests --------------------------------------------------------------- */

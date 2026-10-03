@@ -12,7 +12,9 @@ import type { AppEnv, ExtraEnv } from '../types';
 import { brandSprite } from '../views/brand';
 import { checkoutView, confirmationView, notFoundView, payTestView } from '../views/checkout';
 import { HERO_SIZES, heroSrcset, homeView, storeJsonLd, websiteJsonLd } from '../views/home';
-import { assetTags, page, setDemo, setFollowers, setNewCount, setVerification } from '../views/layout';
+import { assetTags, page, setDemo, setFollowers, setLookbooks, setNewCount, setVerification } from '../views/layout';
+import { countLookbooks, getLookbook, listLookbooks, lookbookImage } from '../lookbooks';
+import { lookbookIndexView, lookbookView } from '../views/lookbook';
 import { occasionView } from '../views/occasion';
 import { legalIntro, legalTitle, legalView } from '../views/legal';
 import { breadcrumbJsonLd, productJsonLd, productView, waNumber, type ProductExtras } from '../views/product';
@@ -31,10 +33,11 @@ pages.use('*', async (c, next) => {
   // minute per instance (the admin refreshes the new count of its own instance when it saves a dress)
   if (Date.now() - settingsRead > 60_000) {
     settingsRead = Date.now();
-    const [demo, count, fresh] = await Promise.all([getSetting(c.env.DB, 'demo_data'), followerCount(c.env.DB), countNew(c.env.DB)]);
+    const [demo, count, fresh, books] = await Promise.all([getSetting(c.env.DB, 'demo_data'), followerCount(c.env.DB), countNew(c.env.DB), countLookbooks(c.env.DB)]);
     setDemo(demo === '1');
     setFollowers(count);
     setNewCount(fresh);
+    setLookbooks(books);
   }
   await next();
 });
@@ -135,6 +138,46 @@ pages.get('/fustan/:slug', async (c) => {
       image: p.photos[0] ? photoAt(p.photos[0], 1600) : undefined,
       body: productView(lang, p, index, all.length, next, zones, extras, isSize(masa) ? (masa as Size) : undefined),
       jsonLd: [productJsonLd(origin(c), lang, p, returns), breadcrumbJsonLd(origin(c), lang, p)],
+    }),
+  );
+});
+
+/** Lookbooks: the index, and each one (lookbooks.ts, views/lookbook.ts). */
+pages.get('/lookbook', async (c) => {
+  const lang = c.get('lang');
+  const t = copy[lang].lookbook;
+  const list = await listLookbooks(c.env.DB, lang);
+  if (!list.length) return notFound(c);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: '/lookbook',
+      title: t.metaTitle,
+      description: t.metaDescription,
+      kind: 'lookbook',
+      image: photoAt(list[0]!.cover, 1600),
+      body: lookbookIndexView(lang, list),
+    }),
+  );
+});
+
+pages.get('/lookbook/:slug', async (c) => {
+  const lang = c.get('lang');
+  const l = await getLookbook(c.env.DB, c.req.param('slug'), lang);
+  if (!l) return notFound(c);
+  return send(
+    c,
+    page({
+      lang,
+      origin: origin(c),
+      path: `/lookbook/${l.slug}`,
+      title: `${l.title}, ${copy[lang].lookbook.metaTitle}`,
+      description: l.intro.slice(0, 155) || copy[lang].lookbook.metaDescription,
+      kind: 'lookbook',
+      image: lookbookImage(l),
+      body: lookbookView(lang, l),
     }),
   );
 });
