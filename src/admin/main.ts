@@ -23,6 +23,7 @@ import {
   type OrderDetail,
   type OrderStatus,
   type OrderSummary,
+  type Review,
   type SalesReport,
   type ShopRequest,
   type StatsReport,
@@ -587,6 +588,13 @@ async function editor(id: string): Promise<void> {
     return;
   }
   let saved = JSON.stringify(toDraft(p));
+  // what customers said about this dress (loaded beside the dress; added and removed at once)
+  let reviews: Review[] = [];
+  let reviewNote = '';
+  void api.reviews(p.id).then((r) => {
+    reviews = r;
+    replace(p, true);
+  });
   const uploads: { key: string; name: string; progress: number; preview: string; error?: string }[] = [];
   // the dress's video while it is being prepared or sent: progress 0..1, or an error in words
   let clip: { progress: number; error?: string } | null = null;
@@ -704,6 +712,34 @@ async function editor(id: string): Promise<void> {
             <div class="adm-grid2">
               <label class="adm-field"><span>Si bie, në shqip</span><input class="adm-input" name="fitSq" value="${d.fitSq}" maxlength="200" placeholder="p.sh. Bie pak e ngushtë, merr një masë më të madhe." /></label>
               <label class="adm-field"><span>Si bie, në anglisht</span><input class="adm-input" name="fitEn" value="${d.fitEn}" maxlength="200" placeholder="e.g. Fits small, take one size up." /></label>
+            </div>
+          </section>
+
+          <section class="adm-card" aria-labelledby="sec-voices">
+            <h2 class="adm-h2" id="sec-voices">Fjalë nga klientet <span class="adm-count">${reviews.length}</span></h2>
+            <p class="adm-note">Fjalët e një klienteje për këtë fustan, me lejen e saj: shfaqen te fustani dhe në kryefaqe. Pa yje: janë fjalë të zgjedhura, jo vlerësim.</p>
+            ${reviews.length
+              ? html`<ul class="adm-voices">${reviews.map(
+                  (r) => html`<li class="adm-voice">
+                    ${r.photo ? html`<img src="${photoAt(r.photo, 480)}" alt="" width="48" height="64" loading="lazy" />` : html`<span class="adm-noimg"></span>`}
+                    <span class="adm-voice__text">«${r.text}»<br /><span class="adm-muted">${r.name}${r.city ? `, ${r.city}` : ''} · ${r.lang.toUpperCase()}</span></span>
+                    <button class="adm-link adm-danger" type="button" data-voice-del="${r.id}">Hiq</button>
+                  </li>`,
+                )}</ul>`
+              : ''}
+            <div class="adm-voice-new" data-voice-new>
+              <div class="adm-grid2">
+                <label class="adm-field"><span>Emri (vetëm emri)</span><input class="adm-input" data-v="name" maxlength="40" /></label>
+                <label class="adm-field"><span>Qyteti (jo i detyrueshëm)</span><input class="adm-input" data-v="city" maxlength="40" /></label>
+              </div>
+              <label class="adm-field"><span>Fjalët e saj, ashtu siç i tha</span><textarea class="adm-input adm-area" data-v="text" rows="3" maxlength="600"></textarea></label>
+              <div class="adm-grid2">
+                <label class="adm-field"><span>Gjuha e fjalëve</span><select class="adm-input" data-v="lang"><option value="sq">Shqip</option><option value="en">Anglisht</option><option value="fr">Frëngjisht</option></select></label>
+                <label class="adm-field"><span>Foto e saj me fustanin (jo e detyrueshme)</span><input class="adm-input" type="file" accept="image/*" data-v="photo" /></label>
+              </div>
+              <label class="adm-check"><input type="checkbox" data-v="consent" /> Klientja më dha leje t’i publikoj fjalët dhe foton</label>
+              <button class="btn btn--line" type="button" data-voice-add>Shto fjalët</button>
+              ${reviewNote ? html`<p class="adm-note" role="status">${reviewNote}</p>` : ''}
             </div>
           </section>
 
@@ -878,6 +914,49 @@ async function editor(id: string): Promise<void> {
 
   on('click', async (e) => {
     const t = e.target as HTMLElement;
+    if (t.closest('[data-voice-add]')) {
+      const box = root.querySelector<HTMLElement>('[data-voice-new]')!;
+      const v = (k: string) => box.querySelector<HTMLInputElement>(`[data-v="${k}"]`)!;
+      if (!v('name').value.trim() || v('text').value.trim().length < 5) return toast('Shkruaj emrin dhe fjalët e saj.', 'err');
+      if (!v('consent').checked) return toast('Shto fjalët vetëm me lejen e klientes.', 'err');
+      const form = new FormData();
+      try {
+        const file = v('photo').files?.[0];
+        if (file) {
+          const prepared = await prepare(file);
+          URL.revokeObjectURL(prepared.preview);
+          const pf = toForm(prepared);
+          pf.forEach((value, key) => form.set(key, value));
+        }
+        form.set('name', v('name').value.trim());
+        form.set('city', v('city').value.trim());
+        form.set('text', v('text').value.trim());
+        form.set('lang', v('lang').value);
+        form.set('consent', '1');
+        reviewNote = 'Po ruhet';
+        replace(p, true);
+        reviews = await uploadForm<Review[]>(`/api/admin/products/${p.id}/reviews`, form, () => undefined);
+        reviewNote = '';
+        replace(p, true);
+        toast('Fjalët u shtuan. Shfaqen te fustani dhe në kryefaqe.');
+      } catch (x) {
+        reviewNote = '';
+        replace(p, true);
+        toast(x instanceof ApiError ? errText(x) : 'Fotoja nuk u përgatit. Provo një tjetër.', 'err');
+      }
+      return;
+    }
+    const vd = t.closest<HTMLButtonElement>('[data-voice-del]');
+    if (vd) {
+      if (!(await ask('T’i heqësh këto fjalë nga dyqani?', 'Hiq'))) return;
+      try {
+        reviews = await api.deleteReview(vd.dataset.voiceDel!);
+        replace(p, true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
     if (t.closest('[data-video-remove]')) {
       if (!(await ask('Ta heqësh videon e këtij fustani?', 'Hiq videon'))) return;
       try {

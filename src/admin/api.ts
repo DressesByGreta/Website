@@ -68,6 +68,18 @@ export interface AdminLookbook {
 }
 export type LookbookSummary = Omit<AdminLookbook, 'frames'> & { frames: number; cover: Photo | null };
 
+/** A customer's words about a dress (worker/reviews.ts). */
+export interface Review {
+  id: string;
+  productId: string;
+  name: string;
+  city: string;
+  text: string;
+  lang: 'sq' | 'en' | 'fr';
+  photo: Photo | null;
+  createdAt: string;
+}
+
 /** A visitor's request from a dress page (worker/requests.ts). */
 export interface ShopRequest {
   id: string;
@@ -216,6 +228,8 @@ export const api = {
   instagramSync: () => call<InstagramState>('POST', '/instagram/sync'),
   instagramUnlink: () => call<InstagramState>('DELETE', '/instagram'),
   deleteVideo: (id: string) => call<AdminProduct>('DELETE', `/products/${id}/video`),
+  reviews: (productId: string) => call<Review[]>('GET', `/products/${productId}/reviews`),
+  deleteReview: (id: string) => call<Review[]>('DELETE', `/reviews/${id}`),
   lookbooks: () => call<LookbookSummary[]>('GET', '/lookbooks'),
   createLookbook: (titleSq: string) => call<AdminLookbook>('POST', '/lookbooks', { titleSq }),
   lookbook: (id: string) => call<AdminLookbook>('GET', `/lookbooks/${id}`),

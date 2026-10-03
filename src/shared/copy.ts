@@ -294,6 +294,10 @@ const sq = {
     cta: 'Ndiq në Instagram',
     close: 'Mbyll',
   },
+  voices: {
+    title: 'Nga klientet',
+    dress: 'Fustani',
+  },
   lookbook: {
     title: 'Lookbook',
     intro: 'Fustanet në histori: fotografi nga Greta, me fustanet e shënuara. Prek një numër për ta parë fustanin.',
@@ -618,6 +622,10 @@ const en: Copy = {
     body: 'New dresses appear every week on Instagram.',
     cta: 'Follow on Instagram',
     close: 'Close',
+  },
+  voices: {
+    title: 'From our clients',
+    dress: 'The dress',
   },
   lookbook: {
     title: 'Lookbook',
@@ -956,6 +964,10 @@ const fr: Copy = {
     body: 'Les nouvelles robes arrivent chaque semaine sur Instagram.',
     cta: 'Suivre sur Instagram',
     close: 'Fermer',
+  },
+  voices: {
+    title: 'Nos clientes',
+    dress: 'La robe',
   },
   lookbook: {
     title: 'Lookbook',

@@ -19,6 +19,7 @@ import { occasionView } from '../views/occasion';
 import { legalIntro, legalTitle, legalView } from '../views/legal';
 import { breadcrumbJsonLd, productJsonLd, productView, waNumber, type ProductExtras } from '../views/product';
 import { bookedDates } from '../requests';
+import { latestReviews, reviewsFor } from '../reviews';
 import { addDays, tiranaDay } from '../../shared/time';
 import { savedView, shopView, type ShopState } from '../views/shop';
 
@@ -49,7 +50,7 @@ const send = (c: Context<AppEnv>, body: string, status: 200 | 404 = 200) =>
 pages.get('/', async (c) => {
   const lang = c.get('lang');
   const t = copy[lang];
-  const [visible, { business }] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB)]);
+  const [visible, { business }, voices] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), latestReviews(c.env.DB)]);
   return send(
     c,
     page({
@@ -61,7 +62,7 @@ pages.get('/', async (c) => {
       kind: 'home',
       overPhoto: true,
       preload: { srcset: heroSrcset('webp'), sizes: HERO_SIZES, type: 'image/webp' },
-      body: homeView(lang, visible),
+      body: homeView(lang, visible, voices),
       jsonLd: [storeJsonLd(origin(c), business), websiteJsonLd(origin(c), lang)],
     }),
   );
@@ -120,9 +121,15 @@ pages.get('/fustan/:slug', async (c) => {
   const lang = c.get('lang');
   const p = await getVisibleBySlug(c.env.DB, c.req.param('slug'), lang);
   if (!p) return notFound(c);
-  const [all, { returns, business }, zones, booked] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB), bookedDates(c.env.DB, p.id)]);
+  const [all, { returns, business }, zones, booked, reviews] = await Promise.all([
+    listVisible(c.env.DB, lang),
+    getLegalSettings(c.env.DB),
+    getZones(c.env.DB),
+    bookedDates(c.env.DB, p.id),
+    reviewsFor(c.env.DB, p.id),
+  ]);
   const today = tiranaDay();
-  const extras: ProductExtras = { whatsapp: waNumber(business.phone), booked, today, maxDay: addDays(today, 365) };
+  const extras: ProductExtras = { whatsapp: waNumber(business.phone), booked, today, maxDay: addDays(today, 365), reviews };
   const index = Math.max(0, all.findIndex((x) => x.id === p.id));
   const next = all.length > 1 ? (all[(index + 1) % all.length] ?? null) : null;
   const masa = c.req.query('masa');
