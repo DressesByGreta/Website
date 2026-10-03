@@ -1,7 +1,9 @@
 /**
  * Photographs are prepared in the browser before they leave the phone: oriented, resized to the
- * shop's widths, encoded (WebP where the browser can, JPEG otherwise, e.g. iPhone Safari), plus
- * a 20px stand-in shown while the real image loads. The Worker only checks and stores.
+ * shop's widths, encoded as WebP, plus a 20px stand-in shown while the real image loads. The Worker
+ * only checks and stores. Browsers that cannot write WebP from a canvas (iPhone Safari) encode with
+ * libwebp compiled to WebAssembly (@jsquash/webp), fetched the first time a photo is added and only
+ * by those browsers; if it cannot load (no connection), the photo goes up as JPEG, as before.
  */
 import { PHOTO_MAX_BYTES, PHOTO_WIDTHS } from '../shared/catalog';
 
@@ -33,14 +35,34 @@ function draw(src: ImageBitmap, width: number): HTMLCanvasElement {
   return c;
 }
 
+/** libwebp in WebAssembly, for browsers whose canvas cannot write WebP; null when it cannot load. */
+type WasmEncode = (data: ImageData, options: { quality: number }) => Promise<ArrayBuffer>;
+let wasm: Promise<WasmEncode | null> | null = null;
+function wasmWebp(): Promise<WasmEncode | null> {
+  wasm ??= import('@jsquash/webp/encode')
+    .then(async (m) => {
+      const encode = m.default as WasmEncode;
+      // one tiny encode proves the module compiled and runs here
+      await encode(new ImageData(2, 2), { quality: 80 });
+      return encode;
+    })
+    .catch(() => {
+      wasm = null; // try again next time (it may have been the connection)
+      return null;
+    });
+  return wasm;
+}
+
+const pixels = (c: HTMLCanvasElement): ImageData => c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+
 const toBlob = (c: HTMLCanvasElement, type: string, q: number) =>
   new Promise<Blob>((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), type, q));
 
 /** Sequins and lace at 2400 px can come out heavy (JPEG on iPhone): step the quality down until the
  *  file fits what the Worker stores. */
-async function encode(c: HTMLCanvasElement, type: string): Promise<Blob> {
+async function encode(c: HTMLCanvasElement, type: string, viaWasm: WasmEncode | null): Promise<Blob> {
   for (const q of [0.82, 0.72, 0.62]) {
-    const blob = await toBlob(c, type, q);
+    const blob = viaWasm ? new Blob([await viaWasm(pixels(c), { quality: q * 100 })], { type: 'image/webp' }) : await toBlob(c, type, q);
     if (blob.size <= PHOTO_MAX_BYTES) return blob;
   }
   throw new Error('too_big');
@@ -51,12 +73,15 @@ export async function prepare(file: File): Promise<Prepared> {
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
   try {
     if (bmp.width < 400) throw new Error('too_small');
-    const ext = (await canEncodeWebp()) ? 'webp' : 'jpg';
+    const native = await canEncodeWebp();
+    const viaWasm = native ? null : await wasmWebp();
+    const ext = native || viaWasm ? 'webp' : 'jpg';
     const type = ext === 'webp' ? 'image/webp' : 'image/jpeg';
     const widths = [...new Set(PHOTO_WIDTHS.map((w) => Math.min(w, bmp.width)))].sort((a, b) => a - b);
     const blobs: { width: number; blob: Blob }[] = [];
-    for (const width of widths) blobs.push({ width, blob: await encode(draw(bmp, width), type) });
-    const lqip = draw(bmp, 20).toDataURL(type, 0.4);
+    for (const width of widths) blobs.push({ width, blob: await encode(draw(bmp, width), type, viaWasm) });
+    // the 20px stand-in is a data URL; a canvas that cannot write WebP writes it as JPEG (both are allowed)
+    const lqip = draw(bmp, 20).toDataURL(native ? 'image/webp' : 'image/jpeg', 0.4);
     return {
       meta: { w: bmp.width, h: bmp.height, lqip, ext, widths },
       blobs,

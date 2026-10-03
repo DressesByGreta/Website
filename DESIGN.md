@@ -496,3 +496,8 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 - **The save bar:** one row on phones (Draft and Publikuar left, Ruaj right, the unsaved note above them only when there is one), 73px instead of two rows.
 - **Phones:** cards pad 16px; the sales and visit figures stand two by two.
 - **Checked:** no page of the shop or the admin scrolls sideways at 320px or 375px (French included); every storefront control was already 40px or more.
+
+## Changes 2026-10-03, later (photographs always WebP)
+
+- **Uploads:** every photograph goes up as WebP. Browsers whose canvas cannot write WebP (iPhone Safari) encode with libwebp compiled to WebAssembly (@jsquash/webp, Apache-2.0), fetched the first time a photo is added (about 120KB gzipped) and only by those browsers; if it cannot load, the photo goes up as JPEG as before. The admin's pages (only those) allow 'wasm-unsafe-eval' in their content security policy; the storefront's policy is unchanged.
+- **The catalogue:** the 90 photographs imported from Instagram as JPEG (267 files) were re-encoded as WebP at quality 82 and switched over on 2026-10-03: 107MB to 45MB, a phone's 960px photograph 365KB to 158KB on average. Lighthouse mobile on the home page: performance 58 to 99, LCP 3.9s to 1.6s.

@@ -15,17 +15,22 @@ import type { AppEnv } from './types';
 const app = new Hono<AppEnv>();
 
 // Production only: Vite's dev server needs inline scripts and a websocket.
-const CSP = [
-  "default-src 'self'",
-  "img-src 'self' data: blob:",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "form-action 'self'",
-  "base-uri 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+const csp = (scripts: string) =>
+  [
+    "default-src 'self'",
+    "img-src 'self' data: blob:",
+    `script-src ${scripts}`,
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+const CSP = csp("'self'");
+// The admin may compile WebAssembly (only that: JavaScript eval stays blocked): an iPhone, whose
+// canvas cannot write WebP, encodes the photographs with libwebp in WebAssembly (src/admin/images.ts).
+const ADMIN_CSP = csp("'self' 'wasm-unsafe-eval'");
 
 app.use('*', async (c, next) => {
   await next();
@@ -33,7 +38,7 @@ app.use('*', async (c, next) => {
   c.header('referrer-policy', 'strict-origin-when-cross-origin');
   c.header('permissions-policy', 'camera=(), microphone=(), geolocation=()');
   if (import.meta.env.PROD && (c.res.headers.get('content-type') ?? '').includes('text/html')) {
-    c.header('content-security-policy', CSP);
+    c.header('content-security-policy', c.req.path === '/admin' || c.req.path.startsWith('/admin/') ? ADMIN_CSP : CSP);
     c.header('x-frame-options', 'DENY');
   }
 });
