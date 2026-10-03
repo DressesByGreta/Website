@@ -76,6 +76,45 @@ export interface Photo {
 
 export type Stock = Record<Size, number>;
 
+/** How a dress fits, in centimetres, as Greta measured it: the length, and bust, waist and hips per size.
+ *  Any of them may be missing; the dress page shows only what is there. */
+export const MEASURES = ['bust', 'waist', 'hips'] as const;
+export type Measure = (typeof MEASURES)[number];
+export interface Measures {
+  length?: number;
+  sizes: Partial<Record<Size, Partial<Record<Measure, number>>>>;
+}
+const cm = (v: unknown): number | undefined => {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 10 && n <= 250 ? Math.round(n) : undefined;
+};
+/** Reads (and cleans) stored or posted measurements: unknown sizes, keys and odd numbers are dropped. */
+export function parseMeasures(raw: unknown): Measures {
+  let v = raw;
+  if (typeof v === 'string') {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      v = null;
+    }
+  }
+  const o = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  const sizes: Measures['sizes'] = {};
+  const src = o.sizes && typeof o.sizes === 'object' ? (o.sizes as Record<string, unknown>) : {};
+  for (const s of SIZES) {
+    const row = src[s] && typeof src[s] === 'object' ? (src[s] as Record<string, unknown>) : {};
+    const clean: Partial<Record<Measure, number>> = {};
+    for (const m of MEASURES) {
+      const n = cm(row[m]);
+      if (n !== undefined) clean[m] = n;
+    }
+    if (Object.keys(clean).length) sizes[s] = clean;
+  }
+  const length = cm(o.length);
+  return length !== undefined ? { length, sizes } : { sizes };
+}
+export const hasMeasures = (m: Measures): boolean => m.length !== undefined || Object.keys(m.sizes).length > 0;
+
 /** A product as the storefront sees it, already resolved to one language. */
 export interface Product {
   id: string;
@@ -93,6 +132,9 @@ export interface Product {
   photos: Photo[];
   /** Inside its two weeks as new (NEW_DAYS). */
   isNew: boolean;
+  measures: Measures;
+  /** "Fits small, take one size up": in the page's language, '' when Greta has not written one. */
+  fit: string;
 }
 
 export const emptyStock = (): Stock => ({ '34': 0, '36': 0, '38': 0, '40': 0, '42': 0 });

@@ -9,6 +9,7 @@ import { formatLek } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { getSetting, setSetting } from './db';
 import { getOrder } from './orders';
+import { getRequest } from './requests';
 import type { ExtraEnv } from './types';
 
 type TgEnv = Env & ExtraEnv;
@@ -148,5 +149,37 @@ export async function orderAlert(env: TgEnv, origin: string, orderId: string): P
     await broadcast(env, lines.join('\n'));
   } catch (e) {
     console.error('order alert', e);
+  }
+}
+
+const day = (iso: string): string => {
+  const MONTHS = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+  return `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+};
+
+/** A visitor asked to rent a dress, or to hear when a size is back. */
+export async function requestAlert(env: TgEnv, origin: string, id: string): Promise<void> {
+  try {
+    if (!telegramReady(env)) return;
+    const r = await getRequest(env.DB, id);
+    if (!r) return;
+    const lines =
+      r.kind === 'rental'
+        ? [`Kërkesë për qira`, '', `${r.product_name} · masa ${r.size}`, `Data: ${day(r.event_date ?? '')}`, '', r.name, r.phone, ...(r.note ? [`Shënim: ${r.note}`] : [])]
+        : [`Dikush pret masën ${r.size}`, '', `${r.product_name}`, r.phone, ...(r.name ? [r.name] : [])];
+    await broadcast(env, [...lines, '', `Hap kërkesat: ${origin}/admin/kerkesat${r.kind === 'restock' ? '?lloji=kthim' : ''}`].join('\n'));
+  } catch (e) {
+    console.error('request alert', e);
+  }
+}
+
+/** A size people were waiting for is back in stock: time to message them. */
+export async function restockAlert(env: TgEnv, origin: string, dress: string, waiting: Record<string, number>): Promise<void> {
+  try {
+    if (!telegramReady(env)) return;
+    const sizes = Object.entries(waiting).map(([s, n]) => `masa ${s}: ${n === 1 ? '1 person' : `${n} persona`}`);
+    await broadcast(env, [`Masa u kthye në gjendje: ${dress}`, ...sizes, '', `Njoftoji: ${origin}/admin/kerkesat?lloji=kthim`].join('\n'));
+  } catch (e) {
+    console.error('restock alert', e);
   }
 }

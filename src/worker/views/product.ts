@@ -1,5 +1,5 @@
 /** A dress: every photograph down the left, the caption held beside it, the next dress at the foot. */
-import { formatLek, pad2, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
+import { MEASURES, SIZES, formatLek, hasMeasures, pad2, photoAt, type Product, type Size, type Zone } from '../../shared/catalog';
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { Returns } from '../../shared/legal';
@@ -15,7 +15,85 @@ function deliveryZones(lang: Lang, zones: Zone[]): Raw | '' {
   return html`<ul class="body acc__list">${on.map((z) => html`<li>${t.product.deliveryZone(t.checkout.zones[z.id], z.fee === null ? t.product.feeByPhone : z.fee === 0 ? '0' : formatLek(z.fee, lang))}</li>`)}</ul>`;
 }
 
-export function productView(lang: Lang, p: Product, index: number, total: number, next: Product | null, zones: Zone[], size?: Size): Raw {
+/** What the dress page needs beyond the dress: the shop's WhatsApp number, booked dates, today in Tirana. */
+export interface ProductExtras {
+  whatsapp: string | null;
+  booked: { date: string; size: Size }[];
+  today: string;
+  maxDay: string;
+}
+
+/** A WhatsApp number in international digits: an Albanian 06x number gains 355, anything else keeps its own code. */
+export function waNumber(phone: string): string | null {
+  let d = phone.replace(/[^\d+]/g, '');
+  if (!d) return null;
+  if (d.startsWith('+')) d = d.slice(1);
+  else if (d.startsWith('00')) d = d.slice(2);
+  else if (d.startsWith('0')) d = `355${d.slice(1)}`;
+  return /^\d{8,15}$/.test(d) ? d : null;
+}
+
+/** The measurements in centimetres: a row per size that has any, the length beneath. */
+function measuresTable(lang: Lang, p: Product): Raw | '' {
+  const t = copy[lang].product;
+  const m = p.measures;
+  if (!hasMeasures(m)) return '';
+  const cols = MEASURES.filter((k) => SIZES.some((s) => m.sizes[s]?.[k] !== undefined));
+  const rows = SIZES.filter((s) => m.sizes[s]);
+  return html`<details class="acc"><summary class="acc__sum">${t.measures}</summary><div class="acc__body">
+    ${rows.length
+      ? html`<table class="measures"><thead><tr><th scope="col">${t.size}</th>${cols.map((k) => html`<th scope="col">${t.measure[k]}</th>`)}</tr></thead>
+          <tbody>${rows.map((s) => html`<tr><th scope="row">${s}</th>${cols.map((k) => html`<td>${m.sizes[s]?.[k] ?? ''}</td>`)}</tr>`)}</tbody></table>`
+      : ''}
+    ${m.length !== undefined ? html`<p class="body">${t.measure.length} ${m.length} cm</p>` : ''}
+    <p class="small">${t.measuresNote}</p>
+  </div></details>`;
+}
+
+/** A small form for a request (rent this dress, tell me when a size is back), posted by the page's script. */
+function field(id: string, label: string, input: Raw): Raw {
+  return html`<div class="field"><label class="field__label" for="${id}">${label}</label>${input}<p class="field__error" id="${id}-error" hidden></p></div>`;
+}
+
+function rentalForm(lang: Lang, p: Product, x: ProductExtras): Raw {
+  const t = copy[lang];
+  const id = (n: string) => `rq-rent-${n}`;
+  const inStockSizes = SIZES.filter((s) => p.stock[s] > 0);
+  const sizes = inStockSizes.length ? inStockSizes : SIZES;
+  return html`<details class="acc" data-request-acc><summary class="acc__sum">${t.product.rentTitle}</summary><div class="acc__body">
+    <p class="body">${t.product.rentIntro}</p>
+    ${x.booked.length ? html`<p class="small rq-booked"><span>${t.product.booked}</span> ${x.booked.map((b) => t.product.bookedOn(b.date, b.size)).join(', ')}</p>` : ''}
+    <form class="rq" data-request="rental" data-product-id="${p.id}" novalidate>
+      ${field(id('eventDate'), t.product.rentDate, html`<input class="field__input" id="${id('eventDate')}" name="eventDate" type="date" min="${x.today}" max="${x.maxDay}" required aria-required="true" />`)}
+      ${field(id('size'), t.product.size, html`<select class="field__input" id="${id('size')}" name="size" required>${sizes.map((s) => html`<option value="${s}">${s}</option>`)}</select>`)}
+      ${field(id('name'), t.checkout.name, html`<input class="field__input" id="${id('name')}" name="name" autocomplete="name" maxlength="80" required aria-required="true" />`)}
+      ${field(id('phone'), t.checkout.phone, html`<input class="field__input" id="${id('phone')}" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" required aria-required="true" />`)}
+      ${field(id('note'), t.product.noteOptional, html`<textarea class="field__input field__input--area" id="${id('note')}" name="note" rows="2" maxlength="500"></textarea>`)}
+      <input class="rq__trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <button class="btn btn--line btn--wide" type="submit">${t.product.rentSend}</button>
+      <p class="rq__status small" role="status" aria-live="polite"></p>
+    </form>
+  </div></details>`;
+}
+
+function restockForm(lang: Lang, p: Product): Raw | '' {
+  const t = copy[lang];
+  const out = SIZES.filter((s) => p.stock[s] <= 0);
+  if (!out.length) return '';
+  const id = (n: string) => `rq-back-${n}`;
+  return html`<details class="acc" data-request-acc><summary class="acc__sum">${t.product.restockTitle}</summary><div class="acc__body">
+    <p class="body">${t.product.restockIntro}</p>
+    <form class="rq" data-request="restock" data-product-id="${p.id}" novalidate>
+      ${field(id('size'), t.product.size, html`<select class="field__input" id="${id('size')}" name="size" required>${out.map((s) => html`<option value="${s}">${s}</option>`)}</select>`)}
+      ${field(id('phone'), t.checkout.phone, html`<input class="field__input" id="${id('phone')}" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" required aria-required="true" />`)}
+      <input class="rq__trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <button class="btn btn--line btn--wide" type="submit">${t.product.restockSend}</button>
+      <p class="rq__status small" role="status" aria-live="polite"></p>
+    </form>
+  </div></details>`;
+}
+
+export function productView(lang: Lang, p: Product, index: number, total: number, next: Product | null, zones: Zone[], x: ProductExtras, size?: Size): Raw {
   const t = copy[lang];
   const sold = !Object.values(p.stock).some((n) => n > 0);
   const paragraphs = p.description.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
@@ -48,6 +126,7 @@ export function productView(lang: Lang, p: Product, index: number, total: number
           <form class="product__form" data-add data-product="${bagData(p)}" novalidate>
             ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, 'size', size)}
             <p class="pick__hint small" data-pick-hint aria-live="polite"></p>
+            ${p.fit ? html`<p class="small product__fit"><span>${t.product.fit}</span> ${p.fit}</p>` : ''}
             <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
           </form>
           <p class="product__trust"><span>${t.checkout.cod}</span><span aria-hidden="true">·</span><a href="${href('/', lang)}#visit">${t.nav.visit}</a></p>
@@ -55,9 +134,14 @@ export function productView(lang: Lang, p: Product, index: number, total: number
           ${paragraphs.length
             ? html`<details class="acc" open><summary class="acc__sum">${t.product.description}</summary><div class="acc__body">${paragraphs.map((s) => html`<p class="body">${s}</p>`)}</div></details>`
             : ''}
+          ${measuresTable(lang, p)}
+          ${rentalForm(lang, p, x)}
+          ${restockForm(lang, p)}
           <details class="acc"><summary class="acc__sum">${t.product.delivery}</summary><div class="acc__body"><p class="body">${t.product.deliveryBody}</p>${deliveryZones(lang, zones)}</div></details>
           <p class="product__links">
-            <a class="tlink" href="${SITE.message}" target="_blank" rel="noopener">${t.product.rent}</a>
+            ${x.whatsapp
+              ? html`<a class="tlink" href="https://wa.me/${x.whatsapp}?text=${encodeURIComponent(t.product.waText(p.name, null, ''))}" target="_blank" rel="noopener" data-wa="${x.whatsapp}" data-wa-name="${p.name}">${t.product.whatsapp}</a>`
+              : html`<a class="tlink" href="${SITE.message}" target="_blank" rel="noopener">${t.product.ask}</a>`}
             ${p.instagramUrl ? html`<a class="tlink" href="${p.instagramUrl}" target="_blank" rel="noopener">${t.product.instagram}</a>` : ''}
             <button class="tlink" type="button" data-share>${t.product.share}</button>
             <span class="sr-only" aria-live="polite" data-share-status></span>

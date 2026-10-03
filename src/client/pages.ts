@@ -351,9 +351,79 @@ function shareButton(main: HTMLElement, lang: Lang): void {
   });
 }
 
+/**
+ * The dress page's requests (rent this dress, tell me when a size is back): posted to /api/requests;
+ * a field the server turns down is marked beside it, a sent request leaves its thank-you in place.
+ */
+function requestForms(main: HTMLElement, lang: Lang): void {
+  const t = copy[lang].product;
+  main.querySelectorAll<HTMLFormElement>('form[data-request]').forEach((form) => {
+    const status = form.querySelector<HTMLElement>('.rq__status');
+    const mark = (names: string[]) => {
+      form.querySelectorAll<HTMLElement>('.field__error').forEach((p) => (p.hidden = true));
+      form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+      for (const n of names) {
+        const input = form.querySelector<HTMLElement>(`[name="${n}"]`);
+        const err = input && form.querySelector<HTMLElement>(`#${input.id}-error`);
+        if (!input || !err) continue;
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', err.id);
+        err.textContent = t.formCheck;
+        err.hidden = false;
+      }
+      form.querySelector<HTMLElement>('[aria-invalid]')?.focus();
+    };
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      const missing = [...form.querySelectorAll<HTMLInputElement>('[required]')].filter((el) => !el.value.trim()).map((el) => el.name);
+      if (missing.length) return mark(missing);
+      const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...data, kind: form.dataset.request, productId: form.dataset.productId, lang }),
+        });
+        if (res.status === 201) {
+          mark([]);
+          form.reset();
+          if (status) status.textContent = form.dataset.request === 'rental' ? t.rentDone : t.restockDone;
+          return;
+        }
+        const body = (await res.json().catch(() => ({}))) as { fields?: string[] };
+        if (res.status === 400 && body.fields?.length) mark(body.fields);
+        else if (status) status.textContent = t.formFailed;
+      } catch {
+        if (status) status.textContent = t.formFailed;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  });
+}
+
+/** The WhatsApp link carries the dress and, once one is picked, the size. */
+function whatsappLink(main: HTMLElement, lang: Lang): void {
+  const a = main.querySelector<HTMLAnchorElement>('[data-wa]');
+  const form = main.querySelector<HTMLFormElement>('.product__form');
+  if (!a || !form) return;
+  const update = () => {
+    const size = form.querySelector<HTMLInputElement>('input[type="radio"]:checked')?.value ?? null;
+    const url = new URL(location.pathname, location.origin);
+    if (lang !== 'sq') url.searchParams.set('lang', lang);
+    a.href = `https://wa.me/${a.dataset.wa}?text=${encodeURIComponent(copy[lang].product.waText(a.dataset.waName ?? '', size, url.href))}`;
+  };
+  form.addEventListener('change', update);
+  update();
+}
+
 function productPage(main: HTMLElement, lang: Lang): () => void {
   const t = copy[lang];
   shareButton(main, lang);
+  requestForms(main, lang);
+  whatsappLink(main, lang);
   const observers: IntersectionObserver[] = [];
   const counter = main.querySelector<HTMLElement>('[data-gallery-i]');
   const gallery = main.querySelector<HTMLElement>('[data-gallery]');

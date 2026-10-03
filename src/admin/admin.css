@@ -1762,7 +1762,9 @@ body {
   .adm-brand {
     min-height: 44px;
   }
-  .adm-table td a {
+  .adm-table td a,
+  .adm-req__dress,
+  .adm-req__who a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -1773,4 +1775,82 @@ body {
   .adm-top {
     transition: none;
   }
+}
+
+/* ---------- Kërkesat: rentals and sizes people wait for ---------- */
+.adm-reqs {
+  display: grid;
+  border-top: 1px solid var(--ink);
+  background: var(--ground);
+  margin-top: var(--s-4);
+}
+
+.adm-req {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* an unanswered request carries an ink rule down its left edge */
+.adm-req.is-new {
+  border-left: 2px solid var(--ink);
+  padding-left: calc(var(--s-4) - 2px);
+}
+
+.adm-req__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adm-req__dress {
+  font-size: 16px;
+  justify-self: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgba(0, 0, 0, 0.25);
+}
+
+.adm-req__meta,
+.adm-req__who {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  color: var(--ink-2);
+}
+
+.adm-req__meta b {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.adm-req__note {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.adm-req__acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+
+@media (min-width: 768px) {
+  .adm-req {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+/* measurements: a narrow centimetre field per size and measure */
+.adm-cm {
+  width: 72px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-measures td,
+.adm-measures th {
+  padding: 4px var(--s-2) 4px 0;
 }

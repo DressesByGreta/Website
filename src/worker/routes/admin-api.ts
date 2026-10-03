@@ -1,6 +1,6 @@
 /** /api/admin/*: Greta's back office. Every route below the sign-in block requires a session. */
 import { Hono, type Context } from 'hono';
-import { CATEGORIES, NEW_DAYS, OCCASIONS, SIZES, isTag, slugify, type Stock } from '../../shared/catalog';
+import { CATEGORIES, NEW_DAYS, OCCASIONS, SIZES, isTag, parseMeasures, slugify, type Size, type Stock } from '../../shared/catalog';
 import type { Business, Returns } from '../../shared/legal';
 import { isDay } from '../../shared/time';
 import { clearHits, adminGet, adminList, countNew, getLegalSettings, getSetting, getZones, hit, setSetting, uniqueSlug } from '../db';
@@ -11,7 +11,8 @@ import { allowedNext, getOrder, setOrderStatus, setPaymentStatus, type OrderStat
 import { gatewayFor } from '../payments';
 import { salesReport } from '../sales';
 import { report } from '../stats';
-import { botName, checkLink, linkedChats, removeChat, sendTest, startLink, telegramReady } from '../telegram';
+import { countNewRequests, listRequests, REQUEST_STATUSES, setRequestStatus, waitingFor, type RequestStatus } from '../requests';
+import { botName, checkLink, linkedChats, removeChat, restockAlert, sendTest, startLink, telegramReady } from '../telegram';
 import type { AppEnv } from '../types';
 import { setFollowers, setNewCount } from '../views/layout';
 
@@ -74,6 +75,7 @@ adminApi.get('/summary', async (c) => {
     awaitingPayment: count(o?.results, 'awaiting_payment'),
     confirmed: count(o?.results, 'confirmed'),
     soldOut: ((low?.results ?? [])[0] as { n?: number } | undefined)?.n ?? 0,
+    newRequests: await countNewRequests(db),
     demo: (await getSetting(db, 'demo_data')) === '1',
   });
 });
@@ -128,6 +130,9 @@ adminApi.put('/products/:id', async (c) => {
   if (comparePrice === undefined) errors.push('comparePrice');
   const categories = Array.isArray(b.categories) ? [...new Set(b.categories.filter(isTag))] : cur.categories;
   const featured = typeof b.featured === 'boolean' ? b.featured : cur.featured;
+  const measures = 'measures' in b ? parseMeasures(b.measures) : cur.measures;
+  const fitSq = text(b.fitSq, 200) ?? cur.fitSq;
+  const fitEn = text(b.fitEn, 200) ?? cur.fitEn;
   const instagramUrl = text(b.instagramUrl, 200) ?? cur.instagramUrl;
   if (instagramUrl && !/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_./?=&-]+$/.test(instagramUrl)) errors.push('instagramUrl');
   const status = b.status === 'published' || b.status === 'draft' ? b.status : cur.status;
@@ -170,9 +175,9 @@ adminApi.put('/products/:id', async (c) => {
     db
       .prepare(
         `UPDATE products SET slug = ?, name_sq = ?, name_en = ?, description_sq = ?, description_en = ?, price = ?, compare_price = ?, color = ?,
-         categories = ?, status = ?, featured = ?, instagram_url = ?, new_until = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+         categories = ?, status = ?, featured = ?, instagram_url = ?, new_until = ?, measures = ?, fit_sq = ?, fit_en = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
       )
-      .bind(slug, nameSq, nameEn, descriptionSq, descriptionEn, price ?? null, comparePrice ?? null, color, JSON.stringify(categories), status, featured ? 1 : 0, instagramUrl, newUntil, id),
+      .bind(slug, nameSq, nameEn, descriptionSq, descriptionEn, price ?? null, comparePrice ?? null, color, JSON.stringify(categories), status, featured ? 1 : 0, instagramUrl, newUntil, JSON.stringify(measures), fitSq, fitEn, id),
     ...SIZES.map((s) =>
       db
         .prepare('INSERT INTO product_sizes (product_id, size, stock) VALUES (?, ?, ?) ON CONFLICT (product_id, size) DO UPDATE SET stock = excluded.stock')
@@ -181,6 +186,12 @@ adminApi.put('/products/:id', async (c) => {
   ]);
   // the header's "new" link on this instance follows at once (the others within a minute)
   setNewCount(await countNew(db));
+  // sizes back in stock that people asked about: tell Greta, so she can message them
+  const back = SIZES.filter((s) => cur.stock[s] === 0 && stock[s] > 0);
+  if (back.length) {
+    const waiting = await waitingFor(db, id, back as Size[]);
+    if (Object.keys(waiting).length) c.executionCtx.waitUntil(restockAlert(c.env, new URL(c.req.url).origin, nameSq, waiting));
+  }
   return c.json(await adminGet(db, id));
 });
 
@@ -311,6 +322,16 @@ adminApi.patch('/orders/:id', async (c) => {
   }
   const o = await getOrder(db, id);
   return o ? c.json({ ...o, next: allowedNext(o.order.status) }) : c.json({ error: 'not_found' }, 404);
+});
+
+/* -------------------------------------------------------------- requests --------------------------------------------------------------- */
+
+adminApi.get('/requests', async (c) => c.json(await listRequests(c.env.DB, c.req.query('kind') === 'restock' ? 'restock' : 'rental')));
+
+adminApi.patch('/requests/:id', async (c) => {
+  const b = (await c.req.json().catch(() => ({}))) as { status?: unknown };
+  if (!REQUEST_STATUSES.includes(b.status as RequestStatus)) return c.json({ error: 'invalid' }, 400);
+  return (await setRequestStatus(c.env.DB, c.req.param('id'), b.status as RequestStatus)) ? c.json({ ok: true }) : c.json({ error: 'not_found' }, 404);
 });
 
 /* -------------------------------------------------------------- settings --------------------------------------------------------------- */

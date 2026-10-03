@@ -1,5 +1,5 @@
 /** Thin client for /api/admin. Every call carries the session cookie; errors become ApiError. */
-import type { Photo, Tag, Stock, Zone } from '../shared/catalog';
+import type { Measures, Photo, Tag, Stock, Zone } from '../shared/catalog';
 import type { Business, Returns } from '../shared/legal';
 
 export class ApiError extends Error {
@@ -36,6 +36,26 @@ export interface AdminProduct {
   updatedAt: string;
   /** Shown as new until then; null until the first publication. */
   newUntil: string | null;
+  measures: Measures;
+  fitSq: string;
+  fitEn: string;
+}
+
+/** A visitor's request from a dress page (worker/requests.ts). */
+export interface ShopRequest {
+  id: string;
+  kind: 'rental' | 'restock';
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  size: string;
+  event_date: string | null;
+  name: string;
+  phone: string;
+  note: string;
+  lang: 'sq' | 'en' | 'fr';
+  status: 'new' | 'confirmed' | 'declined' | 'done';
+  created_at: string;
 }
 
 export interface SaleOrder {
@@ -134,7 +154,7 @@ export const api = {
   login: (password: string) => call<{ ok: true }>('POST', '/login', { password }),
   devLogin: () => call<{ ok: true }>('POST', '/dev-login'),
   logout: () => call<{ ok: true }>('POST', '/logout'),
-  summary: () => call<{ published: number; drafts: number; newOrders: number; awaitingPayment: number; confirmed: number; soldOut: number; demo: boolean }>('GET', '/summary'),
+  summary: () => call<{ published: number; drafts: number; newOrders: number; awaitingPayment: number; confirmed: number; soldOut: number; newRequests: number; demo: boolean }>('GET', '/summary'),
   products: () => call<AdminProduct[]>('GET', '/products'),
   product: (id: string) => call<AdminProduct>('GET', `/products/${id}`),
   create: (nameSq: string) => call<AdminProduct>('POST', '/products', { nameSq }),
@@ -150,6 +170,8 @@ export const api = {
   orders: (status?: string) => call<OrderSummary[]>('GET', `/orders${status ? `?status=${status}` : ''}`),
   order: (id: string) => call<OrderDetail>('GET', `/orders/${id}`),
   updateOrder: (id: string, patch: { status?: OrderStatus; paymentStatus?: string }) => call<OrderDetail>('PATCH', `/orders/${id}`, patch),
+  requests: (kind: 'rental' | 'restock') => call<ShopRequest[]>('GET', `/requests?kind=${kind}`),
+  setRequest: (id: string, status: ShopRequest['status']) => call<{ ok: true }>('PATCH', `/requests/${id}`, { status }),
   settings: () => call<{ zones: Zone[]; shopPhone: string; card: boolean }>('GET', '/settings'),
   saveSettings: (zones: Zone[]) => call<{ zones: Zone[] }>('PUT', '/settings', { zones }),
   stats: (days: number) => call<StatsReport>('GET', `/stats?days=${days}`),

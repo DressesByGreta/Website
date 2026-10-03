@@ -6,7 +6,8 @@ import { clientIp } from '../auth';
 import { createOrder, getOrder, parseOrderInput, setOrderStatus, setPaymentStatus } from '../orders';
 import { gatewayFor } from '../payments';
 import { BOT_UA, count, parseHit, rowsFor, tooMany } from '../stats';
-import { orderAlert } from '../telegram';
+import { createRequest, parseRequest } from '../requests';
+import { orderAlert, requestAlert } from '../telegram';
 import type { AppEnv } from '../types';
 
 export const publicApi = new Hono<AppEnv>();
@@ -47,6 +48,21 @@ publicApi.post('/orders', async (c) => {
   // Telegram, after the response: cash orders now, card orders once the bank says paid
   if (res.created && !res.payUrl) c.executionCtx.waitUntil(orderAlert(c.env, origin, res.id));
   return c.json({ id: res.id, number: res.number, payUrl: res.payUrl ?? null }, 201);
+});
+
+/** A rental request or a "tell me when this size is back", from a dress page (requests.ts). */
+publicApi.post('/requests', async (c) => {
+  if (c.req.header('Origin') !== new URL(c.req.url).origin) return c.json({ error: 'bad_origin' }, 403);
+  const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body || (typeof body.website === 'string' && body.website.trim())) return c.json({ error: 'invalid' }, 400);
+  const { input, errors } = parseRequest(body);
+  if (!input) return c.json({ error: 'invalid', fields: errors }, 400);
+  if (!(await hit(c.env.DB, `request:${clientIp(c)}`, import.meta.env.DEV ? 1000 : 10, 60 * 60))) return c.json({ error: 'too_many' }, 429);
+  const dress = await c.env.DB.prepare(`SELECT id FROM products WHERE id = ? AND status = 'published'`).bind(input.productId).first();
+  if (!dress) return c.json({ error: 'invalid', fields: ['productId'] }, 400);
+  const id = await createRequest(c.env.DB, input);
+  c.executionCtx.waitUntil(requestAlert(c.env, new URL(c.req.url).origin, id));
+  return c.json({ ok: true }, 201);
 });
 
 /** The shop's own visit counts (stats.ts): one beacon per page view, nothing kept about the visitor. */

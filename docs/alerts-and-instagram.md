@@ -112,3 +112,34 @@ After the deploy, in **Google Search Console**:
 3. **Sitemaps** → submit `sitemap.xml`.
 
 With a custom domain later, add that domain as a new property.
+
+## Rentals and "tell me when my size is back"
+
+Each dress page has **Merre me qera** (event date, size, name, phone) and, when a size is sold out,
+**Njoftomë kur kthehet masa** (size and phone). Both arrive in the admin's **Kërkesat** tab and as a
+Telegram alert.
+
+- **Qira:** press **WhatsApp** to open a reply already written in the visitor's language, agree the
+  price, then **Konfirmo**: the date shows on the dress page as booked (no name, only the date and
+  size). **Refuzo** if it cannot be done; **U kthye, mbylle** once the dress is back.
+- **Masa u kthye:** when a size people asked for goes from 0 back into stock in the dress's page,
+  Telegram says so. Open the tab, press **WhatsApp** beside each person (the message with the link
+  is ready), then **E njoftova, mbylle**.
+
+The WhatsApp button on dress pages uses the shop phone from **Cilësimet** (business details); without
+one, the dress page links to Instagram messages instead.
+
+## Google Shopping and the Instagram and Facebook shop (free listings)
+
+The shop publishes its catalogue at `/feed.xml` (Albanian) and `/feed.xml?lang=en` (English): one line
+per dress and size, with price, stock, photographs and brand, refreshed every hour.
+
+1. **Google:** merchants.google.com, create the account with the shop's details, add the website and
+   verify it (the same way as Search Console). **Products → Add products → Add products from a file
+   → Enter a link to your file**: `https://<the shop's address>/feed.xml`, daily. Choose free listings.
+2. **Instagram and Facebook:** business.facebook.com → **Commerce Manager → Catalogue → Data sources →
+   Data feed → Scheduled feed**, the same address, daily. Then connect the catalogue to the Instagram
+   account to tag dresses in posts.
+
+Use the address once the shop has its own domain. Check in the first import that every product
+is accepted: Google accepts WebP photographs; if Meta turns any down, tell Luca.

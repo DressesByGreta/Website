@@ -466,3 +466,63 @@
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
+
+/* how the dress fits: a note under the sizes, and a hairline table in centimetres */
+.product__fit span,
+.rq-booked span {
+  color: var(--ink);
+}
+
+.product__fit {
+  color: var(--ink-2);
+}
+
+.measures {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.measures th,
+.measures td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  font-weight: 400;
+}
+
+.measures thead th {
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* the request forms (rent, back in stock) inside their accordion */
+.rq {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+.rq select.field__input {
+  appearance: none;
+  border-radius: 0;
+  background: var(--ground) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E") no-repeat right 14px center;
+}
+
+.rq__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.rq__status:empty {
+  display: none;
+}
+
+.rq-booked {
+  color: var(--ink-2);
+}

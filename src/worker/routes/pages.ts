@@ -15,7 +15,9 @@ import { HERO_SIZES, heroSrcset, homeView, storeJsonLd, websiteJsonLd } from '..
 import { assetTags, page, setDemo, setFollowers, setNewCount, setVerification } from '../views/layout';
 import { occasionView } from '../views/occasion';
 import { legalIntro, legalTitle, legalView } from '../views/legal';
-import { breadcrumbJsonLd, productJsonLd, productView } from '../views/product';
+import { breadcrumbJsonLd, productJsonLd, productView, waNumber, type ProductExtras } from '../views/product';
+import { bookedDates } from '../requests';
+import { addDays, tiranaDay } from '../../shared/time';
 import { shopView, type ShopState } from '../views/shop';
 
 export const pages = new Hono<AppEnv>();
@@ -115,7 +117,9 @@ pages.get('/fustan/:slug', async (c) => {
   const lang = c.get('lang');
   const p = await getVisibleBySlug(c.env.DB, c.req.param('slug'), lang);
   if (!p) return notFound(c);
-  const [all, { returns }, zones] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB)]);
+  const [all, { returns, business }, zones, booked] = await Promise.all([listVisible(c.env.DB, lang), getLegalSettings(c.env.DB), getZones(c.env.DB), bookedDates(c.env.DB, p.id)]);
+  const today = tiranaDay();
+  const extras: ProductExtras = { whatsapp: waNumber(business.phone), booked, today, maxDay: addDays(today, 365) };
   const index = Math.max(0, all.findIndex((x) => x.id === p.id));
   const next = all.length > 1 ? (all[(index + 1) % all.length] ?? null) : null;
   const masa = c.req.query('masa');
@@ -129,7 +133,7 @@ pages.get('/fustan/:slug', async (c) => {
       description: p.description.slice(0, 155) || copy[lang].meta.shopDescription,
       kind: 'product',
       image: p.photos[0] ? photoAt(p.photos[0], 1600) : undefined,
-      body: productView(lang, p, index, all.length, next, zones, isSize(masa) ? (masa as Size) : undefined),
+      body: productView(lang, p, index, all.length, next, zones, extras, isSize(masa) ? (masa as Size) : undefined),
       jsonLd: [productJsonLd(origin(c), lang, p, returns), breadcrumbJsonLd(origin(c), lang, p)],
     }),
   );

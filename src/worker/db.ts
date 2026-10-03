@@ -1,5 +1,5 @@
 /** D1 access: catalogue reads for the storefront, full records for the admin, settings. */
-import { SIZES, emptyStock, isCategory, isOccasion, isSize, isTag, ZONES, type Category, type Occasion, type Tag, type Photo, type Product, type Size, type Stock, type Zone } from '../shared/catalog';
+import { SIZES, emptyStock, parseMeasures, type Measures, isCategory, isOccasion, isSize, isTag, ZONES, type Category, type Occasion, type Tag, type Photo, type Product, type Size, type Stock, type Zone } from '../shared/catalog';
 import type { Lang } from '../shared/copy';
 import { EMPTY_BUSINESS, EMPTY_RETURNS, UPDATED, type Business, type Returns } from '../shared/legal';
 
@@ -21,6 +21,9 @@ export interface ProductRow {
   created_at: string;
   updated_at: string;
   new_until: string | null;
+  measures: string;
+  fit_sq: string;
+  fit_en: string;
 }
 
 export interface ImageRow {
@@ -64,6 +67,9 @@ export interface AdminProduct {
   updatedAt: string;
   /** Shown as new until then; null until the first publication. */
   newUntil: string | null;
+  measures: Measures;
+  fitSq: string;
+  fitEn: string;
 }
 
 const parseList = <T>(json: string, keep: (v: unknown) => v is T): T[] => {
@@ -129,6 +135,8 @@ function assemble(rows: ProductRow[], sizes: SizeRow[], images: ImageRow[], lang
     stock: stock.get(r.id) ?? emptyStock(),
     photos: photos.get(r.id) ?? [],
     isNew: r.new_until !== null && r.new_until > now,
+    measures: parseMeasures(r.measures),
+    fit: lang !== 'sq' ? r.fit_en || r.fit_sq : r.fit_sq || r.fit_en,
   }));
 }
 
@@ -189,6 +197,9 @@ function toAdmin(r: ProductRow, sizes: SizeRow[], images: ImageRow[]): AdminProd
       .map((im) => ({ ...toPhoto(im, 'sq'), altSq: im.alt_sq, altEn: im.alt_en })),
     updatedAt: r.updated_at,
     newUntil: r.new_until,
+    measures: parseMeasures(r.measures),
+    fitSq: r.fit_sq,
+    fitEn: r.fit_en,
   };
 }
 

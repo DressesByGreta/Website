@@ -4,7 +4,7 @@
  * Operate mode: plain, dense, fast; the storefront's type and colour, none of its choreography.
  */
 import { nameSvg } from '../shared/brand';
-import { CATEGORIES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
+import { CATEGORIES, MEASURES, NEW_DAYS, OCCASIONS, PHOTO_SHARP_WIDTH, SIZES, SIZE_LETTER, formatLek, pad2, photoAt, type Zone } from '../shared/catalog';
 import { copy } from '../shared/copy';
 import { html, raw, type Raw } from '../shared/html';
 import { returnsSection, sellerText, type Business, type Returns } from '../shared/legal';
@@ -20,6 +20,7 @@ import {
   type OrderStatus,
   type OrderSummary,
   type SalesReport,
+  type ShopRequest,
   type StatsReport,
 } from './api';
 import { prepare, toForm } from './images';
@@ -150,7 +151,7 @@ const sourceLabel = (s: string): string => {
   return `${SOURCE[src ?? ''] ?? src}${campaign ? ` · ${campaign}` : ''}`;
 };
 
-function frame(active: 'products' | 'orders' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
+function frame(active: 'products' | 'orders' | 'requests' | 'sales' | 'stats' | 'settings', body: Raw, badge = 0): Raw {
   // On desktop the tabs stand as a numbered index down the left rail, like the shop's contents.
   let n = 0;
   const tab = (key: typeof active, href: string, label: string, extra: Raw | string = '') =>
@@ -160,6 +161,7 @@ function frame(active: 'products' | 'orders' | 'sales' | 'stats' | 'settings', b
       <nav class="adm-tabs" aria-label="Admin">
         ${tab('products', '/admin', 'Fustanet')}
         ${tab('orders', '/admin/porosi', 'Porositë', badge ? html`<span class="adm-badge">${badge}</span>` : '')}
+        ${tab('requests', '/admin/kerkesat', 'Kërkesat', newRequests ? html`<span class="adm-badge">${newRequests}</span>` : '')}
         ${tab('sales', '/admin/shitjet', 'Shitjet')}
         ${tab('stats', '/admin/statistikat', 'Statistikat')}
         ${tab('settings', '/admin/cilesimet', 'Cilësimet')}
@@ -229,11 +231,13 @@ window.addEventListener(
 );
 
 let newOrders = 0;
+let newRequests = 0;
 let demo = false;
 async function refreshBadge(): Promise<void> {
   try {
     const s = await api.summary();
     newOrders = s.newOrders;
+    newRequests = s.newRequests;
     demo = s.demo;
   } catch {
     /* keep */
@@ -257,6 +261,7 @@ async function route(): Promise<void> {
   if ((m = p.match(/^\/admin\/produkt\/([\w-]+)$/))) return editor(m[1]!);
   if ((m = p.match(/^\/admin\/porosi\/([\w-]+)$/))) return orderView(m[1]!);
   if (p === '/admin/porosi') return ordersView();
+  if (p === '/admin/kerkesat') return requestsView();
   if (p === '/admin/shitjet') return salesView();
   if (p === '/admin/statistikat') return statsView();
   if (p === '/admin/cilesimet') return settingsView();
@@ -509,7 +514,14 @@ interface Draft {
   slug: string;
   status: 'draft' | 'published';
   stock: Record<string, string>;
+  /** 'length' and '<size>-<bust|waist|hips>', in centimetres as typed */
+  measures: Record<string, string>;
+  fitSq: string;
+  fitEn: string;
 }
+
+const MEASURE_KEYS = ['length', ...SIZES.flatMap((s) => MEASURES.map((m) => `${s}-${m}`))];
+const MEASURE_LABEL: Record<(typeof MEASURES)[number], string> = { bust: 'Gjoksi', waist: 'Beli', hips: 'Ijet' };
 
 const toDraft = (p: AdminProduct): Draft => ({
   nameSq: p.nameSq,
@@ -525,6 +537,15 @@ const toDraft = (p: AdminProduct): Draft => ({
   slug: p.slug,
   status: p.status,
   stock: Object.fromEntries(SIZES.map((s) => [s, String(p.stock[s])])),
+  measures: Object.fromEntries(
+    MEASURE_KEYS.map((k) => {
+      const [s, m] = k.split('-') as [(typeof SIZES)[number], (typeof MEASURES)[number]];
+      const v = k === 'length' ? p.measures.length : p.measures.sizes[s]?.[m];
+      return [k, v === undefined ? '' : String(v)];
+    }),
+  ),
+  fitSq: p.fitSq,
+  fitEn: p.fitEn,
 });
 
 const COLORS = ['black', 'white', 'red', 'blue', 'green', 'pink', 'purple', 'lilac', 'gold', 'silver', 'grey', 'brown', 'yellow', 'teal'];
@@ -634,6 +655,24 @@ async function editor(id: string): Promise<void> {
             </fieldset>
           </section>
 
+          <section class="adm-card" aria-labelledby="sec-fit">
+            <h2 class="adm-h2" id="sec-fit">Masat dhe si bie</h2>
+            <p class="adm-note">Në centimetra, të matura në fustan. Dyqani shfaq vetëm ato që plotëson.</p>
+            <label class="adm-field adm-field--inline"><span>Gjatësia</span><input class="adm-input adm-cm" name="m-length" inputmode="numeric" value="${d.measures['length']}" /></label>
+            <div class="adm-table-wrap"><table class="adm-table adm-measures">
+              <thead><tr><th>Masa</th>${MEASURES.map((m) => html`<th>${MEASURE_LABEL[m]}</th>`)}</tr></thead>
+              <tbody>${SIZES.map(
+                (s) => html`<tr><th scope="row">${s}</th>${MEASURES.map(
+                  (m) => html`<td><input class="adm-input adm-cm" name="m-${s}-${m}" inputmode="numeric" value="${d.measures[`${s}-${m}`]}" aria-label="${MEASURE_LABEL[m]}, masa ${s}" /></td>`,
+                )}</tr>`,
+              )}</tbody>
+            </table></div>
+            <div class="adm-grid2">
+              <label class="adm-field"><span>Si bie, në shqip</span><input class="adm-input" name="fitSq" value="${d.fitSq}" maxlength="200" placeholder="p.sh. Bie pak e ngushtë, merr një masë më të madhe." /></label>
+              <label class="adm-field"><span>Si bie, në anglisht</span><input class="adm-input" name="fitEn" value="${d.fitEn}" maxlength="200" placeholder="e.g. Fits small, take one size up." /></label>
+            </div>
+          </section>
+
           <section class="adm-card" aria-labelledby="sec-info">
             <h2 class="adm-h2" id="sec-info">Të dhënat</h2>
             <div class="adm-grid2">
@@ -691,6 +730,9 @@ async function editor(id: string): Promise<void> {
       slug: v('slug').trim(),
       status: (f.querySelector<HTMLInputElement>('input[name="status"]:checked')?.value as Draft['status']) ?? 'draft',
       stock: Object.fromEntries(SIZES.map((s) => [s, v(`stock-${s}`).trim() || '0'])),
+      measures: Object.fromEntries(MEASURE_KEYS.map((k) => [k, v(`m-${k}`).replace(/\D/g, '')])),
+      fitSq: v('fitSq').trim(),
+      fitEn: v('fitEn').trim(),
     };
   };
 
@@ -708,6 +750,7 @@ async function editor(id: string): Promise<void> {
       const f = root.querySelector<HTMLFormElement>('[data-form]')!;
       for (const [k, v] of Object.entries(pending)) {
         if (k === 'stock') for (const s of SIZES) (f.elements.namedItem(`stock-${s}`) as HTMLInputElement).value = (v as Record<string, string>)[s] ?? '0';
+        else if (k === 'measures') for (const mk of MEASURE_KEYS) (f.elements.namedItem(`m-${mk}`) as HTMLInputElement).value = (v as Record<string, string>)[mk] ?? '';
         else if (k === 'categories') f.querySelectorAll<HTMLInputElement>('input[name="cat"]').forEach((x) => (x.checked = (v as string[]).includes(x.value)));
         else if (k === 'featured') (f.elements.namedItem('featured') as HTMLInputElement).checked = v as boolean;
         else if (k === 'status') f.querySelectorAll<HTMLInputElement>('input[name="status"]').forEach((x) => (x.checked = x.value === v));
@@ -873,6 +916,13 @@ async function editor(id: string): Promise<void> {
         slug: d.slug,
         status: d.status,
         stock: Object.fromEntries(SIZES.map((s) => [s, Math.max(0, parseInt(d.stock[s] ?? '0', 10) || 0)])) as AdminProduct['stock'],
+        // the server keeps only sensible centimetres (10 to 250) and drops the rest
+        measures: {
+          length: Number(d.measures['length']) || undefined,
+          sizes: Object.fromEntries(SIZES.map((s) => [s, Object.fromEntries(MEASURES.map((m) => [m, Number(d.measures[`${s}-${m}`]) || undefined]))])),
+        },
+        fitSq: d.fitSq,
+        fitEn: d.fitEn,
       });
       saved = JSON.stringify(toDraft(fresh));
       replace(fresh, false);
@@ -886,6 +936,95 @@ async function editor(id: string): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ orders ----------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------- requests ---------------------------------------------------------------- */
+
+const REQ_STATUS: Record<ShopRequest['status'], string> = { new: 'E re', confirmed: 'Konfirmuar', declined: 'Refuzuar', done: 'Mbyllur' };
+const MONTHS_SQ = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+const dayText = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS_SQ[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+
+/** WhatsApp with the answer already written, in the visitor's language; Greta reads it and sends. */
+function waReply(r: ShopRequest): string {
+  const digits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '').replace(/^0/, '355');
+  const link = `${location.origin}/fustan/${r.product_slug}${r.lang === 'sq' ? '' : `?lang=${r.lang}`}`;
+  const text =
+    r.kind === 'rental'
+      ? { sq: `Përshëndetje${r.name ? ` ${r.name}` : ''}! Faleminderit për kërkesën për ${r.product_name}, masa ${r.size}, më ${dayText(r.event_date ?? '')}.`, en: `Hello${r.name ? ` ${r.name}` : ''}! Thank you for your request to rent ${r.product_name}, size ${r.size}, on ${r.event_date}.`, fr: `Bonjour${r.name ? ` ${r.name}` : ''} ! Merci pour votre demande de location de ${r.product_name}, taille ${r.size}, le ${r.event_date}.` }[r.lang]
+      : { sq: `Përshëndetje! ${r.product_name} është sërish në masën ${r.size}: ${link}`, en: `Hello! ${r.product_name} is back in size ${r.size}: ${link}`, fr: `Bonjour ! ${r.product_name} est de nouveau disponible en taille ${r.size} : ${link}` }[r.lang];
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+async function requestsView(): Promise<void> {
+  const kind = new URLSearchParams(location.search).get('lloji') === 'kthim' ? 'restock' : 'rental';
+  mount(frame('requests', html`<p class="adm-empty">Po ngarkohen kërkesat</p>`, newOrders));
+  let list: ShopRequest[];
+  try {
+    list = await api.requests(kind);
+  } catch (e) {
+    toast(errText(e), 'err');
+    return;
+  }
+  const actions = (r: ShopRequest) =>
+    r.kind === 'rental'
+      ? r.status === 'new'
+        ? html`<button class="btn" type="button" data-req="${r.id}" data-to="confirmed">Konfirmo</button><button class="adm-link" type="button" data-req="${r.id}" data-to="declined">Refuzo</button>`
+        : r.status === 'confirmed'
+          ? html`<button class="adm-link" type="button" data-req="${r.id}" data-to="done">U kthye, mbylle</button>`
+          : ''
+      : r.status === 'new'
+        ? html`<button class="adm-link" type="button" data-req="${r.id}" data-to="done">E njoftova, mbylle</button>`
+        : '';
+  const draw = () =>
+    mount(
+      frame(
+        'requests',
+        html`<div class="adm-head"><h1 class="adm-h1">Kërkesat <span class="adm-count">${list.filter((r) => r.status === 'new').length}</span></h1></div>
+        <div class="adm-filters adm-filters--wrap" role="group" aria-label="Lloji">
+          <a class="adm-filter${kind === 'rental' ? ' is-on' : ''}" href="/admin/kerkesat" data-link${kind === 'rental' ? raw(' aria-current="page"') : ''}>Qira</a>
+          <a class="adm-filter${kind === 'restock' ? ' is-on' : ''}" href="/admin/kerkesat?lloji=kthim" data-link${kind === 'restock' ? raw(' aria-current="page"') : ''}>Masa u kthye</a>
+        </div>
+        <p class="adm-note">${kind === 'rental'
+          ? 'Kërkesat për qira nga faqet e fustaneve. Shkruaj klientes në WhatsApp, pastaj konfirmo: data shfaqet si e zënë te fustani.'
+          : 'Kush pret që një masë e shitur të kthehet. Kur e rikthen në gjendje, merr një njoftim në Telegram; shkruaju këtu me një prekje.'}</p>
+        ${list.length
+          ? html`<ol class="adm-reqs">${list.map(
+              (r) => html`<li class="adm-req${r.status === 'new' ? ' is-new' : ''}">
+                <div class="adm-req__main">
+                  <a class="adm-req__dress" href="/admin/produkt/${r.product_id}" data-link>${r.product_name}</a>
+                  <p class="adm-req__meta">Masa ${r.size}${r.event_date ? html` · <b>${dayText(r.event_date)}</b>` : ''} · <span class="adm-state${r.status === 'confirmed' ? ' is-live' : ''}">${REQ_STATUS[r.status]}</span></p>
+                  <p class="adm-req__who">${r.name ? html`${r.name} · ` : ''}<a href="tel:${r.phone.replace(/[^\d+]/g, '')}">${r.phone}</a></p>
+                  ${r.note ? html`<p class="adm-req__note">${r.note}</p>` : ''}
+                </div>
+                <div class="adm-req__acts">
+                  <a class="btn btn--line" href="${waReply(r)}" target="_blank" rel="noopener">WhatsApp</a>
+                  ${actions(r)}
+                </div>
+              </li>`,
+            )}</ol>`
+          : html`<p class="adm-empty">${kind === 'rental' ? 'Ende asnjë kërkesë për qira.' : 'Askush nuk pret ende për një masë.'}</p>`}`,
+        newOrders,
+      ),
+    );
+  draw();
+  on('click', async (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-req]');
+    if (!b) return;
+    const to = b.dataset.to as ShopRequest['status'];
+    if (to === 'declined' && !(await ask('Ta refuzosh këtë kërkesë për qira?', 'Refuzo'))) return;
+    b.disabled = true;
+    try {
+      await api.setRequest(b.dataset.req!, to);
+      const r = list.find((x) => x.id === b.dataset.req);
+      if (r) r.status = to;
+      await refreshBadge();
+      draw();
+      toast(to === 'confirmed' ? 'U konfirmua: data shfaqet si e zënë te fustani.' : 'U ruajt.');
+    } catch (x) {
+      b.disabled = false;
+      toast(errText(x), 'err');
+    }
+  });
+}
 
 async function ordersView(): Promise<void> {
   const status = new URLSearchParams(location.search).get('s') ?? 'new';

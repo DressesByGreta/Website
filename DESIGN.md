@@ -501,3 +501,11 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 
 - **Uploads:** every photograph goes up as WebP. Browsers whose canvas cannot write WebP (iPhone Safari) encode with libwebp compiled to WebAssembly (@jsquash/webp, Apache-2.0), fetched the first time a photo is added (about 120KB gzipped) and only by those browsers; if it cannot load, the photo goes up as JPEG as before. The admin's pages (only those) allow 'wasm-unsafe-eval' in their content security policy; the storefront's policy is unchanged.
 - **The catalogue:** the 90 photographs imported from Instagram as JPEG (267 files) were re-encoded as WebP at quality 82 and switched over on 2026-10-03: 107MB to 45MB, a phone's 960px photograph 365KB to 158KB on average. Lighthouse mobile on the home page: performance 58 to 99, LCP 3.9s to 1.6s.
+
+## Changes 2026-10-03, evening (rentals, waiting lists, fit, feeds)
+
+- **Dress page accordions** (same register as Përshkrimi): **Masat** (a hairline table in centimetres, a column per measure that has a value, the length beneath, a 12px note), **Merre me qera** (event date, size, name, phone, note; the booked dates above in ink 80) and, only when a size is sold out, **Njoftomë kur kthehet masa** (size, phone). Fields reuse the checkout's (16px, so iPhones do not zoom); a hidden field catches bots; errors sit under their field; the thank-you replaces nothing and leaves the form empty.
+- **Fit note** under the sizes in ink 80 ("Si bie: …"), Greta's words, never a badge.
+- **WhatsApp** replaces "Pyet në Instagram" in the dress page's links when the shop has a phone; the message names the dress and, once picked, the size, with the page's link.
+- **Admin, Kërkesat:** a tab after Porositë with a square count badge; Qira and Masa u kthye as filters; each request a row with the dress (underlined), size, date in ink, the state as words after the 8px square, the person and phone; actions on the right: WhatsApp (line button, the reply written in the visitor's language), Konfirmo (black), Refuzo or Mbylle (text controls). An unanswered request carries a 2px ink rule down its left edge (never a shadow).
+- **Admin, the dress:** a "Masat dhe si bie" card after the price and stock: the length, a size by measure grid of 72px centimetre fields, the fit note in Albanian and English.
