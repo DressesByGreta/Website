@@ -9,6 +9,7 @@ import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type CatalogueItem, type Line } from './bag';
 import * as me from './me';
 import { linkPictures, showIn } from './peek';
+import { trackUse } from './stats';
 import { gsap, motionStopped, printPlate, reducedMotion } from './motion';
 
 const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right' } as const;
@@ -384,7 +385,12 @@ export class Drawers {
     form.querySelector('[data-me-nodate]')!.addEventListener('click', () => ((form.elements.namedItem('date') as HTMLInputElement).value = ''));
     foot.querySelector('[data-me-save]')!.addEventListener('click', () => {
       const picked = form.querySelector<HTMLInputElement>('input[name="size"]:checked')?.value;
-      me.setAll({ body: read(), size: isSize(picked) ? picked : null, date: (form.elements.namedItem('date') as HTMLInputElement).value || null });
+      const date = (form.elements.namedItem('date') as HTMLInputElement).value || null;
+      const body = read();
+      const before = me.get();
+      me.setAll({ body, size: isSize(picked) ? picked : null, date });
+      if ((Object.keys(body).length || isSize(picked)) && (JSON.stringify(body) !== JSON.stringify(before.body) || picked !== before.size)) trackUse('size');
+      if (date && date !== before.date) trackUse('date');
       void this.close(this.d.me);
     });
     foot.querySelector('[data-me-clear]')!.addEventListener('click', () => {

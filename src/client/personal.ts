@@ -9,6 +9,7 @@ import { copy, href, type Lang } from '../shared/copy';
 import { gsap, reducedMotion } from './motion';
 import * as me from './me';
 import { navigate } from './router';
+import { trackUse } from './stats';
 
 const todayLocal = (): string => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 
@@ -114,11 +115,14 @@ export function personal(main: HTMLElement, lang: Lang): () => void {
   const onClick = (e: Event) => {
     const b = (e.target as Element).closest<HTMLButtonElement>('[data-save]');
     if (b) {
-      me.toggleSaved(b.dataset.save!);
+      if (me.toggleSaved(b.dataset.save!)) trackUse('save');
       if (!reducedMotion()) gsap.fromTo(b, { scale: 0.92 }, { scale: 1, duration: 0.4, ease: 'back.out(3)', clearProps: 'transform' });
       return;
     }
-    if ((e.target as Element).closest('[data-saved-share]')) void shareSaved(main, lang);
+    if ((e.target as Element).closest('[data-saved-share]')) {
+      trackUse('share');
+      void shareSaved(main, lang);
+    }
   };
   main.addEventListener('click', onClick);
   savedButtons();

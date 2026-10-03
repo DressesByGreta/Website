@@ -156,6 +156,7 @@ export interface StatsReport {
   funnel: { checkout: number; submit: number; invalid: number; orders: number };
   invalidFields: { key: string; n: number }[];
   sales: { orders: number; total: number };
+  uses: Record<'size' | 'date' | 'save' | 'share' | 'mark' | 'video' | 'whatsapp' | 'rental' | 'restock', number>;
 }
 
 export interface OrderDetail {

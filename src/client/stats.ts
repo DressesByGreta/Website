@@ -59,6 +59,11 @@ export function trackView(kind: string): void {
   send({ t: 'view', k: kind, s: slug, e: first ? true : undefined, src: first?.src, c: first?.c });
 }
 
+/** One use of a shop tool (worker/stats.ts USES): nothing about what she chose, only that she did. */
+export function trackUse(key: 'size' | 'date' | 'save' | 'share' | 'mark' | 'video' | 'whatsapp'): void {
+  send({ t: 'use', k: key });
+}
+
 /** The order form: a press of the send button, and the fields that stopped it. */
 export function trackForm(t: 'submit' | 'invalid', fields?: string[]): void {
   send({ t, k: 'checkout', f: fields });

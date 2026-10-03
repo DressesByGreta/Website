@@ -1623,6 +1623,22 @@ async function statsView(): Promise<void> {
               <tbody>${s.dresses.map((x) => html`<tr><td><a href="/fustan/${x.slug}" target="_blank" rel="noopener">${x.name}</a></td><td class="adm-bar-cell">${bar(x.n, topDress)}</td><td class="num">${x.n}</td></tr>`)}</tbody></table>`
             : html`<p class="adm-note">Ende asnjë fustan i shikuar.</p>`}
         </section>
+        <section class="adm-card" aria-labelledby="st-tools">
+          <h2 class="adm-h2" id="st-tools">Mjetet e dyqanit</h2>
+          <p class="adm-note">Sa herë u përdorën, pa asnjë të dhënë për vizitoren. Kërkesat numërohen nga Kërkesat.</p>
+          <dl class="adm-totals">
+            <div><dt>Ruajtën masën («Gjej masën»)</dt><dd>${s.uses.size}</dd></div>
+            <div><dt>Vendosën datën e eventit</dt><dd>${s.uses.date}</dd></div>
+            <div><dt>Ruajtën një fustan</dt><dd>${s.uses.save}</dd></div>
+            <div><dt>Dërguan listën e ruajtur</dt><dd>${s.uses.share}</dd></div>
+            <div><dt>Hapën një shenjë në lookbook</dt><dd>${s.uses.mark}</dd></div>
+            <div><dt>Panë videon e një fustani</dt><dd>${s.uses.video}</dd></div>
+            <div><dt>Shtypën WhatsApp te një fustan</dt><dd>${s.uses.whatsapp}</dd></div>
+            <div><dt>Kërkesa për qira</dt><dd>${s.uses.rental}</dd></div>
+            <div><dt>Prisnin një masë</dt><dd>${s.uses.restock}</dd></div>
+          </dl>
+        </section>
+
         <section class="adm-card" aria-labelledby="st-form">
           <h2 class="adm-h2" id="st-form">Formulari i porosisë</h2>
           <dl class="adm-totals">

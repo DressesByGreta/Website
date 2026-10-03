@@ -7,13 +7,17 @@
  */
 import { addDays, dayStart, tiranaDay } from '../shared/time';
 
-const KINDS = new Set(['home', 'shop', 'product', 'checkout', 'confirmation', 'notfound', 'privacy', 'terms']);
+const KINDS = new Set(['home', 'shop', 'product', 'checkout', 'confirmation', 'notfound', 'privacy', 'terms', 'lookbook']);
+/** The shop's own tools a visitor used (one +1 each, no detail): her size saved, her event date set,
+ *  a dress saved, the saved list sent, a lookbook mark opened, a dress video seen, WhatsApp pressed. */
+export const USES = ['size', 'date', 'save', 'share', 'mark', 'video', 'whatsapp'] as const;
+const USE_SET = new Set<string>(USES);
 const FIELDS = new Set(['name', 'phone', 'email', 'zone', 'city', 'address', 'payment']);
 /** crawlers and test browsers that say what they are */
 export const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed/i;
 
 export interface Hit {
-  t: 'view' | 'submit' | 'invalid';
+  t: 'view' | 'submit' | 'invalid' | 'use';
   k: string;
   slug?: string;
   entry?: boolean;
@@ -26,8 +30,8 @@ const clean = (v: unknown, max: number): string => (typeof v === 'string' ? v.to
 
 export function parseHit(raw: unknown): Hit | null {
   const b = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const t = b.t === 'submit' || b.t === 'invalid' ? b.t : b.t === 'view' ? 'view' : null;
-  const k = typeof b.k === 'string' && KINDS.has(b.k) ? b.k : null;
+  const t = b.t === 'submit' || b.t === 'invalid' || b.t === 'use' ? b.t : b.t === 'view' ? 'view' : null;
+  const k = typeof b.k === 'string' && (t === 'use' ? USE_SET.has(b.k) : KINDS.has(b.k)) ? b.k : null;
   if (!t || !k) return null;
   const slug = typeof b.s === 'string' && /^[a-z0-9-]{1,80}$/.test(b.s) ? b.s : undefined;
   const fields = Array.isArray(b.f) ? b.f.filter((f): f is string => typeof f === 'string' && FIELDS.has(f)).slice(0, 7) : undefined;
@@ -37,6 +41,7 @@ export function parseHit(raw: unknown): Hit | null {
 /** The rows one beacon adds 1 to. */
 export function rowsFor(h: Hit): [string, string][] {
   if (h.t === 'submit') return [['submit', '']];
+  if (h.t === 'use') return [['use', h.k]];
   if (h.t === 'invalid') return [['invalid', ''], ...(h.fields ?? []).map((f): [string, string] => ['invalid_field', f])];
   const rows: [string, string][] = [['view', h.k]];
   if (h.k === 'product' && h.slug) rows.push(['dress', h.slug]);
@@ -83,19 +88,23 @@ export interface StatsReport {
   funnel: { checkout: number; submit: number; invalid: number; orders: number };
   invalidFields: { key: string; n: number }[];
   sales: { orders: number; total: number };
+  /** the shop's tools: uses counted by beacon, and the requests sent (from the requests table) */
+  uses: Record<(typeof USES)[number] | 'rental' | 'restock', number>;
 }
 
 /** What the admin's Statistikat page shows for the last `days` days (today included). */
 export async function report(db: D1Database, days: number): Promise<StatsReport> {
   const since = addDays(tiranaDay(), -(days - 1));
   const placed = `status NOT IN ('cancelled', 'awaiting_payment') AND created_at >= ?`;
-  const [agg, daily, sales, bySource, names] = await db.batch([
+  const [agg, daily, sales, bySource, names, requests] = await db.batch([
     db.prepare('SELECT metric, key, SUM(n) AS n FROM stats WHERE day >= ? GROUP BY metric, key').bind(since),
     db.prepare(`SELECT day, SUM(n) AS n FROM stats WHERE metric = 'visit' AND day >= ? GROUP BY day`).bind(since),
     db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total), 0) AS total FROM orders WHERE ${placed}`).bind(dayStart(since)),
     db.prepare(`SELECT source, COUNT(*) AS n FROM orders WHERE ${placed} GROUP BY source`).bind(dayStart(since)),
     db.prepare('SELECT slug, name_sq FROM products'),
+    db.prepare(`SELECT kind, COUNT(*) AS n FROM requests WHERE created_at >= ? GROUP BY kind`).bind(dayStart(since)),
   ]);
+  const asked = new Map(((requests?.results ?? []) as { kind: string; n: number }[]).map((r) => [r.kind, r.n]));
   const rows = (agg?.results ?? []) as { metric: string; key: string; n: number }[];
   const sum = (metric: string, key?: string) => rows.filter((r) => r.metric === metric && (key === undefined || r.key === key)).reduce((n, r) => n + r.n, 0);
   const list = (metric: string) =>
@@ -131,5 +140,10 @@ export async function report(db: D1Database, days: number): Promise<StatsReport>
     funnel: { checkout: sum('view', 'checkout'), submit: sum('submit'), invalid: sum('invalid'), orders: s.n },
     invalidFields: list('invalid_field'),
     sales: { orders: s.n, total: s.total },
+    uses: {
+      ...(Object.fromEntries(USES.map((k) => [k, sum('use', k)])) as Record<(typeof USES)[number], number>),
+      rental: asked.get('rental') ?? 0,
+      restock: asked.get('restock') ?? 0,
+    },
   };
 }
