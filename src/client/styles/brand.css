@@ -186,3 +186,42 @@ html.dmenu-open .nav .nav__brand {
   height: auto;
   overflow: visible;
 }
+
+/* ---------- the opening (intro.ts): the logo drawn on its own ivory, then lifted off the page ---------- */
+html.intro,
+html.intro-on {
+  overflow: hidden;
+}
+
+/* painted before the first frame by the head's boot script, so the page never shows first */
+html.intro body::before,
+.intro-sheet {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--ivory);
+}
+
+.intro-sheet {
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  will-change: transform;
+}
+
+.intro-sheet__logo {
+  width: min(56vw, 300px);
+  height: auto;
+  overflow: visible;
+}
+
+.intro-sheet__g {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.intro-sheet__l {
+  fill: currentColor;
+}

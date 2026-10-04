@@ -72,7 +72,7 @@ function spread(p: Product, i: number, total: number, lang: Lang, s: ShopState):
           ${price(p, lang, 'price spread__price')}
           <p class="spread__me small" data-me-note hidden></p>
           ${sold ? html`<p class="spread__sold">${t.shop.soldOut}</p>` : sizePicker(p, lang, `size-${p.id}`, s.size)}
-          <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : t.product.add}</button>
+          <button class="btn btn--wide" type="submit" data-add-btn${sold ? raw(' disabled') : ''}>${sold ? t.shop.soldOut : html`<span class="add__long">${t.product.add}</span><span class="add__short">${t.product.addShort}</span>`}</button>
           <p class="spread__folio">${second ? html`<span class="spread__num">${folio(i, total)}</span>` : html`<span></span>`}<a class="tlink" href="${url}" data-fly-link>${t.shop.open}</a></p>
         </form>
       </div>

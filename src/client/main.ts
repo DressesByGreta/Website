@@ -3,12 +3,14 @@ import { copy, isLang } from '../shared/copy';
 import { bag } from './bag';
 import { Drawers } from './drawers';
 import { loadMotionChoice, motionStopped, setMotionStopped } from './motion';
+import { playIntro } from './intro';
 import { initPage } from './pages';
 import { headerPeek } from './peek';
 import { startRouter } from './router';
 
 const lang = isLang(document.body.dataset.lang) ? document.body.dataset.lang : 'sq';
 loadMotionChoice();
+playIntro();
 const drawers = new Drawers(lang);
 startRouter(initPage(lang, drawers));
 drawers.schedulePopup(9000);

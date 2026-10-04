@@ -76,6 +76,20 @@ export const setVerification = (code: string | undefined): void => {
 const filters = (): ShopFilter[] => (newCount > 0 ? ['new', ...CATEGORIES] : [...CATEGORIES]);
 const ldJson = (o: object): string => JSON.stringify(o).replace(/</g, `${B}u003c`);
 
+/**
+ * The opening's boot (client/intro.ts), run in the head before the first paint: on a visitor's
+ * first page in 12 hours, with motion allowed, it marks <html> so the stylesheet paints the logo's
+ * ivory over the page at once; the script then draws the logo there. If the script never arrives,
+ * the ivory leaves by itself after 3.5s. Its hash is in the content security policy (index.ts):
+ * change a character here and the hash follows by itself.
+ */
+export const INTRO_BOOT =
+  "(function(){try{var d=document.documentElement,k='greta-intro',n=Date.now();" +
+  "if(n-(+localStorage.getItem(k)||0)<432e5||localStorage.getItem('greta-motion')==='off'||!matchMedia('(prefers-reduced-motion: no-preference)').matches)return;" +
+  "localStorage.setItem(k,String(n));d.classList.add('intro');setTimeout(function(){d.classList.remove('intro')},3500)}catch(e){}})()";
+/** Paying and its receipts open without the opening. */
+const NO_INTRO = new Set<PageOptions['kind']>(['checkout', 'confirmation', 'pay']);
+
 function assets(kind: 'store' | 'admin'): Raw {
   const entry = kind === 'store' ? 'client/main' : 'admin/main';
   const style = kind === 'store' ? 'client/styles/index' : 'admin/admin';
@@ -169,6 +183,7 @@ export function page(o: PageOptions): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    ${NO_INTRO.has(o.kind) ? '' : raw(`<script>${INTRO_BOOT}</script>`)}
     <title>${o.title}</title>
     <meta name="description" content="${o.description}" />
     ${o.noindex ? raw('<meta name="robots" content="noindex" />') : ''}

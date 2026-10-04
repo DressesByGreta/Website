@@ -269,11 +269,20 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     if (hint) hint.textContent = text;
   };
   let timer = 0;
-  const label = (text: string) => {
+  // the spreads' button holds a long and a short wording (the phone caption shows the short one)
+  const write = (long: string, short: string) => {
     if (!btn) return;
-    btn.textContent = text;
+    const l = btn.querySelector('.add__long');
+    const s = btn.querySelector('.add__short');
+    if (l && s) {
+      l.textContent = long;
+      s.textContent = short;
+    } else btn.textContent = long;
+  };
+  const label = (long: string, short: string) => {
+    write(long, short);
     window.clearTimeout(timer);
-    timer = window.setTimeout(() => (btn.textContent = t.product.add), 1600);
+    timer = window.setTimeout(() => write(t.product.add, t.product.addShort), 1600);
   };
 
   form.addEventListener('change', (e) => {
@@ -293,7 +302,7 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     const picked = form.querySelector<HTMLInputElement>('input[type="radio"]:checked');
     if (!picked || !isSize(picked.value)) {
       say(t.product.chooseSize);
-      label(t.product.chooseSize);
+      label(t.product.chooseSize, t.product.chooseShort);
       form.querySelector<HTMLInputElement>('input[type="radio"]:not(:disabled)')?.focus();
       if (!reducedMotion()) gsap.fromTo(form.querySelector('.pick__row'), { x: -4 }, { x: 0, duration: 0.4, ease: 'elastic.out(1, 0.3)' });
       return;
@@ -308,7 +317,7 @@ function addForm(form: HTMLFormElement, lang: Lang): void {
     dropIntoBag(plate);
     // a short tick on phones that can (Android); iPhones ignore it
     if (window.matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(12);
-    label(t.product.added);
+    label(t.product.added, t.product.addedShort);
     say('');
   });
 }

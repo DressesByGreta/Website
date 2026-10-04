@@ -13,6 +13,7 @@ import { notFound, pages } from './routes/pages';
 import { publicApi } from './routes/public-api';
 import { seo } from './routes/seo';
 import type { AppEnv } from './types';
+import { INTRO_BOOT } from './views/layout';
 
 const app = new Hono<AppEnv>();
 
@@ -29,7 +30,10 @@ const csp = (scripts: string) =>
     "base-uri 'self'",
     "frame-ancestors 'none'",
   ].join('; ');
-const CSP = csp("'self'");
+// The store's pages also run one inline script, the opening's boot (views/layout.ts), allowed by its hash.
+let introHash = '';
+const sha256 = async (s: string): Promise<string> =>
+  btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))));
 // The admin may compile WebAssembly (only that: JavaScript eval stays blocked): an iPhone, whose
 // canvas cannot write WebP, encodes the photographs with libwebp in WebAssembly (src/admin/images.ts).
 const ADMIN_CSP = csp("'self' 'wasm-unsafe-eval'");
@@ -40,7 +44,8 @@ app.use('*', async (c, next) => {
   c.header('referrer-policy', 'strict-origin-when-cross-origin');
   c.header('permissions-policy', 'camera=(), microphone=(), geolocation=()');
   if (import.meta.env.PROD && (c.res.headers.get('content-type') ?? '').includes('text/html')) {
-    c.header('content-security-policy', c.req.path === '/admin' || c.req.path.startsWith('/admin/') ? ADMIN_CSP : CSP);
+    introHash ||= await sha256(INTRO_BOOT);
+    c.header('content-security-policy', c.req.path === '/admin' || c.req.path.startsWith('/admin/') ? ADMIN_CSP : csp(`'self' 'sha256-${introHash}'`));
     c.header('x-frame-options', 'DENY');
   }
 });
