@@ -5,13 +5,15 @@ import { html, type Raw } from '../../shared/html';
 import type { Business } from '../../shared/legal';
 import { SITE } from '../site';
 import { heroBrand } from './brand';
+import type { Review } from '../reviews';
 import { shopView } from './shop';
+import { voicesView } from './voices';
 
 /** The photograph fills the screen; phones take the 1216 file, large screens the enlarged ones. */
 export const HERO_SIZES = '100vw';
 export const heroSrcset = (ext: 'webp' | 'jpg'): string => SITE.hero.widths.map((w) => `${SITE.hero.base}-${w}.${ext} ${w}w`).join(', ');
 
-export function homeView(lang: Lang, visible: Product[]): Raw {
+export function homeView(lang: Lang, visible: Product[], voices: (Review & { slug: string; dress: string })[] = []): Raw {
   const t = copy[lang];
   return html`<section class="hero" id="hero">
       <figure class="plate hero__plate" style="--p: 1">
@@ -31,6 +33,8 @@ export function homeView(lang: Lang, visible: Product[]): Raw {
     </section>
 
     ${shopView(lang, visible, { view: 'spreads' }, { embedded: true })}
+
+    ${voicesView(lang, voices)}
 
     <section class="visit container" id="visit">
       <h2 class="heading" data-lines>${t.visit.title}</h2>

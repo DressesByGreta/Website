@@ -7,8 +7,8 @@ import type { Context } from 'hono';
 import { PHOTO_MAX_BYTES as MAX_BYTES, VIDEO_MAX_BYTES } from '../shared/catalog';
 import type { AppEnv } from './types';
 
-// p/ dresses' photographs, v/ the posters of their videos, l/ lookbook photographs
-const KEY_RE = /^[pvl]\/[a-z0-9-]{6,40}\/[a-z0-9-]{6,40}\/\d{3,4}\.(webp|jpg)$/;
+// p/ dresses' photographs, v/ the posters of their videos, l/ lookbook photographs, r/ customers' photographs
+const KEY_RE = /^[pvlr]\/[a-z0-9-]{6,40}\/[a-z0-9-]{6,40}\/\d{3,4}\.(webp|jpg)$/;
 const CLIP_RE = /^v\/[a-z0-9-]{6,40}\/[a-z0-9-]{6,40}\/clip\.(mp4|webm)$/;
 
 export async function serveImage(c: Context<AppEnv>): Promise<Response> {

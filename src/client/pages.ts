@@ -7,7 +7,7 @@ import type { Drawers } from './drawers';
 import { dropIntoBag, gsap, pageMotion, printPlate, reducedMotion } from './motion';
 import { navigate, type PageInit } from './router';
 import { personal } from './personal';
-import { trackForm, trackView, visitSource } from './stats';
+import { trackForm, trackUse, trackView, visitSource } from './stats';
 
 interface ProductData extends Snap {
   id: string;
@@ -419,6 +419,7 @@ function whatsappLink(main: HTMLElement, lang: Lang): void {
     a.href = `https://wa.me/${a.dataset.wa}?text=${encodeURIComponent(copy[lang].product.waText(a.dataset.waName ?? '', size, url.href))}`;
   };
   form.addEventListener('change', update);
+  a.addEventListener('click', () => trackUse('whatsapp'));
   update();
 }
 
@@ -454,6 +455,7 @@ function dressVideo(main: HTMLElement, lang: Lang): () => void {
   );
   io.observe(v);
   v.addEventListener('play', label);
+  v.addEventListener('play', () => trackUse('video'), { once: true });
   v.addEventListener('pause', label);
   btn.addEventListener('click', () => {
     if (v.paused) {
@@ -564,6 +566,7 @@ function lookbookPage(main: HTMLElement, lang: Lang): () => void {
     spot.setAttribute('aria-expanded', 'true');
     spot.classList.add('is-on');
     open = { spot, card };
+    trackUse('mark');
     if (!reducedMotion()) gsap.fromTo(card, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out', clearProps: 'transform,opacity' });
     card.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
   };

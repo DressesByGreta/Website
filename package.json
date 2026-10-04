@@ -12,9 +12,11 @@
     "db:migrate": "wrangler d1 migrations apply greta --local",
     "seed": "uv run --with pillow python tools/seed.py",
     "admin:password": "node tools/admin-password.mjs",
-    "deploy": "npm run build && wrangler d1 migrations apply greta --remote && wrangler deploy"
+    "deploy": "npm run build && wrangler d1 migrations apply greta --remote && wrangler deploy",
+    "backup": "node tools/backup.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@jsquash/webp": "^1.5.0",
     "gsap": "^3.13.0",
     "hono": "^4.13.8"

@@ -23,6 +23,7 @@ import {
   type OrderDetail,
   type OrderStatus,
   type OrderSummary,
+  type Review,
   type SalesReport,
   type ShopRequest,
   type StatsReport,
@@ -587,6 +588,13 @@ async function editor(id: string): Promise<void> {
     return;
   }
   let saved = JSON.stringify(toDraft(p));
+  // what customers said about this dress (loaded beside the dress; added and removed at once)
+  let reviews: Review[] = [];
+  let reviewNote = '';
+  void api.reviews(p.id).then((r) => {
+    reviews = r;
+    replace(p, true);
+  });
   const uploads: { key: string; name: string; progress: number; preview: string; error?: string }[] = [];
   // the dress's video while it is being prepared or sent: progress 0..1, or an error in words
   let clip: { progress: number; error?: string } | null = null;
@@ -704,6 +712,34 @@ async function editor(id: string): Promise<void> {
             <div class="adm-grid2">
               <label class="adm-field"><span>Si bie, në shqip</span><input class="adm-input" name="fitSq" value="${d.fitSq}" maxlength="200" placeholder="p.sh. Bie pak e ngushtë, merr një masë më të madhe." /></label>
               <label class="adm-field"><span>Si bie, në anglisht</span><input class="adm-input" name="fitEn" value="${d.fitEn}" maxlength="200" placeholder="e.g. Fits small, take one size up." /></label>
+            </div>
+          </section>
+
+          <section class="adm-card" aria-labelledby="sec-voices">
+            <h2 class="adm-h2" id="sec-voices">Fjalë nga klientet <span class="adm-count">${reviews.length}</span></h2>
+            <p class="adm-note">Fjalët e një klienteje për këtë fustan, me lejen e saj: shfaqen te fustani dhe në kryefaqe. Pa yje: janë fjalë të zgjedhura, jo vlerësim.</p>
+            ${reviews.length
+              ? html`<ul class="adm-voices">${reviews.map(
+                  (r) => html`<li class="adm-voice">
+                    ${r.photo ? html`<img src="${photoAt(r.photo, 480)}" alt="" width="48" height="64" loading="lazy" />` : html`<span class="adm-noimg"></span>`}
+                    <span class="adm-voice__text">«${r.text}»<br /><span class="adm-muted">${r.name}${r.city ? `, ${r.city}` : ''} · ${r.lang.toUpperCase()}</span></span>
+                    <button class="adm-link adm-danger" type="button" data-voice-del="${r.id}">Hiq</button>
+                  </li>`,
+                )}</ul>`
+              : ''}
+            <div class="adm-voice-new" data-voice-new>
+              <div class="adm-grid2">
+                <label class="adm-field"><span>Emri (vetëm emri)</span><input class="adm-input" data-v="name" maxlength="40" /></label>
+                <label class="adm-field"><span>Qyteti (jo i detyrueshëm)</span><input class="adm-input" data-v="city" maxlength="40" /></label>
+              </div>
+              <label class="adm-field"><span>Fjalët e saj, ashtu siç i tha</span><textarea class="adm-input adm-area" data-v="text" rows="3" maxlength="600"></textarea></label>
+              <div class="adm-grid2">
+                <label class="adm-field"><span>Gjuha e fjalëve</span><select class="adm-input" data-v="lang"><option value="sq">Shqip</option><option value="en">Anglisht</option><option value="fr">Frëngjisht</option></select></label>
+                <label class="adm-field"><span>Foto e saj me fustanin (jo e detyrueshme)</span><input class="adm-input" type="file" accept="image/*" data-v="photo" /></label>
+              </div>
+              <label class="adm-check"><input type="checkbox" data-v="consent" /> Klientja më dha leje t’i publikoj fjalët dhe foton</label>
+              <button class="btn btn--line" type="button" data-voice-add>Shto fjalët</button>
+              ${reviewNote ? html`<p class="adm-note" role="status">${reviewNote}</p>` : ''}
             </div>
           </section>
 
@@ -878,6 +914,49 @@ async function editor(id: string): Promise<void> {
 
   on('click', async (e) => {
     const t = e.target as HTMLElement;
+    if (t.closest('[data-voice-add]')) {
+      const box = root.querySelector<HTMLElement>('[data-voice-new]')!;
+      const v = (k: string) => box.querySelector<HTMLInputElement>(`[data-v="${k}"]`)!;
+      if (!v('name').value.trim() || v('text').value.trim().length < 5) return toast('Shkruaj emrin dhe fjalët e saj.', 'err');
+      if (!v('consent').checked) return toast('Shto fjalët vetëm me lejen e klientes.', 'err');
+      const form = new FormData();
+      try {
+        const file = v('photo').files?.[0];
+        if (file) {
+          const prepared = await prepare(file);
+          URL.revokeObjectURL(prepared.preview);
+          const pf = toForm(prepared);
+          pf.forEach((value, key) => form.set(key, value));
+        }
+        form.set('name', v('name').value.trim());
+        form.set('city', v('city').value.trim());
+        form.set('text', v('text').value.trim());
+        form.set('lang', v('lang').value);
+        form.set('consent', '1');
+        reviewNote = 'Po ruhet';
+        replace(p, true);
+        reviews = await uploadForm<Review[]>(`/api/admin/products/${p.id}/reviews`, form, () => undefined);
+        reviewNote = '';
+        replace(p, true);
+        toast('Fjalët u shtuan. Shfaqen te fustani dhe në kryefaqe.');
+      } catch (x) {
+        reviewNote = '';
+        replace(p, true);
+        toast(x instanceof ApiError ? errText(x) : 'Fotoja nuk u përgatit. Provo një tjetër.', 'err');
+      }
+      return;
+    }
+    const vd = t.closest<HTMLButtonElement>('[data-voice-del]');
+    if (vd) {
+      if (!(await ask('T’i heqësh këto fjalë nga dyqani?', 'Hiq'))) return;
+      try {
+        reviews = await api.deleteReview(vd.dataset.voiceDel!);
+        replace(p, true);
+      } catch (x) {
+        toast(errText(x), 'err');
+      }
+      return;
+    }
     if (t.closest('[data-video-remove]')) {
       if (!(await ask('Ta heqësh videon e këtij fustani?', 'Hiq videon'))) return;
       try {
@@ -1014,7 +1093,7 @@ const dayText = (d: string) => `${Number(d.slice(8, 10))} ${MONTHS_SQ[Number(d.s
 
 /** WhatsApp with the answer already written, in the visitor's language; Greta reads it and sends. */
 function waReply(r: ShopRequest): string {
-  const digits = r.phone.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '').replace(/^0/, '355');
+  const digits = waDigits(r.phone);
   const link = `${location.origin}/fustan/${r.product_slug}${r.lang === 'sq' ? '' : `?lang=${r.lang}`}`;
   const text =
     r.kind === 'rental'
@@ -1463,6 +1542,49 @@ async function ordersView(): Promise<void> {
   );
 }
 
+/** A phone number as WhatsApp wants it: international digits; an Albanian 06x number gains 355. */
+function waDigits(phone: string): string {
+  let d = phone.replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) d = d.slice(1);
+  else if (d.startsWith('00')) d = d.slice(2);
+  else if (d.startsWith('0')) d = `355${d.slice(1)}`;
+  return d;
+}
+
+/** The order's messages, written in the customer's language: confirmed, on its way, thank you. */
+function orderMessages(d: OrderDetail): { label: string; text: string }[] {
+  const o = d.order;
+  const lang = o.lang === 'en' || o.lang === 'fr' ? o.lang : 'sq';
+  const first = o.customer_name.split(/\s+/)[0] ?? '';
+  const items = d.items.map((it) => `${it.name} (${it.size})${it.qty > 1 ? ` x${it.qty}` : ''}`).join(', ');
+  const total = formatLek(o.total, lang);
+  const fee = o.delivery_fee === null;
+  // a card order is already paid; the rest pay the courier
+  const paid = o.payment_status === 'paid';
+  const t = {
+    sq: [
+      `Përshëndetje ${first}! Porosia jote nr. ${o.number} te Dresses by Greta u konfirmua: ${items}. Totali: ${total}${fee ? ' plus transporti, që ta konfirmojmë' : ''}. Të shkruajmë kur të niset.`,
+      `Përshëndetje ${first}! Porosia nr. ${o.number} u nis sot. ${paid ? 'Është paguar me kartë.' : `Paguan në dorëzim: ${total}${fee ? ' plus transporti' : ''}.`} Faleminderit!`,
+      `Faleminderit ${first} që zgjodhe Dresses by Greta! Shpresojmë të të pëlqejë fustani. Na dërgo një foto kur ta veshësh, do na gëzonte shumë.`,
+    ],
+    en: [
+      `Hello ${first}! Your order no. ${o.number} at Dresses by Greta is confirmed: ${items}. Total: ${total}${fee ? ' plus delivery, which we will confirm' : ''}. We will message you when it leaves.`,
+      `Hello ${first}! Order no. ${o.number} left today. ${paid ? 'It is already paid by card.' : `You pay on delivery: ${total}${fee ? ' plus delivery' : ''}.`} Thank you!`,
+      `Thank you ${first} for choosing Dresses by Greta! We hope you love the dress. Send us a photo when you wear it, it would make our day.`,
+    ],
+    fr: [
+      `Bonjour ${first}\u00a0! Votre commande n° ${o.number} chez Dresses by Greta est confirmée\u00a0: ${items}. Total\u00a0: ${total}${fee ? ', plus la livraison, que nous vous confirmerons' : ''}. Nous vous écrivons à son départ.`,
+      `Bonjour ${first}\u00a0! La commande n° ${o.number} est partie aujourd’hui. ${paid ? 'Elle est déjà réglée par carte.' : `Vous payez à la livraison\u00a0: ${total}${fee ? ', plus la livraison' : ''}.`} Merci\u00a0!`,
+      `Merci ${first} d’avoir choisi Dresses by Greta\u00a0! Nous espérons que la robe vous plaira. Envoyez-nous une photo quand vous la porterez, cela nous ferait très plaisir.`,
+    ],
+  }[lang];
+  return [
+    { label: 'Konfirmimi', text: t[0]! },
+    { label: 'U nis', text: t[1]! },
+    { label: 'Faleminderit', text: t[2]! },
+  ];
+}
+
 async function orderView(id: string): Promise<void> {
   mount(frame('orders', html`<p class="adm-empty">Po hapet porosia</p>`, newOrders));
   let d: OrderDetail;
@@ -1474,8 +1596,7 @@ async function orderView(id: string): Promise<void> {
   }
   const draw = () => {
     const o = d.order;
-    const digits = o.phone.replace(/[^\d]/g, '');
-    const wa = digits.startsWith('0') ? `355${digits.slice(1)}` : digits;
+    const wa = waDigits(o.phone);
     mount(
       frame(
         'orders',
@@ -1509,6 +1630,10 @@ async function orderView(id: string): Promise<void> {
             <div class="adm-actions">
               <a class="btn btn--line" href="tel:${o.phone.replace(/[^\d+]/g, '')}">Telefono ${o.phone}</a>
               <a class="btn btn--line" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>
+            </div>
+            <p class="adm-label adm-no-print">Mesazh i gatshëm në WhatsApp${o.lang && o.lang !== 'sq' ? html` (${o.lang === 'en' ? 'anglisht' : 'frëngjisht'}, si klientja)` : ''}</p>
+            <div class="adm-actions adm-no-print">
+              ${orderMessages(d).map((m) => html`<a class="adm-link" href="https://wa.me/${wa}?text=${encodeURIComponent(m.text)}" target="_blank" rel="noopener">${m.label}</a>`)}
             </div>
             <h2 class="adm-h2">Pagesa</h2>
             <p>${METHOD[o.payment_method]}, ${PAYMENT[o.payment_status]}</p>
@@ -1623,6 +1748,23 @@ async function statsView(): Promise<void> {
               <tbody>${s.dresses.map((x) => html`<tr><td><a href="/fustan/${x.slug}" target="_blank" rel="noopener">${x.name}</a></td><td class="adm-bar-cell">${bar(x.n, topDress)}</td><td class="num">${x.n}</td></tr>`)}</tbody></table>`
             : html`<p class="adm-note">Ende asnjë fustan i shikuar.</p>`}
         </section>
+        <section class="adm-card" aria-labelledby="st-tools">
+          <h2 class="adm-h2" id="st-tools">Mjetet e dyqanit</h2>
+          <p class="adm-note">Sa herë u përdorën, pa asnjë të dhënë për vizitoren. Kërkesat numërohen nga Kërkesat.</p>
+          <dl class="adm-totals">
+            <div><dt>Ruajtën masën («Gjej masën»)</dt><dd>${s.uses.size}</dd></div>
+            <div><dt>Vendosën datën e eventit</dt><dd>${s.uses.date}</dd></div>
+            <div><dt>Ruajtën një fustan</dt><dd>${s.uses.save}</dd></div>
+            <div><dt>Dërguan listën e ruajtur</dt><dd>${s.uses.share}</dd></div>
+            <div><dt>Hapën një shenjë në lookbook</dt><dd>${s.uses.mark}</dd></div>
+            <div><dt>Panë videon e një fustani</dt><dd>${s.uses.video}</dd></div>
+            <div><dt>Shtypën WhatsApp te një fustan</dt><dd>${s.uses.whatsapp}</dd></div>
+            <div><dt>Pyetën stilisten AI</dt><dd>${s.uses.stylist}</dd></div>
+            <div><dt>Kërkesa për qira</dt><dd>${s.uses.rental}</dd></div>
+            <div><dt>Prisnin një masë</dt><dd>${s.uses.restock}</dd></div>
+          </dl>
+        </section>
+
         <section class="adm-card" aria-labelledby="st-form">
           <h2 class="adm-h2" id="st-form">Formulari i porosisë</h2>
           <dl class="adm-totals">

@@ -7,8 +7,11 @@ import { createOrder, getOrder, parseOrderInput, setOrderStatus, setPaymentStatu
 import { gatewayFor } from '../payments';
 import { BOT_UA, count, parseHit, rowsFor, tooMany } from '../stats';
 import { bookedOn, createRequest, parseRequest } from '../requests';
+import { askStylist, dailyLimit, StylistError, stylistReady } from '../stylist';
+import { inStock, isSize, photoAt } from '../../shared/catalog';
+import { tiranaDay } from '../../shared/time';
 import { orderAlert, requestAlert } from '../telegram';
-import type { AppEnv } from '../types';
+import type { AppEnv, ExtraEnv } from '../types';
 
 export const publicApi = new Hono<AppEnv>();
 
@@ -49,6 +52,42 @@ publicApi.post('/orders', async (c) => {
   // Telegram, after the response: cash orders now, card orders once the bank says paid
   if (res.created && !res.payUrl) c.executionCtx.waitUntil(orderAlert(c.env, origin, res.id));
   return c.json({ id: res.id, number: res.number, payUrl: res.payUrl ?? null }, 201);
+});
+
+/**
+ * The stylist (stylist.ts): her words, her language, and her saved size and date if she has them;
+ * back come up to three dresses from what she can actually buy or rent, each with a reason.
+ */
+publicApi.post('/stylist', async (c) => {
+  const env = c.env as Env & ExtraEnv;
+  if (!stylistReady(env)) return c.json({ error: 'off' }, 404);
+  if (c.req.header('Origin') !== new URL(c.req.url).origin) return c.json({ error: 'bad_origin' }, 403);
+  const b = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+  const q = typeof b?.q === 'string' ? b.q.trim() : '';
+  if (q.length < 5 || q.length > 400) return c.json({ error: 'short' }, 400);
+  const lang = isLang(b?.lang) ? b.lang : 'sq';
+  const size = isSize(b?.size) ? b.size : undefined;
+  const today = tiranaDay();
+  const date = typeof b?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.date) && b.date >= today ? b.date : undefined;
+  if (!(await hit(c.env.DB, `stylist:${clientIp(c)}`, import.meta.env.DEV ? 1000 : 10, 60 * 60))) return c.json({ error: 'too_many' }, 429);
+  if (!(await hit(c.env.DB, `stylist-day:${today}`, dailyLimit(env), 26 * 60 * 60))) return c.json({ error: 'limit' }, 429);
+  // the dresses on sale: priced and in stock in some size; the ones booked in her size on her date go separately
+  const list = (await listVisible(c.env.DB, lang)).filter((p) => p.price !== null && inStock(p));
+  const booked = date && size ? [...new Set((await bookedOn(c.env.DB, date)).filter((x) => x.size === size).map((x) => x.id))] : [];
+  try {
+    const answer = await askStylist(env, lang, q, list, { size, date, today, booked });
+    const byId = new Map(list.map((p) => [p.id, p]));
+    return c.json({
+      message: answer.message,
+      picks: answer.picks.map((x) => {
+        const p = byId.get(x.id)!;
+        return { slug: p.slug, name: p.name, price: p.price, cover: p.photos[0] ? photoAt(p.photos[0], 480) : null, reason: x.reason };
+      }),
+    });
+  } catch (e) {
+    const code = e instanceof StylistError ? e.code : 'failed';
+    return c.json({ error: code }, code === 'busy' ? 503 : code === 'refused' ? 422 : 502);
+  }
 });
 
 /** The dresses booked on a day (confirmed rentals), for "shop by date": ids and sizes only. */

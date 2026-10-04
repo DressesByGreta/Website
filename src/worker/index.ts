@@ -3,9 +3,11 @@
  * (the built client, public/) are served by Workers Static Assets before this code runs.
  */
 import { Hono } from 'hono';
+import { purgeHits } from './db';
 import { serveImage, serveVideo } from './images';
 import { syncInstagram } from './instagram';
 import { releaseExpiredCardOrders } from './orders';
+import { purgeRequests } from './requests';
 import { adminApi } from './routes/admin-api';
 import { notFound, pages } from './routes/pages';
 import { publicApi } from './routes/public-api';
@@ -60,6 +62,9 @@ export default {
   // every 15 minutes: release unpaid card orders; the Instagram count is read every six hours
   async scheduled(_controller, env, ctx) {
     ctx.waitUntil(releaseExpiredCardOrders(env));
+    // requests delete themselves on the schedule the privacy page states
+    ctx.waitUntil(purgeRequests(env.DB).catch((e) => console.error('purge requests', e)));
+    ctx.waitUntil(purgeHits(env.DB).catch((e) => console.error('purge hits', e)));
     ctx.waitUntil(syncInstagram(env));
   },
 } satisfies ExportedHandler<Env>;

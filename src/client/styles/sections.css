@@ -271,3 +271,75 @@
   list-style: none;
   padding: 0;
 }
+
+/* ---------- what customers said (views/voices.ts): their words large, their name small ---------- */
+.voices {
+  display: grid;
+  gap: var(--s-6);
+  padding-block: var(--section);
+  border-top: 1px solid var(--hairline);
+}
+
+.voices__list {
+  display: grid;
+  gap: var(--s-7) var(--s-5);
+  padding: 0;
+  list-style: none;
+}
+
+.voice {
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+}
+
+.voice__plate {
+  display: block;
+  aspect-ratio: 3 / 4;
+  max-width: 320px;
+}
+
+.voice__plate .plate__img {
+  object-position: 50% 22%;
+}
+
+.voice__quote {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+/* each quote in its own language's marks: «» in Albanian, “” in English, « » in French */
+.voice__quote {
+  quotes: '«' '»';
+}
+
+.voice__quote:lang(en) {
+  quotes: '“' '”';
+}
+
+.voice__quote:lang(fr) {
+  quotes: '«\00a0' '\00a0»';
+}
+
+.voice__quote p::before {
+  content: open-quote;
+}
+
+.voice__quote p::after {
+  content: close-quote;
+}
+
+.voice__who {
+  font-size: var(--fs-ui);
+  letter-spacing: var(--track-ui);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+@media (min-width: 768px) {
+  .voices__list {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}

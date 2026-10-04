@@ -8,6 +8,7 @@ import { SIZES, SIZE_LETTER, formatLek, inStock, pad2, photoAt, photoSrcset, typ
 import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import { SITE } from '../site';
+import { stylistOn } from './layout';
 import { flipId, folio, newTag, plate, price, sizePicker } from './parts';
 
 export interface ShopState {
@@ -129,7 +130,10 @@ export function shopView(lang: Lang, all: Product[], s: ShopState, opts: { embed
   return html`<div class="lookbook" id="shop" data-lookbook data-view="${s.view}">
     <div class="lb-head">
       ${raw(`<${H} class="lb-title">`)}<span>${title}</span><span class="lb-title__count" data-lb-count>${count}</span>${raw(`</${H}>`)}
-      <button class="tlink lb-me" type="button" data-open="me" aria-haspopup="dialog" data-me-label>${t.me.open}</button>
+      <span class="lb-head__end">
+        ${stylistOn() ? html`<button class="tlink lb-me" type="button" data-open="stylist" aria-haspopup="dialog">${t.stylist.open}</button>` : ''}
+        <button class="tlink lb-me" type="button" data-open="me" aria-haspopup="dialog" data-me-label>${t.me.open}</button>
+      </span>
     </div>
     ${sizeIndex(lang, s, counts, 'size-strip')}
     <div class="lb-body">

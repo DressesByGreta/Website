@@ -1953,3 +1953,33 @@ body {
     align-items: start;
   }
 }
+
+/* what customers said about the dress */
+.adm-voices {
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.adm-voice {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: var(--s-3);
+  align-items: start;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.adm-voice img {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+}
+
+.adm-voice__text {
+  font-size: 14px;
+}
+
+.adm-voice-new {
+  display: grid;
+  gap: var(--s-3);
+}

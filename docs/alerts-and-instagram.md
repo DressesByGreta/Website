@@ -157,3 +157,36 @@ is accepted: Google accepts WebP photographs; if Meta turns any down, tell Luca.
 - **Find my size, shop by date, saved dresses:** visitors set these themselves; nothing reaches the
   shop. Greta's own part is the measurements in each dress's "Masat dhe si bie" card: with them, the
   size each visitor sees comes from the dress itself instead of the general chart.
+
+## Backups
+
+`npm run backup` copies the shop to this computer: the database (orders, dresses, settings,
+requests) as a dated SQL file, and every photograph and video (only the new ones after the first
+run). It goes to ~/Documents/Dresses by Greta backups, or to a folder you name:
+`npm run backup -- "/path/to/folder"` (a folder in iCloud Drive keeps it off this computer too).
+It only reads; README.txt in the folder says how to restore. Run it every week or two.
+
+The JPEG copies left from the WebP move can be removed with `node tools/delete-old-jpegs.mjs`
+after a backup: it deletes only JPEGs no photograph uses, that have their WebP, and that are in
+the backup, and asks you to type DELETE first.
+
+## Customers' words, order messages, and the AI stylist
+
+- **Customers' words:** in a dress's page in the admin, **Fjalë nga klientet**: her first name, city,
+  her words as she wrote them (in her language), a photograph if she sent one. Tick the box only when
+  she has agreed to be shown on the site. The quote appears on that dress's page and, the latest
+  six, on the home page; **Hiq** removes one.
+- **Order messages:** an order's page in the admin has three WhatsApp buttons (Konfirmimi, U nis,
+  Faleminderit), each opening WhatsApp at the customer's number with the message already written in
+  her language. Read it, change anything, send.
+- **AI stylist:** a visitor describes her event and gets up to three dresses from the shop. It is
+  off until it has an Anthropic API key, and then costs about 1 to 3 US cents a question, paid to
+  Anthropic. To switch it on:
+  1. At console.anthropic.com, with the shop's billing, create an API key (Settings → API keys) and
+     set a monthly spend limit (Settings → Limits).
+  2. In the project folder: `npx wrangler secret put ANTHROPIC_API_KEY`, and paste the key when
+     asked. It is stored encrypted at Cloudflare, never in the code; the site picks it up at once.
+  3. It allows 100 questions a day for the whole shop and 10 an hour per visitor. To change the
+     daily number: `npx wrangler secret put STYLIST_DAILY_LIMIT` and type the number.
+  To switch it off: `npx wrangler secret delete ANTHROPIC_API_KEY`. The privacy page shows its
+  paragraph only while it is on. Statistikat counts how often it is asked.

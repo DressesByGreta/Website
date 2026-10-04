@@ -317,7 +317,8 @@
 .nav.is-scrolled,
 .nav.is-solid,
 .nav.is-docked,
-html.drawer-open .nav {
+html.drawer-open .nav,
+html.dmenu-open .nav {
   background: var(--ground);
   color: var(--ink);
   border-bottom-color: var(--hairline);
@@ -369,15 +370,14 @@ html.drawer-open .nav {
   display: none;
 }
 
+/* Computers: MENU (the sheet, deskmenu.ts), SHOP and the categories that fit; language, search
+   and bag on the right */
 @media (min-width: 1024px) {
   .nav__left {
     padding-left: 30px;
   }
   .nav__right {
     padding-right: 30px;
-  }
-  .nav__menu {
-    display: none;
   }
   .nav__list {
     display: flex;
@@ -388,46 +388,44 @@ html.drawer-open .nav {
   }
 }
 
-/* iPad landscape and small laptops: the links sit closer, so the longest labels stay on one line
-   with room around the name (measured in sq, en and fr) */
-@media (min-width: 1024px) and (max-width: 1279.98px) {
+/* Up to 1440px the links sit closer (8px each side instead of 12px, 18px from the edges), so the
+   row keeps its 30px before the name in every language */
+@media (min-width: 1024px) and (max-width: 1439.98px) {
   .nav__left {
     padding-left: 18px;
   }
   .nav__right {
     padding-right: 18px;
   }
+  .nav__menu,
   .nav__list .tlink {
     padding: 0 8px;
   }
 }
 
-/* French labels are the longest: below 1120px they would touch the name, so MENU, as on tablets */
-@media (min-width: 1024px) and (max-width: 1119.98px) {
-  :root:lang(fr) .nav__menu {
-    display: inline-flex;
-  }
-  :root:lang(fr) .nav__list {
-    display: none;
-  }
-}
-
-/* "New" (while there are new dresses) joins the categories only where the row keeps room beside
-   the name: from 1180px, in French from 1536px (measured with nav-fit). The menu and the footer
-   always list it. */
-.nav__list .nav__new {
+/* The categories join MENU and SHOP where they keep 30px before the name (measured in sq, en and
+   fr at 1024 to 1920px): from 1180px, French from 1320px; "new" (while there are new dresses)
+   from 1320px, French from 1680px. The menu and the footer always list them. */
+.nav__list .nav__cat {
   display: none;
 }
 
 @media (min-width: 1180px) {
-  .nav__list .nav__new {
+  :root:not(:lang(fr)) .nav__list .nav__cat:not(.nav__new) {
     display: inline-flex;
   }
 }
 
-@media (min-width: 1180px) and (max-width: 1535.98px) {
+@media (min-width: 1320px) {
+  :root:not(:lang(fr)) .nav__list .nav__new,
+  :root:lang(fr) .nav__list .nav__cat:not(.nav__new) {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1680px) {
   :root:lang(fr) .nav__list .nav__new {
-    display: none;
+    display: inline-flex;
   }
 }
 
@@ -596,6 +594,15 @@ html.drawer-open .nav {
 
 .search__status {
   padding: 0 var(--s-6) var(--s-3);
+}
+
+/* nothing matched: the words can go to the AI stylist */
+.search__ask {
+  padding: 0 var(--s-6) var(--s-4);
+}
+
+.search__ask .tlink {
+  min-height: 44px;
 }
 
 @media (min-width: 768px) {

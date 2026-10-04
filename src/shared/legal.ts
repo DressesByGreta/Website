@@ -10,7 +10,7 @@
  */
 import type { Lang } from './copy';
 
-export const UPDATED = '2026-10-02';
+export const UPDATED = '2026-10-04';
 
 export interface LegalDoc {
   title: string;
@@ -47,7 +47,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
   privacy: {
     sq: {
       title: 'Privatësia',
-      updated: 'Përditësuar më 2 tetor 2026',
+      updated: 'Përditësuar më 4 tetor 2026',
       intro: 'Kjo faqe shpjegon cilat të dhëna mbledh dyqani online i Dresses by Greta, pse, dhe çfarë mund të kërkosh për to.',
       sections: [
         { id: 'who', h: 'Kush jemi', p: [`Dresses by Greta, dyqan fustanesh në ${where}, Tiranë. Për çdo pyetje mbi të dhënat e tua, na shkruaj në Instagram, @dressesbygreta.`] },
@@ -59,19 +59,42 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          h: 'Kur kërkon një fustan me qera ose një masë që mungon',
+          p: [
+            'Për qira: emrin, telefonin, datën e eventit, masën dhe shënimin nëse e shkruan. Për njoftimin kur kthehet një masë: telefonin dhe masën.',
+            'I përdorim vetëm për t’iu përgjigjur kërkesës, me telefon ose në WhatsApp. Kur e konfirmojmë një qira, te fustani shfaqet vetëm data dhe masa e zënë, pa emër.',
+          ],
+        },
+        {
+          id: 'stylist',
+          h: 'Kur pyet stilisten AI',
+          p: [
+            'Stilistja AI zgjedh fustane me Claude, një model i inteligjencës artificiale i kompanisë Anthropic. Kur e pyet, Anthropic merr fjalët që shkruan, gjuhën e faqes dhe, nëse i ke ruajtur te «Masa dhe data», masën dhe datën e eventit, bashkë me listën e fustaneve të dyqanit.',
+            'Mos shkruaj aty emrin, telefonin apo të dhëna të tjera personale: nuk duhen për të zgjedhur fustanin. Dyqani nuk e ruan as pyetjen, as përgjigjen; Anthropic i trajton sipas rregullave të veta të privatësisë.',
+          ],
+        },
+        {
           h: 'Kush i sheh',
           p: [
             'Greta dhe kush punon në dyqan. Kush e dërgon porosinë merr emrin, telefonin dhe adresën.',
-            'Njoftimi për një porosi të re vjen në telefonin e dyqanit përmes Telegram-it, me emrin, telefonin, qytetin dhe fustanet.',
+            'Njoftimi për një porosi të re vjen në telefonin e dyqanit përmes Telegram-it, me emrin, telefonin, qytetin dhe fustanet. Po ashtu vijnë kërkesat për qira dhe për njoftim.',
             'Faqja dhe të dhënat ruhen te Cloudflare, kompania që e mban faqen në internet; porositë ruhen në Europën Perëndimore. Nuk i shesim dhe nuk ia japim askujt tjetër.',
           ],
         },
-        { h: 'Sa kohë i mbajmë', p: ['Porositë mbeten si shënim i shitjeve të dyqanit. Nëse do që të dhënat e tua të fshihen, na shkruaj: i fshijmë kur ligji nuk na detyron t’i mbajmë.'] },
+        {
+          h: 'Sa kohë i mbajmë',
+          p: [
+            'Porositë mbeten si shënim i shitjeve të dyqanit. Nëse do që të dhënat e tua të fshihen, na shkruaj: i fshijmë kur ligji nuk na detyron t’i mbajmë.',
+            'Kërkesat fshihen vetë: ato për qira gjashtë muaj pas datës së eventit; ato për njoftim një muaj pasi të kemi njoftuar, dhe në çdo rast gjashtë muaj pasi i ke dërguar.',
+            'Për të ndalur abuzimet, faqja numëron për një orë sa porosi, kërkesa ose pyetje dërgohen nga e njëjta adresë interneti (IP). Ky numër fshihet pas një dite.',
+          ],
+        },
         {
           h: 'Cookies dhe kujtesa e pajisjes',
           p: [
             'Faqja nuk përdor cookies për reklama apo për të ndjekur vizitorët.',
             'Çanta ruhet vetëm në pajisjen tënde, në kujtesën e shfletuesit, që ta gjesh kur kthehesh. Po aty ruhet edhe zgjedhja «Ndalo animacionet». Hyrja e stafit në admin përdor një cookie që i shërben vetëm hyrjes.',
+            'Po ashtu ruhen vetëm në pajisjen tënde masat e tua («Gjej masën»), data e eventit dhe fustanet që ruan («Të ruajtura»). Data i dërgohet faqes vetëm për të parë cilët fustane janë të zënë atë ditë; nuk ruhet dhe nuk lidhet me asgjë tjetër. Lista e ruajtur del nga pajisja vetëm kur e dërgon vetë si lidhje.',
           ],
         },
         {
@@ -84,7 +107,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     en: {
       title: 'Privacy',
-      updated: 'Last updated 2 October 2026',
+      updated: 'Last updated 4 October 2026',
       intro: 'This page explains what data the Dresses by Greta online shop collects, why, and what you can ask about it.',
       sections: [
         { id: 'who', h: 'Who we are', p: [`Dresses by Greta, a dress shop at ${where}, Tirana. For any question about your data, message us on Instagram, @dressesbygreta.`] },
@@ -96,19 +119,42 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          h: 'When you ask to rent a dress, or for a size that is out',
+          p: [
+            'For a rental: your name, phone number, the date of your event, the size and your note if you write one. To hear when a size is back: your phone number and the size.',
+            'We use them only to answer your request, by phone or on WhatsApp. When we confirm a rental, the dress shows only the booked date and size, never a name.',
+          ],
+        },
+        {
+          id: 'stylist',
+          h: 'When you ask the AI stylist',
+          p: [
+            'The AI stylist chooses dresses with Claude, an artificial intelligence model made by Anthropic. When you ask it, Anthropic receives the words you write, the page’s language and, if you saved them in «Size and date», your size and the date of your event, together with the list of the shop’s dresses.',
+            'Do not write your name, phone number or other personal details there: they are not needed to choose a dress. The shop keeps neither the question nor the answer; Anthropic handles them under its own privacy rules.',
+          ],
+        },
+        {
           h: 'Who sees it',
           p: [
             'Greta and the people who work in the shop. Whoever delivers your order receives your name, phone number and address.',
-            'The alert for a new order reaches the shop’s phone through Telegram, with your name, phone number, city and the dresses.',
+            'The alert for a new order reaches the shop’s phone through Telegram, with your name, phone number, city and the dresses. Rental requests and requests to hear about a size arrive the same way.',
             'The site and the data are hosted by Cloudflare, the company that runs the site; orders are stored in Western Europe. We do not sell your data or give it to anyone else.',
           ],
         },
-        { h: 'How long we keep it', p: ['Orders stay in the shop’s record of sales. If you want your data deleted, message us: we delete it wherever the law does not require us to keep it.'] },
+        {
+          h: 'How long we keep it',
+          p: [
+            'Orders stay in the shop’s record of sales. If you want your data deleted, message us: we delete it wherever the law does not require us to keep it.',
+            'Requests delete themselves: rental requests six months after the date of the event; requests to hear about a size one month after we have told you, and in any case six months after you sent them.',
+            'To stop abuse, the site counts for one hour how many orders, requests or questions come from the same internet (IP) address. That count is deleted after a day.',
+          ],
+        },
         {
           h: 'Cookies and storage on your device',
           p: [
             'The site uses no advertising or tracking cookies.',
             'Your bag is kept only on your device, in the browser’s storage, so it is there when you come back. The Stop animations choice is kept there too. Staff sign-in to the admin uses one cookie that serves only that.',
+            'Your measurements (Find my size), the date of your event and the dresses you save (Saved) are also kept only on your device. The date is sent to the site only to see which dresses are booked that day; it is not stored or linked to anything else. Your saved list leaves your device only when you send it yourself as a link.',
           ],
         },
         {
@@ -121,7 +167,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
     },
     fr: {
       title: 'Confidentialité',
-      updated: 'Mis à jour le 2 octobre 2026',
+      updated: 'Mis à jour le 4 octobre 2026',
       intro: 'Cette page explique quelles données la boutique en ligne Dresses by Greta recueille, pourquoi, et ce que vous pouvez demander à leur sujet.',
       sections: [
         { id: 'who', h: 'Qui nous sommes', p: [`Dresses by Greta, boutique de robes, ${where}, Tirana. Pour toute question sur vos données, écrivez-nous sur Instagram, @dressesbygreta.`] },
@@ -133,19 +179,42 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           ],
         },
         {
+          h: 'Quand vous demandez une location, ou une taille épuisée',
+          p: [
+            'Pour une location\u00a0: vos nom et prénom, votre téléphone, la date de votre événement, la taille et votre remarque si vous en écrivez une. Pour être prévenue du retour d’une taille\u00a0: votre téléphone et la taille.',
+            'Nous les utilisons uniquement pour répondre à votre demande, par téléphone ou sur WhatsApp. Lorsque nous confirmons une location, la robe n’affiche que la date et la taille réservées, jamais un nom.',
+          ],
+        },
+        {
+          id: 'stylist',
+          h: 'Quand vous interrogez la styliste IA',
+          p: [
+            'La styliste IA choisit les robes avec Claude, un modèle d’intelligence artificielle de la société Anthropic. Quand vous l’interrogez, Anthropic reçoit les mots que vous écrivez, la langue de la page et, si vous les avez enregistrées dans «\u00a0Taille et date\u00a0», votre taille et la date de votre événement, avec la liste des robes de la boutique.',
+            'N’y écrivez ni votre nom, ni votre téléphone, ni d’autres données personnelles\u00a0: elles ne servent pas à choisir une robe. La boutique ne conserve ni la question ni la réponse\u00a0; Anthropic les traite selon ses propres règles de confidentialité.',
+          ],
+        },
+        {
           h: 'Qui les voit',
           p: [
             'Greta et les personnes qui travaillent à la boutique. La personne qui livre reçoit votre nom, votre téléphone et votre adresse.',
-            'L’alerte de nouvelle commande arrive sur le téléphone de la boutique par Telegram, avec votre nom, votre téléphone, la ville et les robes.',
+            'L’alerte de nouvelle commande arrive sur le téléphone de la boutique par Telegram, avec votre nom, votre téléphone, la ville et les robes. Les demandes de location et de retour d’une taille arrivent de la même façon.',
             'Le site et les données sont hébergés par Cloudflare, l’entreprise qui fait fonctionner le site ; les commandes sont stockées en Europe de l’Ouest. Nous ne les vendons pas et ne les donnons à personne d’autre.',
           ],
         },
-        { h: 'Combien de temps nous les gardons', p: ['Les commandes restent dans le registre des ventes de la boutique. Si vous voulez que vos données soient effacées, écrivez-nous : nous les effaçons lorsque la loi ne nous oblige pas à les garder.'] },
+        {
+          h: 'Combien de temps nous les gardons',
+          p: [
+            'Les commandes restent dans le registre des ventes de la boutique. Si vous voulez que vos données soient effacées, écrivez-nous : nous les effaçons lorsque la loi ne nous oblige pas à les garder.',
+            'Les demandes s’effacent d’elles-mêmes\u00a0: les demandes de location six mois après la date de l’événement\u00a0; les demandes de retour d’une taille un mois après que nous vous avons prévenue, et dans tous les cas six mois après leur envoi.',
+            'Pour éviter les abus, le site compte pendant une heure combien de commandes, de demandes ou de questions arrivent d’une même adresse internet (IP). Ce compte est effacé au bout d’un jour.',
+          ],
+        },
         {
           h: 'Cookies et mémoire de l’appareil',
           p: [
             'Le site n’utilise aucun cookie publicitaire ni de suivi.',
             'Votre panier est conservé uniquement sur votre appareil, dans la mémoire du navigateur, pour le retrouver à votre retour. Le choix « Arrêter les animations » y est conservé aussi. La connexion du personnel à l’administration utilise un cookie qui ne sert qu’à cela.',
+            'Vos mesures («\u00a0Trouver ma taille\u00a0»), la date de votre événement et les robes que vous enregistrez («\u00a0Enregistrées\u00a0») sont aussi conservées uniquement sur votre appareil. La date n’est envoyée au site que pour savoir quelles robes sont réservées ce jour-là\u00a0; elle n’est ni conservée ni liée à quoi que ce soit. Votre liste ne quitte votre appareil que si vous l’envoyez vous-même sous forme de lien.',
           ],
         },
         {
@@ -160,7 +229,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
   terms: {
     sq: {
       title: 'Kushtet e shitjes',
-      updated: 'Përditësuar më 2 tetor 2026',
+      updated: 'Përditësuar më 4 tetor 2026',
       intro: 'Këto janë kushtet kur blen një fustan në dyqanin online të Dresses by Greta.',
       sections: [
         { id: 'seller', h: 'Shitësi', p: [`Dresses by Greta, ${where}, Tiranë. Instagram: @dressesbygreta.`] },
@@ -171,14 +240,20 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
         },
         { h: 'Pagesa', p: ['Për momentin pagesa bëhet vetëm në dorëzim, me para në dorë.'] },
         { id: 'delivery', h: 'Dërgesa', p: ['Dërgojmë në Tiranë, në qytetet e tjera të Shqipërisë dhe në Kosovë. Kohën e dërgesës e caktojmë bashkë me ty në telefon.'] },
-        { h: 'Masat', p: ['Masat janë europiane: 34 është XS, 36 S, 38 M, 40 L, 42 XL. Nëse nuk je e sigurt për masën, na pyet në Instagram para porosisë.'] },
-        { h: 'Qiraja', p: ['Marrja me qira e fustaneve rregullohet në Instagram, jo në këtë faqe.'] },
+        { h: 'Masat', p: ['Masat janë europiane: 34 është XS, 36 S, 38 M, 40 L, 42 XL. «Gjej masën» ta tregon nga masat e tua, me masat e vetë fustanit kur i ka. Nëse nuk je e sigurt, na pyet në Instagram para porosisë.'] },
+        {
+          h: 'Qiraja',
+          p: [
+            'Fustanet jepen edhe me qera. Kërkesën e dërgon te faqja e fustanit, me datën e eventit, masën, emrin dhe telefonin.',
+            'Kërkesa nuk është rezervim: të shkruajmë me çmimin dhe kushtet e qirasë, dhe fustani është i zënë për ty vetëm kur e konfirmojmë.',
+          ],
+        },
         { h: 'Pyetje', p: ['Për çdo pyetje para ose pas blerjes, na shkruaj në Instagram ose eja në dyqan.'] },
       ],
     },
     en: {
       title: 'Terms of sale',
-      updated: 'Last updated 2 October 2026',
+      updated: 'Last updated 4 October 2026',
       intro: 'These are the terms when you buy a dress in the Dresses by Greta online shop.',
       sections: [
         { id: 'seller', h: 'The seller', p: [`Dresses by Greta, ${where}, Tirana. Instagram: @dressesbygreta.`] },
@@ -189,14 +264,20 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
         },
         { h: 'Payment', p: ['For now you pay only on delivery, in cash.'] },
         { id: 'delivery', h: 'Delivery', p: ['We deliver in Tirana, to other cities in Albania and to Kosovo. We agree the delivery time with you by phone.'] },
-        { h: 'Sizes', p: ['Sizes are European: 34 is XS, 36 S, 38 M, 40 L, 42 XL. If you are unsure of your size, ask us on Instagram before ordering.'] },
-        { h: 'Rentals', p: ['Renting a dress is arranged on Instagram, not on this site.'] },
+        { h: 'Sizes', p: ['Sizes are European: 34 is XS, 36 S, 38 M, 40 L, 42 XL. Find my size works yours out from your measurements, using the dress’s own measurements where it has them. If you are unsure, ask us on Instagram before ordering.'] },
+        {
+          h: 'Rentals',
+          p: [
+            'Our dresses can also be rented. You send the request from the dress’s page, with the date of your event, your size, name and phone number.',
+            'A request is not a booking: we message you with the rental price and conditions, and the dress is held for you only once we confirm.',
+          ],
+        },
         { h: 'Questions', p: ['For any question before or after buying, message us on Instagram or come to the shop.'] },
       ],
     },
     fr: {
       title: 'Conditions de vente',
-      updated: 'Mis à jour le 2 octobre 2026',
+      updated: 'Mis à jour le 4 octobre 2026',
       intro: 'Voici les conditions lorsque vous achetez une robe sur la boutique en ligne Dresses by Greta.',
       sections: [
         { id: 'seller', h: 'Le vendeur', p: [`Dresses by Greta, ${where}, Tirana. Instagram : @dressesbygreta.`] },
@@ -207,8 +288,14 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
         },
         { h: 'Le paiement', p: ['Pour le moment, le paiement se fait uniquement à la livraison, en espèces.'] },
         { id: 'delivery', h: 'La livraison', p: ['Nous livrons à Tirana, dans les autres villes d’Albanie et au Kosovo. Nous convenons avec vous du moment de la livraison par téléphone.'] },
-        { h: 'Les tailles', p: ['Tailles européennes : 34 correspond au XS, 36 au S, 38 au M, 40 au L, 42 au XL. En cas de doute sur votre taille, demandez-nous sur Instagram avant de commander.'] },
-        { h: 'La location', p: ['La location des robes se règle sur Instagram, pas sur ce site.'] },
+        { h: 'Les tailles', p: ['Tailles européennes : 34 correspond au XS, 36 au S, 38 au M, 40 au L, 42 au XL. «\u00a0Trouver ma taille\u00a0» la déduit de vos mesures, avec les mesures de la robe elle-même lorsqu’elle en a. En cas de doute, demandez-nous sur Instagram avant de commander.'] },
+        {
+          h: 'La location',
+          p: [
+            'Nos robes se louent aussi. Vous envoyez la demande depuis la page de la robe, avec la date de votre événement, votre taille, vos nom et téléphone.',
+            'Une demande n’est pas une réservation\u00a0: nous vous écrivons avec le prix et les conditions de la location, et la robe ne vous est réservée qu’une fois confirmée.',
+          ],
+        },
         { h: 'Questions', p: ['Pour toute question avant ou après l’achat, écrivez-nous sur Instagram ou passez à la boutique.'] },
       ],
     },

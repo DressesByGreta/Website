@@ -12,6 +12,7 @@ import { gatewayFor } from '../payments';
 import { salesReport } from '../sales';
 import { report } from '../stats';
 import { adminLookbook, adminLookbooks, frameKeys, frameRow, lookbookSlugFree, MAX_FRAMES, parseSpots } from '../lookbooks';
+import { reviewRow, reviewsFor } from '../reviews';
 import { countNewRequests, listRequests, REQUEST_STATUSES, setRequestStatus, waitingFor, type RequestStatus } from '../requests';
 import { botName, checkLink, linkedChats, removeChat, restockAlert, sendTest, startLink, telegramReady } from '../telegram';
 import type { AppEnv } from '../types';
@@ -374,6 +375,59 @@ adminApi.patch('/orders/:id', async (c) => {
   }
   const o = await getOrder(db, id);
   return o ? c.json({ ...o, next: allowedNext(o.order.status) }) : c.json({ error: 'not_found' }, 404);
+});
+
+/* --------------------------------------------------------------- reviews --------------------------------------------------------------- */
+
+adminApi.get('/products/:id/reviews', async (c) => c.json(await reviewsFor(c.env.DB, c.req.param('id'))));
+
+/** A customer's words (and optionally her photograph), only with her permission (consent=1). */
+adminApi.post('/products/:id/reviews', async (c) => {
+  const db = c.env.DB;
+  const productId = c.req.param('id');
+  if (!(await db.prepare('SELECT id FROM products WHERE id = ?').bind(productId).first())) return c.json({ error: 'not_found' }, 404);
+  const form = await c.req.formData();
+  const name = text(form.get('name'), 40) ?? '';
+  const city = text(form.get('city'), 40) ?? '';
+  const quote = text(form.get('text'), 600) ?? '';
+  const lang = form.get('lang') === 'en' || form.get('lang') === 'fr' ? (form.get('lang') as 'en' | 'fr') : 'sq';
+  const errors: string[] = [];
+  if (!name) errors.push('name');
+  if (quote.length < 5) errors.push('text');
+  if (form.get('consent') !== '1') errors.push('consent');
+  if (errors.length) return c.json({ error: 'invalid', fields: errors }, 400);
+  const id = crypto.randomUUID();
+  let photo = '';
+  if (form.get('meta')) {
+    let metaRaw: unknown = null;
+    try {
+      metaRaw = JSON.parse(String(form.get('meta')));
+    } catch {
+      /* handled below */
+    }
+    const meta = parseUploadMeta(metaRaw);
+    if (!meta) return c.json({ error: 'invalid_meta' }, 400);
+    const key = `r/${productId}/${id}`;
+    const problem = await storeVariants(c.env, key, meta, form);
+    if (problem) return c.json({ error: 'invalid_file', detail: problem }, 400);
+    photo = JSON.stringify({ id, key, ext: meta.ext, widths: meta.widths, w: meta.w, h: meta.h, lqip: meta.lqip });
+  }
+  await db.prepare('INSERT INTO reviews (id, product_id, name, city, text, lang, photo) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, productId, name, city, quote, lang, photo).run();
+  return c.json(await reviewsFor(db, productId), 201);
+});
+
+adminApi.delete('/reviews/:id', async (c) => {
+  const db = c.env.DB;
+  const r = await reviewRow(db, c.req.param('id'));
+  if (!r) return c.json({ error: 'not_found' }, 404);
+  try {
+    const p = JSON.parse(r.photo || 'null') as { key: string; ext: string; widths: number[] } | null;
+    if (p) await deleteVariants(c.env, p.key, p.ext, p.widths);
+  } catch {
+    /* no photograph */
+  }
+  await db.prepare('DELETE FROM reviews WHERE id = ?').bind(r.id).run();
+  return c.json(await reviewsFor(db, r.product_id));
 });
 
 /* -------------------------------------------------------------- lookbooks -------------------------------------------------------------- */

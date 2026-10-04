@@ -1,16 +1,17 @@
 /**
  * The navigation shows the dresses. Each shop link (all, a category, an occasion) stands for its
  * first dress in stock: on a computer the header's links print that dress's photograph just below
- * the link as the pointer rests on them; the menu drawer shows it beside or before its links.
+ * the link as the pointer rests on them; the desktop menu (deskmenu.ts) shows it large beside its
+ * links, and the phone drawer before each link.
  */
-import { CATEGORIES, OCCASIONS, forOccasion, photoAt, photoSrcset } from '../shared/catalog';
+import { CATEGORIES, OCCASIONS, SIZES, forOccasion, photoAt, photoSrcset } from '../shared/catalog';
 import type { Lang } from '../shared/copy';
 import { catalogue, type CatalogueItem } from './bag';
 import { printPlate, reducedMotion } from './motion';
 
 let pics: Promise<Map<string, CatalogueItem>> | null = null;
 
-/** The dress behind each link key: 'all', 'cat:<category>' (with 'cat:new'), 'occ:<occasion>'. */
+/** The dress behind each link key: 'all', 'cat:<category>' (with 'cat:new'), 'occ:<occasion>', 'size:<size>'. */
 export function linkPictures(lang: Lang): Promise<Map<string, CatalogueItem>> {
   pics ??= catalogue(lang)
     .then((all) => {
@@ -31,6 +32,7 @@ export function linkPictures(lang: Lang): Promise<Map<string, CatalogueItem>> {
       put('cat:new', first(list.filter((p) => p.isNew)));
       for (const c of CATEGORIES) put(`cat:${c}`, first(list.filter((p) => p.categories.includes(c))));
       for (const o of OCCASIONS) put(`occ:${o}`, first(forOccasion(list, o)));
+      for (const s of SIZES) put(`size:${s}`, first(list.filter((p) => p.stock[s] > 0)));
       return map;
     })
     .catch(() => {
@@ -76,7 +78,7 @@ export function headerPeek(lang: Lang): void {
     timer = window.setTimeout(async () => {
       const key = a.dataset.pic!;
       const p = (await linkPictures(lang)).get(key);
-      if (!p?.cover || !a.matches(':hover, :focus-visible')) return;
+      if (!p?.cover || !a.matches(':hover, :focus-visible') || document.documentElement.classList.contains('dmenu-open')) return;
       const r = a.getBoundingClientRect();
       peek.style.left = `${Math.max(16, Math.min(r.left, window.innerWidth - peek.offsetWidth - 16))}px`;
       if (key !== current) {

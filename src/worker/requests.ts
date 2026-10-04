@@ -101,8 +101,40 @@ export async function countNewRequests(db: D1Database): Promise<number> {
 }
 
 export async function setRequestStatus(db: D1Database, id: string, status: RequestStatus): Promise<boolean> {
-  const res = await db.prepare('UPDATE requests SET status = ? WHERE id = ?').bind(status, id).run();
+  const closed = status === 'done' || status === 'declined';
+  const res = await db
+    .prepare(`UPDATE requests SET status = ?, closed_at = CASE WHEN ? THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now') ELSE NULL END WHERE id = ?`)
+    .bind(status, closed ? 1 : 0, id)
+    .run();
   return (res.meta.changes ?? 0) > 0;
+}
+
+/** The same instant n calendar months earlier (the 31st falls back to the month's last day). */
+function monthsAgo(n: number, from = new Date()): Date {
+  const d = new Date(from);
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() - n);
+  d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
+  return d;
+}
+
+/**
+ * Requests delete themselves, as the privacy page promises: a rental six months after the date of
+ * its event; a waiting-list request one month after the visitor was told (closed), and in any case
+ * six months after it was sent. Run by the scheduled job; returns how many went.
+ */
+export async function purgeRequests(db: D1Database, now = new Date()): Promise<number> {
+  const sixMonths = monthsAgo(6, now);
+  const res = await db
+    .prepare(
+      `DELETE FROM requests WHERE
+         (kind = 'rental' AND event_date < ?1)
+         OR (kind = 'restock' AND ((closed_at IS NOT NULL AND closed_at < ?2) OR created_at < ?3))`,
+    )
+    .bind(tiranaDay(sixMonths.getTime()), monthsAgo(1, now).toISOString(), sixMonths.toISOString())
+    .run();
+  return res.meta.changes ?? 0;
 }
 
 /** A dress's confirmed rentals from today on: the dates (and sizes) its page shows as booked. */

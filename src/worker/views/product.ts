@@ -4,7 +4,9 @@ import { copy, href, type Lang } from '../../shared/copy';
 import { html, raw, type Raw } from '../../shared/html';
 import type { Returns } from '../../shared/legal';
 import { SITE } from '../site';
+import type { Review } from '../reviews';
 import { bagData } from './shop';
+import { voicesView } from './voices';
 import { flipId, folio, newTag, plate, price, sizePicker } from './parts';
 
 /** Where the shop delivers and for how much, as set in the admin (a fee left empty is confirmed by phone). */
@@ -21,6 +23,7 @@ export interface ProductExtras {
   booked: { date: string; size: Size }[];
   today: string;
   maxDay: string;
+  reviews: Review[];
 }
 
 /** A WhatsApp number in international digits: an Albanian 06x number gains 355, anything else keeps its own code. */
@@ -163,6 +166,8 @@ export function productView(lang: Lang, p: Product, index: number, total: number
         </div>
       </div>
     </article>
+
+    ${voicesView(lang, x.reviews)}
 
     <div class="buybar" data-buybar hidden>
       <span class="buybar__name">${p.name}</span>

@@ -51,7 +51,8 @@ body {
   overflow-x: clip;
 }
 
-html.drawer-open {
+html.drawer-open,
+html.dmenu-open {
   overflow: hidden;
 }
 

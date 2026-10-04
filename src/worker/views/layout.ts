@@ -55,6 +55,13 @@ let newCount = 0;
 export const setNewCount = (n: number): void => {
   newCount = n;
 };
+/** Whether the stylist is on (an Anthropic API key is set): its buttons and its privacy note show. */
+let stylist = false;
+export const setStylist = (on: boolean): void => {
+  stylist = on;
+};
+export const stylistOn = (): boolean => stylist;
+
 /** How many lookbooks are published (lookbooks.ts): the footer and the menu link them only when there are some. */
 let lookbooks = 0;
 export const setLookbooks = (n: number): void => {
@@ -90,10 +97,10 @@ function header(lang: Lang, o: PageOptions): Raw {
   const t = copy[lang];
   return html`<header class="nav${o.overPhoto ? '' : ' is-solid'}" data-nav${o.kind === 'home' ? raw(' data-dock') : ''}>
     <div class="nav__left">
-      <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
+      <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog"><span class="nav__menu-open">${t.nav.menu}</span><span class="nav__menu-close">${t.nav.close}</span></button>
       <nav class="nav__list" aria-label="${t.nav.shop}">
         <a class="tlink" href="${href('/dyqani', lang)}" data-pic="all">${t.nav.lookbook}</a>
-        ${filters().map((c) => html`<a class="tlink${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`)}
+        ${filters().map((c) => html`<a class="tlink nav__cat${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`)}
       </nav>
     </div>
     <a class="nav__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(nameSvg('nav__name'))}</a>
@@ -191,7 +198,7 @@ export function page(o: PageOptions): string {
     ${assets('store')}
     ${ld}
   </head>
-  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}>
+  <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}${stylist ? raw(' data-stylist') : ''}>
     ${brandSprite()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}
