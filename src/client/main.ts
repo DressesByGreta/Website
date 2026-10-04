@@ -2,15 +2,21 @@
 import { copy, isLang } from '../shared/copy';
 import { bag } from './bag';
 import { Drawers } from './drawers';
-import { loadMotionChoice, motionStopped, setMotionStopped } from './motion';
-import { playIntro } from './intro';
+import { loadMotionChoice, motionStopped, ScrollTrigger, setMotionStopped } from './motion';
 import { initPage } from './pages';
 import { headerPeek } from './peek';
 import { startRouter } from './router';
 
 const lang = isLang(document.body.dataset.lang) ? document.body.dataset.lang : 'sq';
 loadMotionChoice();
-playIntro();
+// the opening (brand.css) holds the page still while it stands: measure the scroll once it lifts
+if (document.documentElement.classList.contains('intro')) {
+  new MutationObserver((_, watch) => {
+    if (document.documentElement.classList.contains('intro')) return;
+    watch.disconnect();
+    ScrollTrigger.refresh();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+}
 const drawers = new Drawers(lang);
 startRouter(initPage(lang, drawers));
 drawers.schedulePopup(9000);
