@@ -108,6 +108,7 @@ const sq = {
     bySize: 'Sipas masës',
     visit: 'Dyqani në Tiranë',
     instagram: 'Instagram',
+    more: 'Më shumë',
   },
   hero: {
     wordmark: 'Dresses by Greta',
@@ -473,6 +474,7 @@ const en: Copy = {
     bySize: 'By size',
     visit: 'The shop in Tirana',
     instagram: 'Instagram',
+    more: 'More',
   },
   hero: {
     wordmark: 'Dresses by Greta',
@@ -821,6 +823,7 @@ const fr: Copy = {
     bySize: 'Par taille',
     visit: 'La boutique à Tirana',
     instagram: 'Instagram',
+    more: 'Et aussi',
   },
   hero: {
     wordmark: 'Dresses by Greta',

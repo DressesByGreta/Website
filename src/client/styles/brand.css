@@ -17,7 +17,8 @@
 .nav.is-scrolled .nav__brand,
 .nav.is-solid .nav__brand,
 .nav.is-docked .nav__brand,
-html.drawer-open .nav .nav__brand {
+html.drawer-open .nav .nav__brand,
+html.dmenu-open .nav .nav__brand {
   color: var(--gold-deep);
 }
 
@@ -41,13 +42,13 @@ html.drawer-open .nav .nav__brand {
    over up here. The hand-over is exact, so it needs no fade. Once the header is paper the name
    always shows, whatever the hand-over state. Without motion both simply show. */
 @media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion='off']) .nav[data-dock]:not(.is-docked):not(.is-scrolled) .nav__brand {
+  :root:not([data-motion='off']):not(.dmenu-open) .nav[data-dock]:not(.is-docked):not(.is-scrolled) .nav__brand {
     visibility: hidden;
   }
 }
 
-/* over the photograph the black focus ring would vanish */
-.nav:not(.is-scrolled):not(.is-solid):not(.is-docked) :focus-visible {
+/* over the photograph the black focus ring would vanish (not while the desktop menu's white sheet is open) */
+:root:not(.dmenu-open) .nav:not(.is-scrolled):not(.is-solid):not(.is-docked) :focus-visible {
   outline-color: var(--on-photo);
 }
 

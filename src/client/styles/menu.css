@@ -292,41 +292,259 @@ html[data-motion='off'] .macc__plus::after {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* computers: the link under the pointer prints its first dress in the open space beside the menu */
-.mnav__preview {
+/* ---------- the menu on computers (deskmenu.ts): a white sheet under the header ---------- */
+.nav__menu-close,
+.dmenu,
+.dmenu-scrim {
   display: none;
 }
 
-@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
-  .mnav__thumb {
+@media (min-width: 1024px) {
+  /* MENU and MBYLL share one cell, so nothing in the row moves when the label changes */
+  .nav__menu {
+    display: inline-grid;
+    place-items: center;
+  }
+  .nav__menu > span {
+    grid-area: 1 / 1;
+  }
+  .nav__menu-close {
+    display: block;
+    visibility: hidden;
+  }
+  .nav__menu[aria-expanded='true'] .nav__menu-open {
+    visibility: hidden;
+  }
+  .nav__menu[aria-expanded='true'] .nav__menu-close {
+    visibility: visible;
+  }
+
+  .dmenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: block;
+    max-height: calc(100svh - var(--header-h) - env(safe-area-inset-top));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--ground);
+    color: var(--ink);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .dmenu[hidden],
+  .dmenu-scrim[hidden] {
     display: none;
   }
-  .mnav__preview {
+
+  /* the page under the sheet: the drawers' 20% veil; a click on it closes the menu */
+  .dmenu-scrim {
     position: fixed;
-    top: 50%;
-    left: calc(min(430px, 86vw) + clamp(32px, 6vw, 96px));
+    inset: 0;
+    z-index: calc(var(--z-nav) - 1);
+    display: block;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dmenu__grid {
     display: grid;
-    gap: var(--s-3);
-    width: min(28vw, 400px);
-    transform: translateY(-50%);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s var(--ease-out);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) clamp(190px, 19vw, 300px);
+    gap: var(--s-6) clamp(24px, 3.2vw, 64px);
+    align-items: start;
+    padding: var(--s-6) var(--gutter) var(--s-7);
   }
-  .mnav__preview.is-on {
-    opacity: 1;
+
+  .dmenu__col {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    min-width: 0;
   }
-  .mnav__plate {
+
+  .dmenu__h {
+    margin-bottom: var(--s-3);
+    font-size: var(--fs-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .dmenu__h:not(:first-child) {
+    margin-top: var(--s-6);
+  }
+
+  .dmenu__bigs,
+  .dmenu__links {
+    display: grid;
+    justify-items: start;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* the dresses in the shop's large type, each with its count raised beside it */
+  .dmenu__big {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.3em;
+    padding: 3px 0;
+    font-size: clamp(28px, 2.6vw, 42px);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    transition: color var(--d-hover) var(--ease-color);
+  }
+
+  .dmenu__n {
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: var(--track-ui);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dmenu__big .dmenu__n {
+    margin-top: 0.35em;
+    font-size: var(--fs-ui);
+  }
+
+  .dmenu__links a,
+  .dmenu__links button,
+  .dmenu__maps {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 5px 0;
+    font-size: 15px;
+    line-height: 1.35;
+    text-align: left;
+    transition: opacity var(--d-hover) var(--ease-color);
+  }
+
+  .dmenu__links .dmenu__n {
+    margin-top: 2px;
+  }
+
+  .dmenu__out {
+    flex: none;
+    margin-top: 0.45em;
+  }
+
+  .dmenu [aria-current] > span:first-child {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
+  }
+
+  .dmenu__sizes {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(40px, 48px));
+    gap: 6px;
+  }
+
+  .dmenu__size {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    height: 52px;
+    border: 1px solid var(--hairline);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    transition: border-color var(--d-hover) var(--ease-color);
+  }
+
+  .dmenu__size span + span {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+  }
+
+  .dmenu__size[aria-current] {
+    border-color: var(--ink);
+  }
+
+  /* her size ("Gjej masën"): the numeral underlined, never a badge */
+  .dmenu__size.is-mine span:first-child {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .dmenu__find,
+  .dmenu__motion {
+    min-height: 36px;
+    font-size: var(--fs-ui);
+    letter-spacing: var(--track-ui);
+    text-transform: uppercase;
+    transition: opacity var(--d-hover) var(--ease-color);
+  }
+
+  .dmenu__find {
+    margin-top: var(--s-2);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .dmenu__motion {
+    margin-top: var(--s-5);
+    color: var(--ink-3);
+  }
+
+  .dmenu__addr {
+    max-width: 26ch;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .dmenu__pic {
+    display: grid;
+    gap: var(--s-1);
+    align-content: start;
+  }
+
+  .dmenu__plate {
     display: block;
     aspect-ratio: 3 / 4;
+    margin-bottom: var(--s-2);
   }
-  .mnav__plate .plate__img {
+
+  .dmenu__plate .plate__inner {
+    position: absolute;
+    inset: 0;
+  }
+
+  .dmenu__plate .plate__img {
     object-position: 50% 22%;
   }
-  .mnav__preview-name {
+
+  .dmenu__pic-name {
     font-size: var(--fs-ui);
-    letter-spacing: 0.22em;
+    letter-spacing: var(--track-ui);
     text-transform: uppercase;
-    color: #ffffff;
+  }
+
+  .dmenu__pic-price {
+    font-size: var(--fs-ui);
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+  /* the line under the pointer stays ink; the others step back */
+  .dmenu__bigs:has(.dmenu__big:hover) .dmenu__big:not(:hover) {
+    color: var(--ink-3);
+  }
+  .dmenu__links a:hover,
+  .dmenu__links button:hover,
+  .dmenu__maps:hover,
+  .dmenu__find:hover,
+  .dmenu__motion:hover {
+    opacity: 0.6;
+  }
+  .dmenu__size:hover {
+    border-color: var(--ink);
   }
 }

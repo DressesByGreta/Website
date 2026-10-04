@@ -7,16 +7,15 @@ import { CATEGORIES, MEASURES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, for
 import { copy, href, LANGS, type Copy, type Lang } from '../shared/copy';
 import { esc, html, raw, type Raw } from '../shared/html';
 import { bag, catalogue, type CatalogueItem, type Line } from './bag';
+import { DeskMenu, desktop } from './deskmenu';
+import { INSTAGRAM, MAPS, MESSAGE } from './links';
 import * as me from './me';
-import { linkPictures, showIn } from './peek';
+import { linkPictures } from './peek';
 import { trackUse } from './stats';
 import { gsap, motionStopped, printPlate, reducedMotion } from './motion';
 
 const SIDE = { menu: 'left', bag: 'right', search: 'top', me: 'right', stylist: 'right' } as const;
 type Kind = keyof typeof SIDE;
-const INSTAGRAM = 'https://www.instagram.com/dressesbygreta/';
-const MESSAGE = 'https://ig.me/m/dressesbygreta';
-const MAPS = 'https://maps.google.com/?q=41.320034%2C19.812943';
 /** Search ignores case and accents: phones often type e for ë and c for ç. */
 const fold = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 const ICON = {
@@ -43,15 +42,19 @@ const PLUS = raw('<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="t
 export class Drawers {
   private d: Record<Kind, HTMLDialogElement>;
   private opener: Element | null = null;
+  /** The menu on computers; MENU opens the dark drawer only below 1024px. */
+  private desk: DeskMenu;
 
   constructor(private lang: Lang) {
     this.d = { menu: this.make('menu'), bag: this.make('bag'), search: this.make('search'), me: this.make('me'), stylist: this.make('stylist') };
+    this.desk = new DeskMenu(lang);
     this.buildMenu();
     this.buildSearch();
     document.addEventListener('click', (e) => {
       const b = (e.target as Element).closest<HTMLElement>('[data-open]');
       if (b && !b.closest('dialog')) {
         e.preventDefault();
+        if (b.dataset.open === 'menu' && desktop.matches) return this.desk.toggle(b as HTMLButtonElement);
         this.open(b.dataset.open as Kind, b);
       }
     });
@@ -94,6 +97,9 @@ export class Drawers {
     const d = this.d[kind];
     if (d.open) return;
     for (const other of Object.values(this.d)) if (other.open && other !== d) other.close();
+    // a drawer opened from the desktop menu takes its place; focus comes back to MENU
+    if (opener?.closest('.dmenu')) opener = document.querySelector('.nav__menu') ?? undefined;
+    this.desk.closeNow();
     this.opener = opener ?? document.activeElement;
     if (kind === 'bag') {
       // the lines wait (hidden) for the refresh, which may draw them again, then arrive
@@ -191,8 +197,7 @@ export class Drawers {
         )}
       </div>
       <div class="mnav__social"><a href="${INSTAGRAM}" target="_blank" rel="noopener" aria-label="${t.nav.instagram}">${ICON.instagram}</a></div>
-    </nav>
-    <div class="mnav__preview" aria-hidden="true"><span class="plate mnav__plate"><span class="plate__inner"><img class="plate__img" alt="" decoding="async" /><span class="plate__scan"></span></span></span><span class="mnav__preview-name"></span></div>`.value;
+    </nav>`.value;
     this.menuPictures();
     this.d.menu.querySelectorAll<HTMLButtonElement>('[data-acc]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -219,16 +224,11 @@ export class Drawers {
   }
 
   /**
-   * The menu shows the dresses: on a computer, the link under the pointer prints a photograph of its
-   * first dress in the open space beside the menu; on a phone each link carries a small one.
+   * The menu shows the dresses: a small photograph before each shop and occasion link, once the
+   * menu first opens. (Computers have the sheet, deskmenu.ts, with its own large photograph.)
    */
   private menuPictures(): void {
     const menu = this.d.menu;
-    const preview = menu.querySelector<HTMLElement>('.mnav__preview')!;
-    const plate = preview.querySelector<HTMLElement>('.mnav__plate')!;
-    const name = preview.querySelector<HTMLElement>('.mnav__preview-name')!;
-    const wide = () => window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)').matches;
-    // phones: a small photograph before each shop and occasion link, once the menu first opens
     const thumbs = async () => {
       const pics = await linkPictures(this.lang);
       menu.querySelectorAll<HTMLAnchorElement>('[data-pic]').forEach((a) => {
@@ -238,20 +238,6 @@ export class Drawers {
       });
     };
     new MutationObserver(() => menu.open && void thumbs()).observe(menu, { attributes: true, attributeFilter: ['open'] });
-    // computers (the menu opens there in French below 1120px): the dress prints beside the menu
-    let current = '';
-    const show = async (e: Event) => {
-      const a = (e.target as Element).closest<HTMLAnchorElement>('[data-pic]');
-      if (!a || !wide() || a.dataset.pic === current) return;
-      const p = (await linkPictures(this.lang)).get(a.dataset.pic!);
-      if (!p?.cover) return;
-      current = a.dataset.pic!;
-      name.textContent = p.name;
-      showIn(plate, p, '28vw');
-      preview.classList.add('is-on');
-    };
-    menu.addEventListener('pointerover', (e) => void show(e));
-    menu.addEventListener('focusin', (e) => void show(e));
   }
 
   /** The language links point at the current page; call after every navigation. */
@@ -630,7 +616,7 @@ export class Drawers {
     }
     const attempt = () => {
       const kind = document.querySelector<HTMLElement>('main')?.dataset.page ?? '';
-      if (document.querySelector('dialog[open]') || ['product', 'checkout', 'confirmation', 'pay'].includes(kind)) {
+      if (document.querySelector('dialog[open]') || this.desk.isOpen || ['product', 'checkout', 'confirmation', 'pay'].includes(kind)) {
         window.setTimeout(attempt, 6000);
         return;
       }

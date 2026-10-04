@@ -97,10 +97,10 @@ function header(lang: Lang, o: PageOptions): Raw {
   const t = copy[lang];
   return html`<header class="nav${o.overPhoto ? '' : ' is-solid'}" data-nav${o.kind === 'home' ? raw(' data-dock') : ''}>
     <div class="nav__left">
-      <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog">${t.nav.menu}</button>
+      <button class="nav__menu" type="button" data-open="menu" aria-haspopup="dialog"><span class="nav__menu-open">${t.nav.menu}</span><span class="nav__menu-close">${t.nav.close}</span></button>
       <nav class="nav__list" aria-label="${t.nav.shop}">
         <a class="tlink" href="${href('/dyqani', lang)}" data-pic="all">${t.nav.lookbook}</a>
-        ${filters().map((c) => html`<a class="tlink${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`)}
+        ${filters().map((c) => html`<a class="tlink nav__cat${c === 'new' ? ' nav__new' : ''}" href="${href('/dyqani', lang, { kategoria: c })}" data-pic="cat:${c}">${t.categories[c]}</a>`)}
       </nav>
     </div>
     <a class="nav__brand" href="${href('/', lang)}" aria-label="${t.a11y.wordmark}">${raw(nameSvg('nav__name'))}</a>
