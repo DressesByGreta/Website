@@ -168,11 +168,11 @@
 }
 
 .choice input:checked + .choice__box {
-  border-color: var(--ink);
+  border-color: var(--accent);
 }
 
 .choice input:checked + .choice__box::before {
-  background: var(--ink);
+  background: var(--accent);
 }
 
 .choice input:focus-visible + .choice__box {

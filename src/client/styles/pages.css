@@ -15,7 +15,7 @@
   right: 0;
   z-index: calc(var(--z-nav) - 1);
   height: 2px;
-  background: var(--ink);
+  background: var(--accent);
   transform: scaleX(0);
   transform-origin: left center;
   pointer-events: none;
@@ -151,7 +151,7 @@
   inset: 0 0 auto 0;
   z-index: 1000;
   height: 2px;
-  background: var(--ink);
+  background: var(--accent);
   transform: scaleX(0);
   transform-origin: left center;
   opacity: 0;
@@ -297,14 +297,14 @@ html[data-motion='off'] .route-bar.is-on {
 
 .lbk-spot.is-on span,
 .lbk-spot.is-lit span {
-  background: var(--ink);
-  color: var(--ground);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .lbk-spot:hover span {
-    background: var(--ink);
-    color: var(--ground);
+    background: var(--accent);
+    color: var(--on-accent);
   }
 }
 

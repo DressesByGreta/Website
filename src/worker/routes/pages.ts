@@ -311,7 +311,7 @@ function adminShell(c: Context<AppEnv>) {
     <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/admin.webmanifest" />
     <link rel="apple-touch-icon" href="/brand/admin-icon-180.png" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f3f3e7" />
     <meta name="apple-mobile-web-app-title" content="Greta Admin" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -1,16 +1,19 @@
 ---
 name: Dresses by Greta
-description: A Tirana boutique's webshop set as a lookbook; white ground, black ink, Helvetica, the dresses as the only colour.
+description: A Tirana boutique's webshop set as a lookbook in Greta's own colours: the logo's ivory ground, warm ink, its deep gold for what is chosen, Helvetica.
 colors:
-  ground: "#ffffff"
-  ground-2: "#f4f4f4"
-  ground-3: "#ebebeb"
-  hairline: "#e6e6e6"
-  line: "#606a72"
-  ink: "#000000"
-  ink-hover: "#222222"
-  ink-2: "rgba(0, 0, 0, 0.8)"
-  ink-3: "rgba(0, 0, 0, 0.55)"
+  ground: "#f3f3e7"
+  ground-2: "#eae7d8"
+  ground-3: "#e0dbc8"
+  hairline: "#dcd5c1"
+  line: "#6e6656"
+  ink: "#1f1b14"
+  ink-2: "rgb(31 27 20 / 0.82)"
+  ink-3: "rgb(31 27 20 / 0.66)"
+  accent: "#857240"
+  accent-hover: "#6f5f34"
+  on-accent: "#ffffff"
+  gold-ink: "#76642f"
   overlay: "rgba(0, 0, 0, 0.15)"
   stage: "#0b0b0b"
   on-photo: "#ffffff"
@@ -203,16 +206,16 @@ components:
 
 **Creative North Star: "The Lookbook"**
 
-The shop is Greta's lookbook, printed in the client's pinned house style. The material is the reference she chose on 2026-09-16 (vivetofficial.com): a white page, black ink, one Helvetica stack (Apple's own Helvetica Neue, Greta Sans on every other device), 12px uppercase chrome at 0.02em, 14px body, square corners, filled black buttons, 1px hairlines, and photographs as the only colour. That material is fixed. What the 2026-09-23 system change added is the book structure on top of it: every dress is a spread, the spreads are turned page by page as she scrolls, the index view is the lookbook's contents page, and a column of size numerals runs down the page edge. The home page is the hero photograph followed directly by the Shop (named "Shop" in both languages); the camera try-on, the featured rail, the catalogue grid and the sizes band no longer exist.
+The shop is Greta's lookbook, printed in the client's pinned house style. The material is the reference she chose on 2026-09-16 (vivetofficial.com), set since 2026-10-04 in Greta's own colours (the ivory and gold of her logo): the logo's ivory page, warm near-black ink, her deep gold for what is chosen, one Helvetica stack (Apple's own Helvetica Neue, Greta Sans on every other device), 12px uppercase chrome at 0.02em, 14px body, square corners, filled gold buttons, 1px hairlines, and the photographs as the loudest colour. That material is fixed. What the 2026-09-23 system change added is the book structure on top of it: every dress is a spread, the spreads are turned page by page as she scrolls, the index view is the lookbook's contents page, and a column of size numerals runs down the page edge. The home page is the hero photograph followed directly by the Shop (named "Shop" in both languages); the camera try-on, the featured rail, the catalogue grid and the sizes band no longer exist.
 
-Density is calm on the storefront and tight in the admin. The storefront gives one dress per viewport, lets the photograph take seven of eleven columns, and keeps everything else in 12px uppercase so the dress is the only loud thing on the screen. Hierarchy comes from size contrast inside one family (12px labels against 20px prices, 22px size numerals and 56 to 96px page numerals) rather than from weight, colour or a second typeface. The admin (Operate mode, Albanian) shares every token and trades the white page for a grey ground with white cards and dense rows.
+Density is calm on the storefront and tight in the admin. The storefront gives one dress per viewport, lets the photograph take seven of eleven columns, and keeps everything else in 12px uppercase so the dress is the only loud thing on the screen. Hierarchy comes from size contrast inside one family (12px labels against 20px prices, 22px size numerals and 56 to 96px page numerals) rather than from weight, colour or a second typeface. The admin (Operate mode, Albanian) shares every token and sets a deeper ivory ground under ivory cards and dense rows.
 
-The shop signs with its own logo, the gold script G with DRESSES BY GRETA across it from its Instagram picture (see Brand under Components). The logo is a drawing kept in its own gold; it is not type and not an accent colour.
+The shop signs with its own logo, the gold script G with DRESSES BY GRETA across it from its Instagram picture (see Brand under Components). The logo is a drawing kept in its own gold; its deep gold is also the site's one accent (see Colors).
 
 Motion carries the book metaphor and one brand moment, nothing else: the page turn, the print under a 1px scan bar, the photograph's flight from spread to product page, the size fold, the drop into the bag, and on home the logo's name handing over from the hero to the header. GSAP is the only engine and `gsap.ticker` the only scheduler; there is no pin, no snap, no smooth-scroll library. Rejected, and confirmed by the brief: the square product grid with badges and a filter sidebar.
 
 **Key Characteristics:**
-- White ground, black ink, the dresses as the only colour; the logo alone keeps its gold.
+- Ivory ground, warm ink, deep gold for what is pressed or chosen and for prices; the dresses stay the loudest colour.
 - One Helvetica on every device (Greta Sans where the system has none); 12px uppercase chrome, 14px body, large numerals as the only display type.
 - Square corners everywhere; 1px hairlines and 1px ink rules as the only structure.
 - One dress per spread: photograph in columns 1 to 7, second photograph or page numeral plus caption in columns 8 to 11.
@@ -220,36 +223,39 @@ Motion carries the book metaphor and one brand moment, nothing else: the page tu
 
 ## Colors
 
-A monochrome page whose only colour arrives in the photographs, plus the gold of Greta's own logo.
+Greta's own colours, from her logo (gold on ivory), chosen on 2026-10-04 over "white with gold" and "ivory, gold and espresso": the logo's ivory is the page, the ink is a warm near-black, and the logo's deep gold marks what is pressed or chosen. The photographs stay the loudest colour. Every text pair meets WCAG AA (contrast figures below, against the ivory ground).
 
 ### Primary
-- **Press Black** (ink): all primary text, the filled buttons, the selected size toggle, the scan bar, the 1px ink rules that open a numeral block, the contents list and the checkout head. There is no accent; black is the action colour.
-- **Soft Press** (ink-hover): the filled button's hover fill, desktop pointers only.
+- **Warm Ink** (ink, #1f1b14, 15.3:1): all primary text, the 1px ink rules that open a numeral block, the contents list and the checkout head, the outline of line buttons, focus rings.
+- **Greta Gold** (accent, #857240, the logo's deep gold): the filled buttons (white text, 4.7:1), the chosen size (wiped up from its foot), checked choices and admin filters, segments and tiles, the reading bar and the page-loading bar, the print's scan line, the lookbook's lit marks, the phone gallery's progress hairline, the open link's underline on the paper header, admin charts and bars, text selection. Never a surface larger than a button.
+- **Gold Pressed** (accent-hover, #6f5f34): the filled button's hover, pointers only.
+- **Price Gold** (gold-ink, #76642f, 5.2:1): prices on spreads and dress pages, the footer's column headings.
 
 ### Neutral
-- **Paper White** (ground): every page, drawer, caption panel, the full-screen viewer and the admin cards.
-- **Proof Grey** (ground-2): image wells while a photograph loads, the checkout summary panel, the admin page ground.
-- **Pressed Grey** (ground-3): disabled and blocked buttons, thumbnail wells inside the grey summary.
-- **Hairline** (hairline): every 1px divider: header once solid, SHOP bar, size strip, size index cells, foot rows, accordion rows, toggles, choices, drawer foot.
-- **Field Slate** (line): text-input borders only (checkout, search, admin).
-- **Ink 80** (ink-2): secondary text, counts, legends, field labels, menu children.
-- **Ink 55** (ink-3): folios, size letters and counts, sold-out sizes, placeholders, the footer's bottom line.
+- **Ivory** (ground, #f3f3e7): every page, drawer, caption panel, the menu sheet, the opening, the admin cards.
+- **Deep Ivory** (ground-2, #eae7d8): image wells while a photograph loads, the footer, the checkout summary panel, the admin page ground, admin row hovers.
+- **Pressed Ivory** (ground-3, #e0dbc8): disabled and blocked buttons, thumbnail wells inside the summary.
+- **Hairline** (hairline, #dcd5c1): every 1px divider: header once solid, SHOP bar, size strip, size index cells, foot rows, accordion rows, toggles, choices, drawer foot.
+- **Field Taupe** (line, #6e6656): text-input borders only (checkout, search, admin).
+- **Ink 82** (ink-2, 9.0:1): secondary text, counts, legends, field labels, menu children.
+- **Ink 66** (ink-3, 5.3:1; 4.8:1 on Pressed Ivory): folios, size letters and counts, sold-out sizes, placeholders, the footer's bottom line.
 - **Photo Veil** (overlay): the 15% overlay on the hero photograph, plus a 120px top gradient at 35% black that keeps the transparent header legible.
-- **Stage** (stage): the hero's letterbox behind the photograph while it loads. The only dark field on the site.
+- **Stage** (stage): the hero's letterbox behind the photograph while it loads.
 - **On Photo** (on-photo): text, the outline button and the scan bar over the hero photograph.
+- **The phone menu:** its dark sheet is the warm ink (#1f1b14) with ivory type (secondary at 64%, rules at 20%), no longer grey and white.
 
 ### Functional
 - **Signal Red** (error): errors only: invalid field borders, field messages, the checkout error box, the bag's "no longer available" warning. Never decoration, never a sale price.
 - **Ledger Green** (ok): admin only, on the status pills for live dresses and new or confirmed orders. Never on the storefront.
 
 ### Brand (the logo's own colours, sampled from the Instagram picture)
-- **Logo Gold** (gold): the logo on paper at full size: the footer seal, the follow-card avatar, the icons and the link preview.
-- **Logo Gold Deep** (gold-deep): the same gold deepened for the small name line on white (4.7:1): the header once solid, the admin top bar and sign-in (Luca's choice, 2026-10-02).
-- **Logo Gold Light** (gold-light): the same gold lifted for the hero photograph, the transparent header over it, and the dark menu's seal.
-- **Ivory** (ivory): the logo's ground: the follow card's avatar disc, the tab icon and the link-preview card. Never a page or panel ground.
+- **Logo Gold** (gold): the logo on paper at full size: the footer seal, the follow-card avatar, the opening, the icons and the link preview.
+- **Logo Gold Deep** (gold-deep): the small name line on ivory: the header once solid, the admin rail and sign-in. The same colour is the accent.
+- **Logo Gold Light** (gold-light): the logo over the hero photograph, the transparent header over it, and the dark menu's seal.
+- **Ivory** (ivory): the logo's ground, and now the page's (ground). The browser's own chrome (theme-color) and the admin's home-screen app take it too.
 
 ### Named Rules
-**The Dresses-and-Seal Rule.** No accent colour, no tinted surfaces, no coloured badges. If a pixel on the storefront has hue, it belongs to a photograph, to an error, or to the logo. The logo's gold never colours type, rules, controls, hover or focus.
+**The One-Gold Rule.** Gold marks what is pressed, chosen or open, and sets prices; it is never a large surface, never a gradient, never a second accent beside itself. If a pixel on the storefront has hue, it belongs to a photograph, to the logo, to that one gold, or to an error.
 
 **The Two-Line Rule.** Structure is drawn with exactly two lines: the 1px hairline that separates, and the 1px ink rule that opens a block (the page numeral, the contents list, the confirmation title, the checkout head, the INDEKSI cell, the order total).
 
@@ -319,11 +325,11 @@ Every corner is square (0px), including inputs (the browser radius is reset) and
 ## Components
 
 ### Buttons
-Square, black, uppercase, one per task.
+Square, gold, uppercase, one per task.
 - **Shape:** square (0px), 44px high, 20px side padding; 52px for the checkout submit.
-- **Primary:** black fill, white 12px uppercase label. Full width in captions, checkout and drawers.
+- **Primary:** Greta Gold fill (the accent), white 12px uppercase label (4.7:1); Gold Pressed on hover. Full width in captions, checkout and drawers.
 - **Hover / Focus:** fill softens to ink-hover on fine pointers; press scales to 0.98 over 120ms; focus is a 1px ink outline at 3px offset.
-- **Line:** transparent with an ink frame; fills black on hover. Used for secondary actions (Google Maps, show all).
+- **Line:** transparent with an ink frame; fills gold on hover. Used for secondary actions (Google Maps, show all).
 - **On photo:** transparent with a white frame over the hero; fills white with black text on hover.
 - **Disabled / blocked:** pressed grey fill, ink-55 text, no press.
 
@@ -331,7 +337,7 @@ Square, black, uppercase, one per task.
 Uppercase 12px links with a 44px hit area (header, drawer close, SHIKO FUSTANIN, back links). Hover and press drop to 60% opacity. Active states are a 1px underline, never a colour.
 
 ### Size toggles
-Real radio inputs inside five equal square cells: EU numeral at 13px over the letter at 10px. Chosen: black fill, white numeral, letter at 70% white. Sold out: ink-55, diagonal hairline, not focusable as a choice.
+Real radio inputs inside five equal square cells: EU numeral at 13px over the letter at 10px. Chosen: gold fill (wiped up from its foot), white numeral and letter. Sold out: ink-55, diagonal hairline, not focusable as a choice.
 
 ### The spread caption
 Name (12px heading), price (20px), MASA legend, toggles, SHTO NË ÇANTË full width, then the foot row: hairline above, the folio left in ink-55 (or nothing when the page numeral is showing), SHIKO FUSTANIN right.
@@ -365,7 +371,7 @@ The logo comes from the shop's own Instagram picture (raw/instagram/brand/profil
 Native dialogs over a 20% backdrop. Menu from the left below 1024px (min(370px, 92vw)): categories 12px parents, 14px uppercase children, five 52px size squares, language and search rows. Bag from the right: 72 by 96px thumbnails, size and price row, the drawn plus/minus quantity box, remove as an underlined text control, total and one black button in the hairline-topped foot. Search from the top: a 54px field and 3:4 result wells in 2, 4 then 6 columns.
 
 ### Product page
-Name at 16px, price at 22px, the size picker, one black button, the trust line (PAGESË NË DORËZIM · DYQANI NË TIRANË in 12px uppercase ink 80, the shop underlined and linked to the visit block on home), the size guide line, accordion rows (48px, 12px uppercase summary, hairline between, chevron), rent and Instagram as underlined text links, then the foot row with the folio and the back link. The full-screen viewer is white, shows each photograph whole (contained) one per screen, with 44px white square close and arrow buttons and a centred "1 / 4" count.
+Name at 16px, price at 22px in Price Gold, the size picker, one gold button, the trust line (PAGESË NË DORËZIM · DYQANI NË TIRANË in 12px uppercase ink 80, the shop underlined and linked to the visit block on home), the size guide line, accordion rows (48px, 12px uppercase summary, hairline between, chevron), rent and Instagram as underlined text links, then the foot row with the folio and the back link. The full-screen viewer is white, shows each photograph whole (contained) one per screen, with 44px white square close and arrow buttons and a centred "1 / 4" count.
 
 ### Confirmation and test bank
 The order number at display scale under an ink rule with its 12px label on the baseline beside it, then the lead, items at 72 by 96px and the totals list (the total opens with an ink rule). The test bank page sets the amount at clamp(40px, 8vw, 96px) with two buttons.
@@ -374,7 +380,7 @@ The order number at display scale under an ink rule with its 12px label on the b
 A full-width black bar with white 12px text at the top of the flow, local testing only; it never overlays content and never ships to the live shop.
 
 ### Admin (Operate)
-Grey ground, white sticky top bar with 12px uppercase tabs underlined in ink when active and square black count badges; white hairline cards; list rows with a grip, a 48 by 64px thumbnail, underlined name, 12px meta and stock per size (zero in ink-55); square 16px radios; hairline status pills (ledger green for live and confirmed, struck for cancelled); a save bar opened by an ink rule. A dress with any photograph under 1600px wide (the Instagram copies are about 1160px) carries a FOTO TË VOGLA pill in the list, and each such photograph a 12px ink-80 note under its card asking for the original. Uploads are resized in the browser to 480, 960, 1600 and 2400px (capped by the original), each file under 4MB (the quality steps down from 0.82 if a busy fabric comes out heavier). Settings also hold the legal pages' details (business as in QKB, NIPT one letter, 8 digits, one letter; returns chosen from four options with a grey preview of the Albanian text), the Telegram order alerts (linked phones as hairline rows with a red Hiq, the one-time code on a grey panel while a phone links) and the Instagram follower count (the number at 22px, its source in a 12px note, a token field or the number by hand); setup in docs/alerts-and-instagram.md. Dates are written by hand in Albanian (2 tetor, 11:38; 02.10, 11:38 in the order list), since browsers may lack Albanian formats. Tabs: Fustanet, Porositë, Shitjet (sales by week or month with the Excel download), Statistikat, Cilësimet.
+Deep ivory ground, ivory top bar with 12px uppercase tabs underlined in gold when active and square gold count badges; ivory hairline cards; list rows with a grip, a 48 by 64px thumbnail, underlined name, 12px meta and stock per size (zero in ink-55); square 16px radios; hairline status pills (ledger green for live and confirmed, struck for cancelled); a save bar opened by an ink rule. A dress with any photograph under 1600px wide (the Instagram copies are about 1160px) carries a FOTO TË VOGLA pill in the list, and each such photograph a 12px ink-80 note under its card asking for the original. Uploads are resized in the browser to 480, 960, 1600 and 2400px (capped by the original), each file under 4MB (the quality steps down from 0.82 if a busy fabric comes out heavier). Settings also hold the legal pages' details (business as in QKB, NIPT one letter, 8 digits, one letter; returns chosen from four options with a grey preview of the Albanian text), the Telegram order alerts (linked phones as hairline rows with a red Hiq, the one-time code on a grey panel while a phone links) and the Instagram follower count (the number at 22px, its source in a 12px note, a token field or the number by hand); setup in docs/alerts-and-instagram.md. Dates are written by hand in Albanian (2 tetor, 11:38; 02.10, 11:38 in the order list), since browsers may lack Albanian formats. Tabs: Fustanet, Porositë, Shitjet (sales by week or month with the Excel download), Statistikat, Cilësimet.
 
 ### Motion
 GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hidden start state is set inside a `prefers-reduced-motion: no-preference` branch, so CSS defaults are the finished page.
@@ -394,12 +400,12 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the page white, the ink black and the photographs the only colour besides the logo's own gold.
+- **Do** keep the page ivory, the ink warm and the photographs the loudest colour; gold only for what is pressed, chosen or open, and for prices.
 - **Do** place the logo only from the page's sprite: gold on paper, gold deep for the small name line on white, gold light on photographs and the dark menu.
 - **Do** keep the hero logo off the dress, where the photograph is quiet.
 - **Do** set every piece of chrome in 12px uppercase at 0.02em (0.08em for headings) and body at 14px.
 - **Do** give each dress its own spread: photograph in columns 1 to 7, second photograph or page numeral under a 1px ink rule plus the caption in columns 8 to 11.
-- **Do** use one full-width black button per caption and per product page.
+- **Do** use one full-width gold button per caption and per product page.
 - **Do** keep sold-out sizes visible and struck (diagonal hairline in toggles, line-through in lists).
 - **Do** put folios in foot rows and set every number in tabular figures.
 - **Do** span the phone caption flush across the photograph's lower edge.
@@ -540,3 +546,8 @@ GSAP core and ScrollTrigger only; `gsap.ticker` is the only scheduler. Every hid
 
 - **Phones see the whole dress (asked for: "when I scroll on the dresses I want to see more of the dresses"):** the spread's photograph no longer fills the sheet under a caption that covered its lower third and its sides; it stands at the full height the caption leaves (see The spread), so a dress shows head to hem. The caption shrank from 252px to 97px on a 390 by 844 phone: name and price on one row, the sizes and a short add button on the next; the folio and SHIKO FUSTANIN leave the phone caption (the photograph and the name open the dress). The page turn is unchanged.
 - **The opening (chosen 2026-10-04 from four directions: a logo intro on the first visit, calm and quick):** see Motion. A first version drew the logo with GSAP from the page's script; on a cold first visit the ivory then stood empty for about a second while that script loaded, so the drawing moved into CSS, running from the first frame. Lighthouse (mobile, local production build, the shop page): score 73 to 74 against 72 before, first and largest paints unchanged, speed index 3.8s to 5.0 to 5.4s (the ivory stands over a page already painted).
+
+## Changes 2026-10-04, night (Greta's colours)
+
+- **Asked for:** "make the website branded Dresses by Greta with her colours, not just black and white". Three directions were shown as phone mock-ups (ivory and gold; white with gold; ivory, gold and espresso); ivory and gold was chosen, for the shop and the admin.
+- **What changed:** the tokens (see Colors): ivory ground, warm ink, the deep gold as the accent for buttons and every chosen or open state, a darker gold for prices and the footer's headings, a deeper ivory footer, the phone menu in warm ink and ivory, the theme-color and the admin app's colours in ivory. The admin follows the same tokens: gold buttons, tab underline, order badge, filters, the selected summary tile, segmented controls, charts and progress bars; ivory hovers instead of light grey.

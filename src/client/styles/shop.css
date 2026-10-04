@@ -13,6 +13,7 @@
   font-size: 20px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
+  color: var(--gold-ink);
 }
 
 .price__was {
@@ -82,12 +83,12 @@
   color: var(--ink-3);
 }
 
-/* the chosen size fills with ink wiped up from its foot (0.28s), not switched at once */
+/* the chosen size fills with gold wiped up from its foot (0.28s), not switched at once */
 .pick__size::before {
   content: '';
   position: absolute;
   inset: -1px;
-  background: var(--ink);
+  background: var(--accent);
   transform: scaleY(0);
   transform-origin: 50% 100%;
   transition: transform 0.28s var(--ease-out);
@@ -99,8 +100,8 @@
 }
 
 .pick__size:has(input:checked) {
-  border-color: var(--ink);
-  color: var(--ground);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .pick__size:has(input:checked)::before {
@@ -118,7 +119,7 @@
 }
 
 .pick__size:has(input:checked) .pick__l {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-accent);
 }
 
 .pick__size:has(input:focus-visible) {
@@ -768,7 +769,7 @@
     text-decoration-thickness: 1px;
   }
   .toc__link.is-on .toc__lead {
-    background: var(--ink);
+    background: var(--accent);
   }
   .toc__link:focus-visible {
     outline-offset: 2px;
@@ -809,6 +810,12 @@
   text-decoration: underline;
   text-underline-offset: 0.35em;
   text-decoration-thickness: 1px;
+}
+
+/* on the paper header the open link's underline is gold (over the hero it stays white) */
+.nav:is(.is-scrolled, .is-solid, .is-docked) .tlink[aria-current],
+html:is(.drawer-open, .dmenu-open) .nav .tlink[aria-current] {
+  text-decoration-color: var(--accent);
 }
 
 /* ---------- her size and her date (personal.ts): marks, never badges ---------- */

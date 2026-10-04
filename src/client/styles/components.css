@@ -8,9 +8,9 @@
   gap: var(--s-2);
   height: 44px;
   padding: 0 20px;
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--ground);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: var(--fs-ui);
   line-height: 1;
   letter-spacing: var(--track-ui);
@@ -30,6 +30,7 @@
 .btn--line {
   background: transparent;
   color: var(--ink);
+  border-color: var(--ink);
 }
 
 .btn--photo {
@@ -56,13 +57,13 @@
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover {
-    background: #222;
-    border-color: #222;
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
   }
   .btn--line:hover {
-    background: var(--ink);
-    color: var(--ground);
-    border-color: var(--ink);
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
   }
   .btn--photo:hover {
     background: var(--on-photo);
@@ -213,7 +214,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: var(--ink);
+  background: var(--accent);
   transform: translateY(calc(var(--p) * 100cqh));
   opacity: calc(1 - var(--p) * var(--p));
   pointer-events: none;

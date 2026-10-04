@@ -199,7 +199,7 @@ export function page(o: PageOptions): string {
     <link rel="canonical" href="${canonical}" />
     ${LANGS.map((l) => html`<link rel="alternate" hreflang="${l}" href="${alt(l)}" />`)}
     <link rel="alternate" hreflang="x-default" href="${alt('sq')}" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f3f3e7" />
     <meta name="color-scheme" content="light" />
     <meta property="og:site_name" content="${SITE.name}" />
     <meta property="og:title" content="${o.title}" />
