@@ -125,6 +125,7 @@
 /* ---------- footer: three columns of 12px links ---------- */
 .foot {
   border-top: 1px solid var(--hairline);
+  background: var(--ground-2);
   padding-block: var(--s-6) max(var(--s-6), env(safe-area-inset-bottom) + 24px);
   font-size: var(--fs-ui);
 }
@@ -146,6 +147,7 @@
   letter-spacing: var(--track-ui);
   text-transform: uppercase;
   font-weight: 400;
+  color: var(--gold-ink);
   margin-bottom: var(--s-1);
 }
 

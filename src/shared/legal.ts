@@ -93,7 +93,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           h: 'Cookies dhe kujtesa e pajisjes',
           p: [
             'Faqja nuk përdor cookies për reklama apo për të ndjekur vizitorët.',
-            'Çanta ruhet vetëm në pajisjen tënde, në kujtesën e shfletuesit, që ta gjesh kur kthehesh. Po aty ruhet edhe zgjedhja «Ndalo animacionet». Hyrja e stafit në admin përdor një cookie që i shërben vetëm hyrjes.',
+            'Çanta ruhet vetëm në pajisjen tënde, në kujtesën e shfletuesit, që ta gjesh kur kthehesh. Po aty ruhen edhe zgjedhja «Ndalo animacionet» dhe ora kur u shfaq hyrja me logon, që të mos përsëritet brenda 12 orëve. Hyrja e stafit në admin përdor një cookie që i shërben vetëm hyrjes.',
             'Po ashtu ruhen vetëm në pajisjen tënde masat e tua («Gjej masën»), data e eventit dhe fustanet që ruan («Të ruajtura»). Data i dërgohet faqes vetëm për të parë cilët fustane janë të zënë atë ditë; nuk ruhet dhe nuk lidhet me asgjë tjetër. Lista e ruajtur del nga pajisja vetëm kur e dërgon vetë si lidhje.',
           ],
         },
@@ -153,7 +153,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           h: 'Cookies and storage on your device',
           p: [
             'The site uses no advertising or tracking cookies.',
-            'Your bag is kept only on your device, in the browser’s storage, so it is there when you come back. The Stop animations choice is kept there too. Staff sign-in to the admin uses one cookie that serves only that.',
+            'Your bag is kept only on your device, in the browser’s storage, so it is there when you come back. The Stop animations choice is kept there too, as is the time the opening with the logo last played, so it does not repeat within 12 hours. Staff sign-in to the admin uses one cookie that serves only that.',
             'Your measurements (Find my size), the date of your event and the dresses you save (Saved) are also kept only on your device. The date is sent to the site only to see which dresses are booked that day; it is not stored or linked to anything else. Your saved list leaves your device only when you send it yourself as a link.',
           ],
         },
@@ -213,7 +213,7 @@ export const LEGAL: Record<'privacy' | 'terms', Record<Lang, LegalDoc>> = {
           h: 'Cookies et mémoire de l’appareil',
           p: [
             'Le site n’utilise aucun cookie publicitaire ni de suivi.',
-            'Votre panier est conservé uniquement sur votre appareil, dans la mémoire du navigateur, pour le retrouver à votre retour. Le choix « Arrêter les animations » y est conservé aussi. La connexion du personnel à l’administration utilise un cookie qui ne sert qu’à cela.',
+            'Votre panier est conservé uniquement sur votre appareil, dans la mémoire du navigateur, pour le retrouver à votre retour. Le choix « Arrêter les animations » y est conservé aussi, ainsi que l’heure à laquelle l’ouverture avec le logo a été jouée, pour qu’elle ne se répète pas dans les 12 heures. La connexion du personnel à l’administration utilise un cookie qui ne sert qu’à cela.',
             'Vos mesures («\u00a0Trouver ma taille\u00a0»), la date de votre événement et les robes que vous enregistrez («\u00a0Enregistrées\u00a0») sont aussi conservées uniquement sur votre appareil. La date n’est envoyée au site que pour savoir quelles robes sont réservées ce jour-là\u00a0; elle n’est ni conservée ni liée à quoi que ce soit. Votre liste ne quitte votre appareil que si vous l’envoyez vous-même sous forme de lien.',
           ],
         },

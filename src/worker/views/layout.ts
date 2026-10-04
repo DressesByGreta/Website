@@ -7,7 +7,7 @@ import { CATEGORIES, OCCASIONS, OCCASION_PATH, SIZES, SIZE_LETTER, type ShopFilt
 import { copy, href, LANGS, type Lang } from '../../shared/copy';
 import { html, raw, type Html, type Raw } from '../../shared/html';
 import { SITE } from '../site';
-import { brandSprite } from './brand';
+import { brandSprite, introSheet } from './brand';
 
 export interface PageOptions {
   lang: Lang;
@@ -75,6 +75,28 @@ export const setVerification = (code: string | undefined): void => {
 };
 const filters = (): ShopFilter[] => (newCount > 0 ? ['new', ...CATEGORIES] : [...CATEGORIES]);
 const ldJson = (o: object): string => JSON.stringify(o).replace(/</g, `${B}u003c`);
+
+/**
+ * The opening's boot, run in the head before the first paint: on a visitor's first page in 12
+ * hours, with motion allowed, it marks <html class="intro">, and the opening (the sheet from
+ * brand.ts introSheet, drawn by brand.css) runs from the first frame, before any other script.
+ * Its first animation starting is the first paint: if that came after 2.5s (a slow phone on a slow
+ * network) the opening steps aside at once rather than make the wait longer. A tap, a key or a
+ * scroll in its first 0.9s sends it to a quick lift (intro-skip). The class leaves when the lift
+ * ends, 2.5s after the start whatever happens, or after 10s if nothing ever painted. Its hash is in
+ * the content security policy (index.ts): change a character here and the hash follows by itself.
+ */
+export const INTRO_BOOT =
+  "(function(){try{var d=document.documentElement,k='greta-intro',n=Date.now(),s=0,t,ev=['pointerdown','keydown','wheel','touchstart'];" +
+  "if(n-(+localStorage.getItem(k)||0)<432e5||localStorage.getItem('greta-motion')==='off'||!matchMedia('(prefers-reduced-motion: no-preference)').matches)return;" +
+  "localStorage.setItem(k,String(n));d.classList.add('intro');" +
+  "function end(){clearTimeout(t);d.classList.remove('intro','intro-skip');ev.forEach(function(e){removeEventListener(e,skip,true)});removeEventListener('animationstart',start,true);removeEventListener('animationend',over,true)}" +
+  "function start(e){if(s||!/^intro-/.test(e.animationName))return;s=performance.now();if(s>2500)return end();clearTimeout(t);t=setTimeout(end,2500)}" +
+  "function over(e){if(/^intro-lift/.test(e.animationName))end()}" +
+  "function skip(){if(!s||performance.now()-s>900)return;ev.forEach(function(e){removeEventListener(e,skip,true)});d.classList.add('intro-skip')}" +
+  "ev.forEach(function(e){addEventListener(e,skip,{capture:true,passive:true})});addEventListener('animationstart',start,true);addEventListener('animationend',over,true);t=setTimeout(end,1e4)}catch(e){}})()";
+/** Paying and its receipts open without the opening. */
+const NO_INTRO = new Set<PageOptions['kind']>(['checkout', 'confirmation', 'pay']);
 
 function assets(kind: 'store' | 'admin'): Raw {
   const entry = kind === 'store' ? 'client/main' : 'admin/main';
@@ -169,6 +191,7 @@ export function page(o: PageOptions): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    ${NO_INTRO.has(o.kind) ? '' : raw(`<script>${INTRO_BOOT}</script>`)}
     <title>${o.title}</title>
     <meta name="description" content="${o.description}" />
     ${o.noindex ? raw('<meta name="robots" content="noindex" />') : ''}
@@ -176,7 +199,7 @@ export function page(o: PageOptions): string {
     <link rel="canonical" href="${canonical}" />
     ${LANGS.map((l) => html`<link rel="alternate" hreflang="${l}" href="${alt(l)}" />`)}
     <link rel="alternate" hreflang="x-default" href="${alt('sq')}" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f3f3e7" />
     <meta name="color-scheme" content="light" />
     <meta property="og:site_name" content="${SITE.name}" />
     <meta property="og:title" content="${o.title}" />
@@ -200,6 +223,7 @@ export function page(o: PageOptions): string {
   </head>
   <body data-lang="${o.lang}"${newCount > 0 ? raw(' data-new') : ''}${lookbooks > 0 ? raw(' data-lookbook') : ''}${stylist ? raw(' data-stylist') : ''}>
     ${brandSprite()}
+    ${NO_INTRO.has(o.kind) ? '' : introSheet()}
     <a class="skip" href="#main">${t.a11y.skip}</a>
     ${header(o.lang, o)}
     <main id="main" tabindex="-1" data-page="${o.kind}" data-nav-mode="${o.overPhoto ? 'photo' : 'solid'}" data-page-json="${o.data ? JSON.stringify(o.data) : ''}">

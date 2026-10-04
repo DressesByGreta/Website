@@ -42,22 +42,28 @@
 :root {
   color-scheme: light;
 
-  /* colour */
-  --ground: #ffffff;
-  --ground-2: #f4f4f4;
-  --ground-3: #ebebeb;
-  --hairline: #e6e6e6;
-  --line: #606a72;
-  --ink: #000000;
-  --ink-2: rgba(0, 0, 0, 0.8);
-  --ink-3: rgba(0, 0, 0, 0.55);
-  --accent: #000000;
+  /* colour: Greta's own, from her logo (gold on ivory, 2026-10-04). The page is the logo's ivory
+     and the text a warm near-black; the logo's deep gold marks what is pressed or chosen (buttons,
+     the chosen size, checks and filters, the reading and loading bars, the print's scan line, the
+     lookbook's marks, the open link's underline), and a darker gold sets prices. Every text pair
+     keeps WCAG AA (DESIGN.md, Colors). */
+  --ground: #f3f3e7;
+  --ground-2: #eae7d8;
+  --ground-3: #e0dbc8;
+  --hairline: #dcd5c1;
+  --line: #6e6656;
+  --ink: #1f1b14;
+  --ink-2: rgb(31 27 20 / 0.82);
+  --ink-3: rgb(31 27 20 / 0.66);
+  --accent: #857240;
+  --accent-hover: #6f5f34;
   --on-accent: #ffffff;
+  --gold-ink: #76642f;
   --overlay: rgba(0, 0, 0, 0.15);
   --scrim: #000000;
   --stage: #0b0b0b;
   --on-photo: #ffffff;
-  /* the logo's own colours, sampled from Greta's Instagram picture; logo artwork only */
+  /* the logo's own colours, sampled from Greta's Instagram picture */
   --gold: #a28d51;
   --gold-light: #d9c48c; /* the same gold lifted for the photograph and the dark menu */
   --gold-deep: #857240; /* the same gold deepened for the small name line on white (4.7:1) */

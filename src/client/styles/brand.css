@@ -186,3 +186,101 @@ html.dmenu-open .nav .nav__brand {
   height: auto;
   overflow: visible;
 }
+
+/* ---------- the opening: the logo drawn on its own ivory, then lifted off the page ---------- */
+/* The sheet is on every page, hidden (views/brand.ts introSheet); the head's boot script adds
+   html.intro on a first visit (views/layout.ts INTRO_BOOT) and the whole opening runs here, from
+   the first frame, before any script has arrived: the one place the motion is CSS, not GSAP. The
+   lift is a transform, so a busy phone still moves it smoothly. About 1.45s. */
+html.intro {
+  overflow: hidden;
+}
+
+.intro-sheet {
+  display: none;
+}
+
+html.intro .intro-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: var(--ivory);
+  color: var(--gold);
+  animation: intro-lift 0.5s cubic-bezier(0.65, 0, 0.35, 1) 0.95s forwards;
+}
+
+.intro-sheet__logo {
+  width: min(56vw, 300px);
+  height: auto;
+  overflow: visible;
+}
+
+/* the G: its outline traced (pathLength 1 in the sprite), then filled */
+html.intro .intro-sheet__g {
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    intro-pen 0.65s cubic-bezier(0.45, 0, 0.55, 1) forwards,
+    intro-ink 0.35s ease-out 0.45s forwards;
+}
+
+/* the name: each letter rises 6 units into place, 0.02s after the one before */
+html.intro .intro-sheet__l {
+  fill: currentColor;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: intro-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) calc(0.35s + var(--i) * 0.02s) forwards;
+}
+
+/* a tap, a key or a scroll early on: the logo whole at once, and a quick lift */
+html.intro-skip .intro-sheet {
+  animation: intro-lift-fast 0.25s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+
+html.intro-skip .intro-sheet__g,
+html.intro-skip .intro-sheet__l {
+  animation: none;
+  fill-opacity: 1;
+  stroke-opacity: 0;
+  stroke-dashoffset: 0;
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes intro-pen {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes intro-ink {
+  to {
+    fill-opacity: 1;
+    stroke-opacity: 0;
+  }
+}
+
+@keyframes intro-rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes intro-lift {
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes intro-lift-fast {
+  to {
+    transform: translateY(-100%);
+  }
+}

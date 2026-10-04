@@ -3,10 +3,10 @@
    languages, and the Instagram mark at the foot. The only dark surface besides the hero. */
 
 .drawer--dark {
-  --m-ground: #1f1f1f;
-  --m-ink: #ffffff;
-  --m-ink-2: rgba(255, 255, 255, 0.62);
-  --m-rule: rgba(255, 255, 255, 0.2);
+  --m-ground: #1f1b14;
+  --m-ink: #f3f3e7;
+  --m-ink-2: rgb(243 243 231 / 0.64);
+  --m-rule: rgb(243 243 231 / 0.2);
   width: min(430px, 86vw);
   background: var(--m-ground);
   color: var(--m-ink);
@@ -432,6 +432,7 @@ html[data-motion='off'] .macc__plus::after {
 
   .dmenu [aria-current] > span:first-child {
     text-decoration: underline;
+    text-decoration-color: var(--accent);
     text-decoration-thickness: 1px;
     text-underline-offset: 0.16em;
   }
@@ -461,7 +462,7 @@ html[data-motion='off'] .macc__plus::after {
   }
 
   .dmenu__size[aria-current] {
-    border-color: var(--ink);
+    border-color: var(--accent);
   }
 
   /* her size ("Gjej masën"): the numeral underlined, never a badge */
